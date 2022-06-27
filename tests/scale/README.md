@@ -29,6 +29,7 @@
 
     "keep_resources" - can be set to True in order to keep or False to delete the resources at the
     end of the test regerdless of the result.
+    "run_live_migration" - can be set to True in order to run test_mass_vm_live_migration for all the VMs
     "test_namespace" - the name of the project the test resources will be created at.
 
     "test_duration" - number of minutes for the test to keep running

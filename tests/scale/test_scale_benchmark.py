@@ -14,6 +14,9 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.virtual_machine_instance_migration import (
+    VirtualMachineInstanceMigration,
+)
 from ocp_utilities.must_gather import run_must_gather
 from ocp_utilities.utils import run_command
 
@@ -32,14 +35,21 @@ from utilities.constants import (
     TIMEOUT_1MIN,
     TIMEOUT_30MIN,
 )
-from utilities.infra import create_ns
+from utilities.infra import cluster_resource, create_ns
 from utilities.storage import generate_data_source_dict, get_images_server_url
-from utilities.virt import VirtualMachineForTestsFromTemplate
+from utilities.virt import (
+    VirtualMachineForTestsFromTemplate,
+    verify_vm_migrated,
+    wait_for_migration_finished,
+)
 
 
 LOGGER = logging.getLogger(__name__)
 OCS = "ocs"
 NFS = "nfs"
+NODE_STR = "node"
+VMI_SOURCE_POD_STR = "vmi_source_pod"
+MIGRATION_INSTANCE_STR = "migration_instance"
 
 SCALE_STORAGE_TYPES = {
     OCS: StorageClass.Types.CEPH_RBD,
@@ -59,8 +69,11 @@ def log_nodes_load_data(vms=None):
     LOGGER.info(
         f"Nodes vm load distribution: {nodes_load_distribute or 'no scale VMs running'}"
     )
-    nodes_load_statistics = run_command(command=shlex.split("oc adm top nodes"))
-    LOGGER.info(f"Nodes load statistics:\n {nodes_load_statistics[1]}")
+    cmd_succeeded, nodes_load_statistics, _ = run_command(
+        command=shlex.split("oc adm top nodes --use-protocol-buffers")
+    )
+    assert cmd_succeeded, "Failed to get nodes status"
+    LOGGER.info(f"Nodes load statistics:\n {nodes_load_statistics}")
 
 
 def all_vms_running(vms):
@@ -110,6 +123,13 @@ def failure_finalizer(vms_list, must_gather_image_url):
     )
 
 
+def start_live_migration(vm):
+    with cluster_resource(VirtualMachineInstanceMigration)(
+        name=vm.name, namespace=vm.namespace, vmi=vm.vmi, teardown=False
+    ) as migration:
+        return migration
+
+
 @pytest.fixture(scope="class")
 def fail_if_param_vms_zero(expected_num_of_vms):
     if expected_num_of_vms == 0:
@@ -128,6 +148,15 @@ def skip_if_keep_resources(keep_resources):
     if keep_resources:
         pytest.skip(
             f"Skipping scale test resources deletion, keep_resources parameter = {keep_resources}"
+        )
+
+
+@pytest.fixture()
+def skip_if_not_run_live_migration(scale_test_param):
+    run_live_migration = scale_test_param["run_live_migration"]
+    if not run_live_migration:
+        pytest.skip(
+            f"Skipping live migration part, run_live_migration parameter = {run_live_migration}"
         )
 
 
@@ -251,7 +280,7 @@ def golden_images_scale_dvs(
             if dv_info[storage_type_key]
         ]
         for storage_type in storage_types_used:
-            golden_images_scale_dv = DataVolume(
+            golden_images_scale_dv = cluster_resource(DataVolume)(
                 name=f"{os_name}-{storage_type}-dv",
                 namespace=golden_images_namespace.name,
                 storage_class=SCALE_STORAGE_TYPES[storage_type],
@@ -280,7 +309,7 @@ def data_sources(request, keep_resources, admin_client, golden_images_scale_dvs)
 
     for dv in golden_images_scale_dvs:
         data_source_name = re.sub(r"-dv$", r"-datasource", dv.name)
-        data_source = DataSource(
+        data_source = cluster_resource(DataSource)(
             name=data_source_name,
             namespace=dv.namespace,
             client=admin_client,
@@ -303,6 +332,13 @@ def scale_vms(
     scale_namespace,
     vms_info,
 ):
+    """
+    VMs used in scale test, separated into batches (lists)
+
+    The VMs amount and configuration is being taken from vms_info fixture
+    while the image from the data_sources fixture
+
+    """
     vms_batches_list = []
 
     for os_type, vm_info in vms_info.items():
@@ -314,7 +350,7 @@ def scale_vms(
                 vms_in_batch_list = []
                 for vm_index in range(num_of_vms_per_batch):
                     vms_in_batch_list.append(
-                        VirtualMachineForTestsFromTemplate(
+                        cluster_resource(VirtualMachineForTestsFromTemplate)(
                             name=f"vm-{vm_base_name}-b{batch_number}-{vm_index}",
                             namespace=scale_namespace.name,
                             client=unprivileged_client,
@@ -332,6 +368,19 @@ def scale_vms(
 
 
 @pytest.fixture(scope="class")
+def vm_migration_info(scale_vms):
+    vm_migration_info = {}
+    for batch in scale_vms:
+        for vm in batch:
+            vm_migration_info[vm.name] = {
+                NODE_STR: vm.vmi.node,
+                VMI_SOURCE_POD_STR: vm.vmi.virt_launcher_pod,
+                MIGRATION_INSTANCE_STR: start_live_migration(vm=vm),
+            }
+    return vm_migration_info
+
+
+@pytest.fixture(scope="class")
 def all_vms_objects(scale_vms):
     all_vms_objects = []
     for batch in scale_vms:
@@ -340,7 +389,6 @@ def all_vms_objects(scale_vms):
 
 
 class TestScale:
-    # TODO add timer for tests to check for time of creation
     @pytest.mark.dependency(name="test_create_vms")
     @pytest.mark.polarion("CNV-8447")
     def test_create_vms(
@@ -379,7 +427,9 @@ class TestScale:
                     )
 
     # TODO check the os internally to see if it didn't reboot
-    @pytest.mark.dependency(depends=["test_start_vms"])
+    @pytest.mark.dependency(
+        name="test_scale_vms_running_stability", depends=["test_start_vms"]
+    )
     @pytest.mark.polarion("CNV-8449")
     def test_scale_vms_running_stability(
         self,
@@ -407,6 +457,27 @@ class TestScale:
                     )
         except TimeoutExpiredError:
             return
+
+    @pytest.mark.dependency(depends=["test_scale_vms_running_stability"])
+    @pytest.mark.polarion("CNV-8993")
+    def test_mass_vm_live_migration(
+        self,
+        skip_if_not_run_live_migration,
+        skip_when_one_node,
+        scale_vms,
+        vm_migration_info,
+    ):
+        for batch in scale_vms:
+            for vm in batch:
+                wait_for_migration_finished(
+                    vm=vm,
+                    migration=vm_migration_info[vm.name][MIGRATION_INSTANCE_STR],
+                )
+                verify_vm_migrated(
+                    vm=vm,
+                    node_before=vm_migration_info[vm.name][NODE_STR],
+                    vmi_source_pod=vm_migration_info[vm.name][VMI_SOURCE_POD_STR],
+                )
 
     @pytest.mark.order(after="test_scale_vms_running_stability")
     @pytest.mark.polarion("CNV-8883")
