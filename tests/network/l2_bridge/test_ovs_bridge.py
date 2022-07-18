@@ -40,50 +40,51 @@ def ovs_bridge_nad(namespace, ovs_bridge_on_worker1):
 
 
 @pytest.fixture(scope="module")
-def brcnv_ovs_nad_vlan_1002(
+def brcnv_ovs_nad_vlan_2(
     namespace,
+    vlan_index_number,
 ):
-    vlan_1002 = 1002
+    vlan_tag = next(vlan_index_number)
     with network_nad(
         namespace=namespace,
         nad_type=OVS_BRIDGE,
-        nad_name=f"{BRCNV}-{vlan_1002}",
+        nad_name=f"{BRCNV}-{vlan_tag}",
         interface_name=BRCNV,
-        vlan=vlan_1002,
+        vlan=vlan_tag,
     ) as nad:
         yield nad
 
 
 @pytest.fixture()
-def brcnv_vmb_with_vlan_1001(
+def brcnv_vmb_with_vlan_1(
     unprivileged_client,
     namespace,
     worker_node1,
-    brcnv_ovs_nad_vlan_1001,
+    brcnv_ovs_nad_vlan_1,
 ):
     yield from vm_for_brcnv_tests(
         vm_name="vmb",
         namespace=namespace,
         unprivileged_client=unprivileged_client,
-        nads=[brcnv_ovs_nad_vlan_1001],
+        nads=[brcnv_ovs_nad_vlan_1],
         address_suffix=2,
         node_selector=worker_node1.hostname,
     )
 
 
 @pytest.fixture(scope="class")
-def brcnv_vmc_with_vlans_1001_1002(
+def brcnv_vmc_with_vlans_1_2(
     unprivileged_client,
     namespace,
     worker_node2,
-    brcnv_ovs_nad_vlan_1001,
-    brcnv_ovs_nad_vlan_1002,
+    brcnv_ovs_nad_vlan_1,
+    brcnv_ovs_nad_vlan_2,
 ):
     yield from vm_for_brcnv_tests(
         vm_name="vmc",
         namespace=namespace,
         unprivileged_client=unprivileged_client,
-        nads=[brcnv_ovs_nad_vlan_1001, brcnv_ovs_nad_vlan_1002],
+        nads=[brcnv_ovs_nad_vlan_1, brcnv_ovs_nad_vlan_2],
         address_suffix=3,
         node_selector=worker_node2.hostname,
     )
@@ -176,15 +177,15 @@ def test_ovs_bridge_sanity(
 
 @pytest.mark.ovs_brcnv
 @pytest.mark.polarion("CNV-8597")
-def test_cnv_bridge_vlan_1001_connectivity_same_node(
-    brcnv_ovs_nad_vlan_1001,
-    brcnv_vma_with_vlan_1001,
-    brcnv_vmb_with_vlan_1001,
+def test_cnv_bridge_vlan_1_connectivity_same_node(
+    brcnv_ovs_nad_vlan_1,
+    brcnv_vma_with_vlan_1,
+    brcnv_vmb_with_vlan_1,
 ):
     assert_ping_successful(
-        src_vm=brcnv_vma_with_vlan_1001,
+        src_vm=brcnv_vma_with_vlan_1,
         dst_ip=get_vmi_ip_v4_by_name(
-            vm=brcnv_vmb_with_vlan_1001, name=brcnv_ovs_nad_vlan_1001.name
+            vm=brcnv_vmb_with_vlan_1, name=brcnv_ovs_nad_vlan_1.name
         ),
     )
 
@@ -192,30 +193,30 @@ def test_cnv_bridge_vlan_1001_connectivity_same_node(
 @pytest.mark.ovs_brcnv
 class TestBRCNVSeperateNodes:
     @pytest.mark.polarion("CNV-8602")
-    def test_cnv_bridge_vlan_1001_connectivity_different_nodes(
+    def test_cnv_bridge_vlan_1_connectivity_different_nodes(
         self,
-        brcnv_ovs_nad_vlan_1001,
-        brcnv_vma_with_vlan_1001,
-        brcnv_vmc_with_vlans_1001_1002,
+        brcnv_ovs_nad_vlan_1,
+        brcnv_vma_with_vlan_1,
+        brcnv_vmc_with_vlans_1_2,
     ):
         assert_ping_successful(
-            src_vm=brcnv_vma_with_vlan_1001,
+            src_vm=brcnv_vma_with_vlan_1,
             dst_ip=get_vmi_ip_v4_by_name(
-                vm=brcnv_vmc_with_vlans_1001_1002, name=brcnv_ovs_nad_vlan_1001.name
+                vm=brcnv_vmc_with_vlans_1_2, name=brcnv_ovs_nad_vlan_1.name
             ),
         )
 
     @pytest.mark.polarion("CNV-8603")
-    def test_cnv_bridge_negative_vlans_1001_1002_connectivity_different_nodes(
+    def test_cnv_bridge_negative_vlans_1_2_connectivity_different_nodes(
         self,
-        brcnv_ovs_nad_vlan_1002,
-        brcnv_vma_with_vlan_1001,
-        brcnv_vmc_with_vlans_1001_1002,
+        brcnv_ovs_nad_vlan_2,
+        brcnv_vma_with_vlan_1,
+        brcnv_vmc_with_vlans_1_2,
     ):
         with pytest.raises(AssertionError):
             assert_ping_successful(
-                src_vm=brcnv_vma_with_vlan_1001,
+                src_vm=brcnv_vma_with_vlan_1,
                 dst_ip=get_vmi_ip_v4_by_name(
-                    vm=brcnv_vmc_with_vlans_1001_1002, name=brcnv_ovs_nad_vlan_1002.name
+                    vm=brcnv_vmc_with_vlans_1_2, name=brcnv_ovs_nad_vlan_2.name
                 ),
             )

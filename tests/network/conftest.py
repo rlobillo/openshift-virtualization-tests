@@ -9,9 +9,10 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.namespace import Namespace
 from ocp_resources.pod import Pod
 from openshift.dynamic.exceptions import ResourceNotFoundError
+from pytest_testconfig import config as py_config
 
 from tests.network.constants import BRCNV
-from tests.network.utils import vm_for_brcnv_tests
+from tests.network.utils import get_vlan_index_number, vm_for_brcnv_tests
 from utilities.constants import (
     IPV6_STR,
     ISTIO_SYSTEM_DEFAULT_NS,
@@ -53,17 +54,6 @@ def get_index_number():
 @pytest.fixture(scope="session")
 def index_number():
     return get_index_number()
-
-
-@pytest.fixture(scope="session")
-def vlan_tag_id(index_number):
-    """
-    set vlan tags based on tlv lab.
-    with this change it should work with both rdu and tlv labs.
-    fixture returns a dictionary with keys of the current supported vlan tags range (1000-1019).
-    """
-    tag_id = 1000
-    return {f"{tag_id + idx}": tag_id + idx for idx in range(20)}
 
 
 @pytest.fixture(scope="session")
@@ -158,34 +148,48 @@ def skip_insufficient_sriov_workers(sriov_workers):
         pytest.skip("Test requires at least 2 SR-IOV worker nodes")
 
 
+@pytest.fixture(scope="session")
+def vlans_list():
+    vlans = py_config["vlans"]
+    if not isinstance(vlans, list):
+        vlans = vlans.split(",")
+    return [int(_id) for _id in vlans]
+
+
 @pytest.fixture(scope="module")
-def brcnv_ovs_nad_vlan_1001(
+def vlan_index_number(vlans_list):
+    return get_vlan_index_number(vlans_list=vlans_list)
+
+
+@pytest.fixture(scope="module")
+def brcnv_ovs_nad_vlan_1(
     hyperconverged_ovs_annotations_enabled_scope_session,
     namespace,
+    vlan_index_number,
 ):
-    vlan_1001 = 1001
+    vlan_tag = next(vlan_index_number)
     with network_nad(
         namespace=namespace,
         nad_type=OVS_BRIDGE,
-        nad_name=f"{BRCNV}-{vlan_1001}",
+        nad_name=f"{BRCNV}-{vlan_tag}",
         interface_name=BRCNV,
-        vlan=vlan_1001,
+        vlan=vlan_tag,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="module")
-def brcnv_vma_with_vlan_1001(
+def brcnv_vma_with_vlan_1(
     unprivileged_client,
     namespace,
     worker_node1,
-    brcnv_ovs_nad_vlan_1001,
+    brcnv_ovs_nad_vlan_1,
 ):
     yield from vm_for_brcnv_tests(
         vm_name="vma",
         namespace=namespace,
         unprivileged_client=unprivileged_client,
-        nads=[brcnv_ovs_nad_vlan_1001],
+        nads=[brcnv_ovs_nad_vlan_1],
         address_suffix=1,
         node_selector=worker_node1.hostname,
     )

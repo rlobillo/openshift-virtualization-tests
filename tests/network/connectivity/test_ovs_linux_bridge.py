@@ -96,73 +96,73 @@ def ovs_linux_nad(
 
 
 @pytest.fixture(scope="class")
-def ovs_linux_vlan1000(vlan_tag_id):
-    return vlan_tag_id["1000"]
+def ovs_linux_vlan1(vlan_index_number):
+    return next(vlan_index_number)
 
 
 @pytest.fixture(scope="class")
-def ovs_linux_vlan1001(vlan_tag_id):
-    return vlan_tag_id["1001"]
+def ovs_linux_vlan2(vlan_index_number):
+    return next(vlan_index_number)
 
 
 @pytest.fixture(scope="class")
-def ovs_linux_vlan1002(vlan_tag_id):
-    return vlan_tag_id["1002"]
+def ovs_linux_vlan3(vlan_index_number):
+    return next(vlan_index_number)
 
 
 @pytest.fixture(scope="class")
-def ovs_linux_br1vlan1000_nad(
+def ovs_linux_br1vlan1_nad(
     bridge_device_matrix__class__,
     namespace,
     ovs_linux_bridge_device_worker_1,
     ovs_linux_bridge_device_worker_2,
     ovs_linux_bridge_device_name,
-    ovs_linux_vlan1000,
+    ovs_linux_vlan1,
 ):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
-        nad_name=f"{ovs_linux_bridge_device_name}-vlan{ovs_linux_vlan1000}-nad",
+        nad_name=f"{ovs_linux_bridge_device_name}-vlan{ovs_linux_vlan1}-nad",
         interface_name=ovs_linux_bridge_device_name,
-        vlan=ovs_linux_vlan1000,
+        vlan=ovs_linux_vlan1,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="class")
-def ovs_linux_br1vlan1001_nad(
+def ovs_linux_br1vlan2_nad(
     bridge_device_matrix__class__,
     namespace,
     ovs_linux_bridge_device_worker_1,
     ovs_linux_bridge_device_worker_2,
     ovs_linux_bridge_device_name,
-    ovs_linux_vlan1001,
+    ovs_linux_vlan2,
 ):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
-        nad_name=f"{ovs_linux_bridge_device_name}-vlan{ovs_linux_vlan1001}-nad",
+        nad_name=f"{ovs_linux_bridge_device_name}-vlan{ovs_linux_vlan2}-nad",
         interface_name=ovs_linux_bridge_device_name,
-        vlan=ovs_linux_vlan1001,
+        vlan=ovs_linux_vlan2,
     ) as nad:
         yield nad
 
 
 @pytest.fixture(scope="class")
-def ovs_linux_br1vlan1002_nad(
+def ovs_linux_br1vlan3_nad(
     bridge_device_matrix__class__,
     namespace,
     ovs_linux_bridge_device_worker_1,
     ovs_linux_bridge_device_worker_2,
     ovs_linux_bridge_device_name,
-    ovs_linux_vlan1002,
+    ovs_linux_vlan3,
 ):
     with network_nad(
         namespace=namespace,
         nad_type=bridge_device_matrix__class__,
-        nad_name=f"{ovs_linux_bridge_device_name}-vlan{ovs_linux_vlan1002}-nad",
+        nad_name=f"{ovs_linux_bridge_device_name}-vlan{ovs_linux_vlan3}-nad",
         interface_name=ovs_linux_bridge_device_name,
-        vlan=ovs_linux_vlan1002,
+        vlan=ovs_linux_vlan3,
     ) as nad:
         yield nad
 
@@ -188,15 +188,15 @@ def ovs_linux_bridge_attached_vma(
     namespace,
     unprivileged_client,
     ovs_linux_nad,
-    ovs_linux_br1vlan1000_nad,
-    ovs_linux_br1vlan1001_nad,
+    ovs_linux_br1vlan1_nad,
+    ovs_linux_br1vlan2_nad,
     dual_stack_network_data,
 ):
     name = "vma"
     networks = OrderedDict()
     networks[ovs_linux_nad.name] = ovs_linux_nad.name
-    networks[ovs_linux_br1vlan1000_nad.name] = ovs_linux_br1vlan1000_nad.name
-    networks[ovs_linux_br1vlan1001_nad.name] = ovs_linux_br1vlan1001_nad.name
+    networks[ovs_linux_br1vlan1_nad.name] = ovs_linux_br1vlan1_nad.name
+    networks[ovs_linux_br1vlan2_nad.name] = ovs_linux_br1vlan2_nad.name
 
     cloud_init_data = compose_cloud_init_data(
         dual_stack_nd=dual_stack_network_data, end_ip_octet=1
@@ -222,15 +222,15 @@ def ovs_linux_bridge_attached_vmb(
     namespace,
     unprivileged_client,
     ovs_linux_nad,
-    ovs_linux_br1vlan1000_nad,
-    ovs_linux_br1vlan1002_nad,
+    ovs_linux_br1vlan1_nad,
+    ovs_linux_br1vlan3_nad,
     dual_stack_network_data,
 ):
     name = "vmb"
     networks = OrderedDict()
     networks[ovs_linux_nad.name] = ovs_linux_nad.name
-    networks[ovs_linux_br1vlan1000_nad.name] = ovs_linux_br1vlan1000_nad.name
-    networks[ovs_linux_br1vlan1002_nad.name] = ovs_linux_br1vlan1002_nad.name
+    networks[ovs_linux_br1vlan1_nad.name] = ovs_linux_br1vlan1_nad.name
+    networks[ovs_linux_br1vlan3_nad.name] = ovs_linux_br1vlan3_nad.name
 
     cloud_init_data = compose_cloud_init_data(
         dual_stack_nd=dual_stack_network_data, end_ip_octet=2
@@ -312,7 +312,7 @@ class TestConnectivity:
         self,
         skip_if_workers_vms,
         namespace,
-        ovs_linux_br1vlan1000_nad,
+        ovs_linux_br1vlan1_nad,
         ovs_linux_bridge_attached_vma,
         ovs_linux_bridge_attached_vmb,
         ovs_linux_bridge_attached_running_vma,
@@ -322,7 +322,7 @@ class TestConnectivity:
             src_vm=ovs_linux_bridge_attached_running_vma,
             dst_ip=get_vmi_ip_v4_by_name(
                 vm=ovs_linux_bridge_attached_running_vmb,
-                name=ovs_linux_br1vlan1000_nad.name,
+                name=ovs_linux_br1vlan1_nad.name,
             ),
         )
 
@@ -338,7 +338,7 @@ class TestConnectivity:
         self,
         skip_if_workers_vms,
         namespace,
-        ovs_linux_br1vlan1002_nad,
+        ovs_linux_br1vlan3_nad,
         ovs_linux_bridge_attached_vma,
         ovs_linux_bridge_attached_vmb,
         ovs_linux_bridge_attached_running_vma,
@@ -348,6 +348,6 @@ class TestConnectivity:
             src_vm=ovs_linux_bridge_attached_running_vma,
             dst_ip=get_vmi_ip_v4_by_name(
                 vm=ovs_linux_bridge_attached_running_vmb,
-                name=ovs_linux_br1vlan1002_nad.name,
+                name=ovs_linux_br1vlan3_nad.name,
             ),
         )

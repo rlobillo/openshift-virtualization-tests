@@ -391,3 +391,10 @@ def vm_for_brcnv_tests(
     ) as vm:
         running_vm(vm=vm)
         yield vm
+
+
+def get_vlan_index_number(vlans_list):
+    yield from vlans_list
+    raise ValueError(
+        f"vlans list is exhausted. Current list size is {len(vlans_list)} and all vlans are in use."
+    )

@@ -455,6 +455,10 @@ vm_deploys = 1  # How many vm of each type to deploy
 linux_iterations = 250  # Number of migration iterations of linux VMs
 windows_iterations = 500  # Number of migration iterations of windows VMs
 
+
+# Network configuration
+vlans = [f"{_id}" for _id in range(1000, 1020)]
+
 for _dir in dir():
     val = locals()[_dir]
     if type(val) not in [bool, list, dict, str, int]:

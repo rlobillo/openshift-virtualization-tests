@@ -49,20 +49,25 @@ def base_ethernet_interface_for_vlan_creation(vlan_base_iface):
             yield temp_interface
 
 
+@pytest.fixture(scope="module")
+def vlan_index_number_for_all_nodes(vlan_index_number):
+    return next(vlan_index_number)
+
+
 # VLAN on interface fixtures
 @pytest.fixture(scope="class")
 def vlan_iface_dhcp_client_1(
     vlan_base_iface,
-    vlan_tag_id,
     base_ethernet_interface_for_vlan_creation,
     dhcp_client_1,
+    vlan_index_number_for_all_nodes,
 ):
     nncp_name = "dhcp-vlan-client-1-nncp"
     with VLANInterfaceNodeNetworkConfigurationPolicy(
         name=nncp_name,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
-        tag=vlan_tag_id["1000"],
+        tag=vlan_index_number_for_all_nodes,
         node_selector=dhcp_client_1.hostname,
         ipv4_enable=True,
         ipv4_dhcp=True,
@@ -79,16 +84,16 @@ def vlan_iface_dhcp_client_1(
 @pytest.fixture(scope="class")
 def vlan_iface_dhcp_client_2(
     vlan_base_iface,
-    vlan_tag_id,
     base_ethernet_interface_for_vlan_creation,
     dhcp_client_2,
+    vlan_index_number_for_all_nodes,
 ):
     nncp_name = "dhcp-vlan-client-2-nncp"
     with VLANInterfaceNodeNetworkConfigurationPolicy(
         name=nncp_name,
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
-        tag=vlan_tag_id["1000"],
+        tag=vlan_index_number_for_all_nodes,
         node_selector=dhcp_client_2.hostname,
         ipv4_enable=True,
         ipv4_dhcp=True,
@@ -107,14 +112,14 @@ def vlan_iface_on_dhcp_client_2_with_different_tag(
     skip_if_no_multinic_nodes,
     vlan_base_iface,
     base_ethernet_interface_for_vlan_creation,
-    vlan_tag_id,
+    vlan_index_number,
     dhcp_client_nodes,
     dhcp_client_2,
 ):
     with VLANInterfaceNodeNetworkConfigurationPolicy(
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
-        tag=vlan_tag_id["1001"],
+        tag=next(vlan_index_number),
         ipv4_enable=True,
         ipv4_dhcp=True,
         node_selector=dhcp_client_2.hostname,
@@ -126,14 +131,14 @@ def vlan_iface_on_dhcp_client_2_with_different_tag(
 def vlan_iface_on_all_worker_nodes(
     skip_if_no_multinic_nodes,
     label_schedulable_nodes,
-    vlan_tag_id,
     vlan_base_iface,
     base_ethernet_interface_for_vlan_creation,
+    vlan_index_number_for_all_nodes,
 ):
     with VLANInterfaceNodeNetworkConfigurationPolicy(
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
-        tag=vlan_tag_id["1000"],
+        tag=vlan_index_number_for_all_nodes,
         node_selector_labels=NODE_TYPE_WORKER_LABEL,
     ) as vlan_iface:
         yield vlan_iface
@@ -222,13 +227,13 @@ def dhcp_server_vlan_iface(
     worker_node1,
     vlan_base_iface,
     base_ethernet_interface_for_vlan_creation,
-    vlan_tag_id,
+    vlan_index_number_for_all_nodes,
 ):
     with VLANInterfaceNodeNetworkConfigurationPolicy(
         name="dhcp-server-vlan-nncp",
         iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
         base_iface=vlan_base_iface,
-        tag=vlan_tag_id["1000"],
+        tag=vlan_index_number_for_all_nodes,
         node_selector=worker_node1.hostname,
     ) as vlan_iface:
         yield vlan_iface
@@ -287,7 +292,7 @@ def vlan_iface_bond_dhcp_client_1(
     hosts_common_available_ports,
     base_ethernet_interface_for_vlan_creation,
     dhcp_client_1,
-    vlan_tag_id,
+    vlan_index_number_for_all_nodes,
 ):
     with cluster_resource(BondNodeNetworkConfigurationPolicy)(
         name=f"vlan-bond{next(index_number)}-nncp",
@@ -299,7 +304,7 @@ def vlan_iface_bond_dhcp_client_1(
             name="dhcp-vlan-bond1",
             iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
             base_iface=bond_iface.bond_name,
-            tag=vlan_tag_id["1000"],
+            tag=vlan_index_number_for_all_nodes,
             node_selector=dhcp_client_1.hostname,
             ipv4_enable=True,
             ipv4_dhcp=True,
@@ -315,8 +320,8 @@ def vlan_iface_bond_dhcp_client_2(
     hosts_common_available_ports,
     base_ethernet_interface_for_vlan_creation,
     dhcp_client_2,
-    vlan_tag_id,
     vlan_iface_bond_dhcp_client_1,
+    vlan_index_number_for_all_nodes,
 ):
     with cluster_resource(BondNodeNetworkConfigurationPolicy)(
         name=f"vlan-bond{next(index_number)}-nncp",
@@ -328,18 +333,10 @@ def vlan_iface_bond_dhcp_client_2(
             name="dhcp-vlan-bond2",
             iface_state=NodeNetworkConfigurationPolicy.Interface.State.UP,
             base_iface=bond_iface.bond_name,
-            tag=vlan_tag_id["1000"],
+            tag=vlan_index_number_for_all_nodes,
             node_selector=dhcp_client_2.hostname,
             ipv4_enable=True,
             ipv4_dhcp=True,
             ipv6_enable=False,
         ) as vlan_iface:
             yield vlan_iface
-
-
-# General fixtures
-@pytest.fixture(scope="module")
-def vlan_base_iface(worker_node1, nodes_available_nics):
-    # Select the last NIC from the list as a way to ensure that the selected NIC
-    # is not already used (e.g. as a bond's port).
-    return nodes_available_nics[worker_node1.name][-1]

@@ -15,7 +15,12 @@ from ocp_utilities.utils import run_ssh_commands
 
 from utilities.constants import MTU_9000, SRIOV, TIMEOUT_10MIN, TIMEOUT_20SEC
 from utilities.infra import cluster_resource
-from utilities.network import cloud_init_network_data, network_nad, sriov_network_dict
+from utilities.network import (
+    cloud_init_network_data,
+    create_sriov_node_policy,
+    network_nad,
+    sriov_network_dict,
+)
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
@@ -76,6 +81,19 @@ def sriov_vm(
         yield vm
 
 
+@pytest.fixture(scope="session")
+def sriov_with_vlan_node_policy(
+    sriov_nodes_states, sriov_iface_with_vlan, sriov_namespace
+):
+    yield from create_sriov_node_policy(
+        nncp_name="test-sriov-on-vlan-policy",
+        namespace=sriov_namespace.name,
+        sriov_iface=sriov_iface_with_vlan,
+        sriov_nodes_states=sriov_nodes_states,
+        sriov_resource_name="sriov_net_with_vlan",
+    )
+
+
 @pytest.fixture(scope="module")
 def sriov_network(sriov_node_policy, namespace, sriov_namespace):
     """
@@ -92,17 +110,19 @@ def sriov_network(sriov_node_policy, namespace, sriov_namespace):
 
 
 @pytest.fixture(scope="class")
-def sriov_network_vlan(sriov_node_policy, namespace, sriov_namespace, vlan_tag_id):
+def sriov_network_vlan(
+    sriov_with_vlan_node_policy, namespace, sriov_namespace, vlan_index_number
+):
     """
     Create a SR-IOV VLAN network linked to SR-IOV policy.
     """
     with network_nad(
         nad_type=SRIOV,
         nad_name="sriov-test-network-vlan",
-        sriov_resource_name=sriov_node_policy.resource_name,
+        sriov_resource_name=sriov_with_vlan_node_policy.resource_name,
         namespace=sriov_namespace,
         sriov_network_namespace=namespace.name,
-        vlan=vlan_tag_id["1000"],
+        vlan=next(vlan_index_number),
     ) as sriov_network:
         yield sriov_network
 

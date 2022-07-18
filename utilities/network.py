@@ -31,6 +31,7 @@ from utilities.constants import (
     IPV4_STR,
     IPV6_STR,
     LINUX_BRIDGE,
+    MTU_9000,
     OVS_BRIDGE,
     SRIOV,
     TIMEOUT_1MIN,
@@ -150,6 +151,8 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
 
         for port in bridge_ports:
             # ToDo: The following block (5 lines) should remain commented-out until BZ 2026621 is fixed.
+            # When uncommenting these lines, they should be refactored to take the correct range from the vlans in the
+            # py_config.
             # vlan_trunk = {
             #     "mode": "trunk",
             #     "trunk-tags": [{"id-range": {"min": 1000, "max": 1019}}],
@@ -1222,3 +1225,32 @@ def is_destination_pingable_from_vm(
 
 def get_cluster_cni_type(admin_client):
     return Network(client=admin_client, name="cluster").instance.status.networkType
+
+
+def wait_for_ready_sriov_nodes(snns):
+    for status in ("InProgress", "Succeeded"):
+        for state in snns:
+            state.wait_for_status_sync(wanted_status=status)
+
+
+def create_sriov_node_policy(
+    nncp_name,
+    namespace,
+    sriov_iface,
+    sriov_nodes_states,
+    sriov_resource_name,
+    mtu=MTU_9000,
+):
+    with network_device(
+        interface_type=SRIOV,
+        nncp_name=nncp_name,
+        namespace=namespace,
+        sriov_iface=sriov_iface,
+        sriov_resource_name=sriov_resource_name,
+        # sriov operator doesnt pass the mtu to the VFs when using vfio-pci device driver (the one we are using)
+        # so the mtu parameter only affects the PF. we need to change the mtu manually on the VM.
+        mtu=mtu,
+    ) as policy:
+        wait_for_ready_sriov_nodes(snns=sriov_nodes_states)
+        yield policy
+    wait_for_ready_sriov_nodes(snns=sriov_nodes_states)

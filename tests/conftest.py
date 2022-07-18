@@ -70,12 +70,10 @@ from utilities.constants import (
     KUBEMACPOOL_MAC_RANGE_CONFIG,
     LINUX_BRIDGE,
     MASTER_NODE_LABEL_KEY,
-    MTU_9000,
     NODE_TYPE_WORKER_LABEL,
     OC_ADM_LOGS_COMMAND,
     OPENSHIFT_CONFIG_NAMESPACE,
     OVS_BRIDGE,
-    SRIOV,
     TIMEOUT_4MIN,
     TIMEOUT_5MIN,
     TIMEOUT_6MIN,
@@ -121,6 +119,7 @@ from utilities.network import (
     MacPool,
     SriovIfaceNotFound,
     cloud_init,
+    create_sriov_node_policy,
     enable_hyperconverged_ovs_annotations,
     get_cluster_cni_type,
     network_device,
@@ -1188,45 +1187,57 @@ def sriov_workers(schedulable_nodes):
 
 
 @pytest.fixture(scope="session")
-def sriov_iface(sriov_nodes_states, workers_utility_pods):
+def vlan_base_iface(worker_node1, nodes_available_nics):
+    # Select the last NIC from the list as a way to ensure that the selected NIC
+    # is not already used (e.g. as a bond's port).
+    return nodes_available_nics[worker_node1.name][-1]
+
+
+@pytest.fixture(scope="session")
+def sriov_iface_with_vlan(sriov_ifaces, vlan_base_iface):
+    for interface in sriov_ifaces:
+        if interface["name"] == vlan_base_iface:
+            return interface
+    raise SriovIfaceNotFound(
+        f"No sriov interface with vlan found. vlan base iface is {vlan_base_iface}, "
+        f"sriov ifaces is {sriov_ifaces}"
+    )
+
+
+@pytest.fixture(scope="session")
+def sriov_ifaces(sriov_nodes_states, workers_utility_pods):
     node = sriov_nodes_states[0]
     state_up = Resource.Interface.State.UP
-    for iface in node.instance.status.interfaces:
+    ifaces_list = [
+        iface
+        for iface in node.instance.status.interfaces
         if (
             iface.totalvfs
             and ExecCommandOnPod(
                 utility_pods=workers_utility_pods, node=node
             ).interface_status(interface=iface.name)
             == state_up
-        ):
-            return iface
-    raise SriovIfaceNotFound(
-        f"no sriov interface with '{state_up}' status was found, "
-        f"please make sure at least one sriov interface is {state_up}"
-    )
+        )
+    ]
 
+    if not ifaces_list:
+        raise SriovIfaceNotFound(
+            f"no sriov interface with '{state_up}' status was found, "
+            f"please make sure at least one sriov interface is {state_up}"
+        )
 
-def wait_for_ready_sriov_nodes(snns):
-    for status in ("InProgress", "Succeeded"):
-        for state in snns:
-            state.wait_for_status_sync(wanted_status=status)
+    return ifaces_list
 
 
 @pytest.fixture(scope="session")
-def sriov_node_policy(sriov_nodes_states, sriov_iface, sriov_namespace):
-    with network_device(
-        interface_type=SRIOV,
+def sriov_node_policy(sriov_nodes_states, sriov_ifaces, sriov_namespace):
+    yield from create_sriov_node_policy(
         nncp_name="test-sriov-policy",
         namespace=sriov_namespace.name,
-        sriov_iface=sriov_iface,
+        sriov_iface=sriov_ifaces[0],
+        sriov_nodes_states=sriov_nodes_states,
         sriov_resource_name="sriov_net",
-        # sriov operator doesnt pass the mtu to the VFs when using vfio-pci device driver (the one we are using)
-        # so the mtu parameter only affects the PF. we need to change the mtu manually on the VM.
-        mtu=MTU_9000,
-    ) as policy:
-        wait_for_ready_sriov_nodes(snns=sriov_nodes_states)
-        yield policy
-    wait_for_ready_sriov_nodes(snns=sriov_nodes_states)
+    )
 
 
 @pytest.fixture(scope="session")
@@ -1353,6 +1364,7 @@ def hosts_common_available_ports(nodes_available_nics):
     nics_list = list(
         set.intersection(*[set(_list) for _list in nodes_available_nics.values()])
     )
+    nics_list.sort()
     LOGGER.info(f"Hosts common available NICs: {nics_list}")
     return nics_list
 

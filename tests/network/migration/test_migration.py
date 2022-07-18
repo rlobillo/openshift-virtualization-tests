@@ -177,13 +177,13 @@ def vmb(
 def brcnv_vm_for_migration(
     unprivileged_client,
     namespace,
-    brcnv_ovs_nad_vlan_1001,
+    brcnv_ovs_nad_vlan_1,
 ):
     yield from vm_for_brcnv_tests(
         vm_name="migration-vm",
         namespace=namespace,
         unprivileged_client=unprivileged_client,
-        nads=[brcnv_ovs_nad_vlan_1001],
+        nads=[brcnv_ovs_nad_vlan_1],
         address_suffix=4,
     )
 
@@ -271,15 +271,15 @@ def ssh_in_background(br1test_nad, running_vma, running_vmb):
 
 @pytest.fixture()
 def brcnv_ssh_in_background(
-    brcnv_ovs_nad_vlan_1001, brcnv_vma_with_vlan_1001, brcnv_vm_for_migration
+    brcnv_ovs_nad_vlan_1, brcnv_vma_with_vlan_1, brcnv_vm_for_migration
 ):
     """
     Start ssh connection to the vm
     """
 
     run_ssh_in_background(
-        nad=brcnv_ovs_nad_vlan_1001,
-        src_vm=brcnv_vma_with_vlan_1001,
+        nad=brcnv_ovs_nad_vlan_1,
+        src_vm=brcnv_vma_with_vlan_1,
         dst_vm=brcnv_vm_for_migration,
         dst_vm_user=USERNAME,
         dst_vm_password=PASSWORD,
@@ -340,18 +340,16 @@ def test_ssh_vm_migration(
 @pytest.mark.polarion("CNV-8600")
 def test_cnv_bridge_ssh_vm_migration(
     skip_when_one_node,
-    brcnv_ovs_nad_vlan_1001,
-    brcnv_vma_with_vlan_1001,
+    brcnv_ovs_nad_vlan_1,
+    brcnv_vma_with_vlan_1,
     brcnv_vm_for_migration,
     brcnv_ssh_in_background,
     brcnv_migrated_vm,
 ):
     src_ip = str(
-        get_vmi_ip_v4_by_name(
-            vm=brcnv_vma_with_vlan_1001, name=brcnv_ovs_nad_vlan_1001.name
-        )
+        get_vmi_ip_v4_by_name(vm=brcnv_vma_with_vlan_1, name=brcnv_ovs_nad_vlan_1.name)
     )
-    assert_ssh_alive(ssh_vm=brcnv_vma_with_vlan_1001, src_ip=src_ip)
+    assert_ssh_alive(ssh_vm=brcnv_vma_with_vlan_1, src_ip=src_ip)
 
 
 @pytest.mark.post_upgrade
