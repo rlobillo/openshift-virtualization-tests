@@ -2,6 +2,7 @@ import pytest
 from ocp_resources.migration_policy import MigrationPolicy
 from ocp_resources.resource import ResourceEditor
 
+from tests.compute.virt.constants import MIGRATION_POLICY_VM_LABEL
 from utilities.infra import cluster_resource, label_project
 from utilities.virt import (
     VirtualMachineForTests,
@@ -11,7 +12,6 @@ from utilities.virt import (
 )
 
 
-VM_LABEL = {"vm-label": "best-vm"}
 NAMESPACE_LABEL = {"awesome-namespace-label": ""}
 
 DEFAULT_MIGRATION_POLICY_PARAMETERS = {
@@ -127,7 +127,7 @@ class TestMigrationPolicies:
                     "allowAutoConverge": True,
                     "namespaceSelector": NAMESPACE_LABEL,
                 },
-                VM_LABEL,
+                MIGRATION_POLICY_VM_LABEL,
                 NAMESPACE_LABEL,
                 marks=pytest.mark.polarion("CNV-8241"),
                 id="by_namespace_label_selector",
@@ -135,9 +135,9 @@ class TestMigrationPolicies:
             pytest.param(
                 {
                     "allowAutoConverge": True,
-                    "virtualMachineInstanceSelector": VM_LABEL,
+                    "virtualMachineInstanceSelector": MIGRATION_POLICY_VM_LABEL,
                 },
-                VM_LABEL,
+                MIGRATION_POLICY_VM_LABEL,
                 NAMESPACE_LABEL,
                 marks=pytest.mark.polarion("CNV-8242"),
                 id="by_vmi_label_selector",
@@ -166,9 +166,9 @@ class TestMigrationPolicies:
                     "allowPostCopy": True,
                     "bandwidthPerMigration": "50Gi",
                     "completionTimeoutPerGiB": 50,
-                    "virtualMachineInstanceSelector": VM_LABEL,
+                    "virtualMachineInstanceSelector": MIGRATION_POLICY_VM_LABEL,
                 },
-                VM_LABEL,
+                MIGRATION_POLICY_VM_LABEL,
                 marks=pytest.mark.polarion("CNV-8308"),
             ),
         ],
@@ -194,16 +194,16 @@ class TestMigrationPolicies:
                 {
                     "name": "migration-policy-a",
                     "allowAutoConverge": True,
-                    "virtualMachineInstanceSelector": VM_LABEL,
+                    "virtualMachineInstanceSelector": MIGRATION_POLICY_VM_LABEL,
                     "namespaceSelector": NAMESPACE_LABEL,
                 },
                 {
                     "name": "migration-policy-b",
                     "allowAutoConverge": True,
-                    "virtualMachineInstanceSelector": VM_LABEL,
+                    "virtualMachineInstanceSelector": MIGRATION_POLICY_VM_LABEL,
                     "namespaceSelector": NAMESPACE_LABEL,
                 },
-                VM_LABEL,
+                MIGRATION_POLICY_VM_LABEL,
                 NAMESPACE_LABEL,
                 "migration-policy-a",
                 marks=pytest.mark.polarion("CNV-8243"),
@@ -218,9 +218,9 @@ class TestMigrationPolicies:
                 {
                     "name": "migration-policy-b",
                     "allowAutoConverge": True,
-                    "virtualMachineInstanceSelector": VM_LABEL,
+                    "virtualMachineInstanceSelector": MIGRATION_POLICY_VM_LABEL,
                 },
-                VM_LABEL,
+                MIGRATION_POLICY_VM_LABEL,
                 NAMESPACE_LABEL,
                 "migration-policy-b",
                 marks=pytest.mark.polarion("CNV-8247"),
@@ -230,14 +230,14 @@ class TestMigrationPolicies:
                 {
                     "name": "migration-policy-a",
                     "allowAutoConverge": True,
-                    "virtualMachineInstanceSelector": VM_LABEL,
+                    "virtualMachineInstanceSelector": MIGRATION_POLICY_VM_LABEL,
                 },
                 {
                     "name": "migration-policy-b",
                     "allowAutoConverge": True,
                     "namespaceSelector": {"label-1": "", "label-2": ""},
                 },
-                VM_LABEL,
+                MIGRATION_POLICY_VM_LABEL,
                 {"label-1": "", "label-2": ""},
                 "migration-policy-b",
                 marks=pytest.mark.polarion("CNV-8248"),
@@ -271,10 +271,10 @@ class TestMigrationPolicies:
             pytest.param(
                 {
                     "allowAutoConverge": True,
-                    "virtualMachineInstanceSelector": VM_LABEL,
+                    "virtualMachineInstanceSelector": MIGRATION_POLICY_VM_LABEL,
                     "namespaceSelector": {"namespace-fake-label": ""},
                 },
-                VM_LABEL,
+                MIGRATION_POLICY_VM_LABEL,
                 marks=pytest.mark.polarion("CNV-8249"),
             ),
         ],
