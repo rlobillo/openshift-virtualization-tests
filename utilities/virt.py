@@ -249,6 +249,8 @@ class VirtualMachineForTests(VirtualMachine):
         additional_labels=None,
         generate_unique_name=True,
         node_selector_labels=None,
+        vm_instance_type=None,
+        vm_preference=None,
     ):
         """
         Virtual machine creation
@@ -317,6 +319,8 @@ class VirtualMachineForTests(VirtualMachine):
             additional_labels (dict, optional): Dict of additional labels for VM (e.g. {"vm-label": "best-vm"})
             generate_unique_name: if True then it will set dynamic name for the vm, False will use the name of vm passed
             node_selector_labels (str, optional): Labels for node selector.
+            vm_instance_type (VirtualMachineInstancetype, optional): instance type object for the VM
+            vm_preference (VirtualMachinePreference, optional): preference object for the VM
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
 
@@ -388,6 +392,8 @@ class VirtualMachineForTests(VirtualMachine):
         self.disable_sha2_algorithms = disable_sha2_algorithms
         self.additional_labels = additional_labels
         self.node_selector_labels = node_selector_labels
+        self.vm_instance_type = vm_instance_type
+        self.vm_preference = vm_preference
 
     def deploy(self, wait=False):
         super().deploy(wait=wait)
@@ -406,6 +412,8 @@ class VirtualMachineForTests(VirtualMachine):
         self.set_rng_device()
         self.generate_body()
         self.set_run_strategy()
+        self.set_instance_type()
+        self.set_vm_preference()
 
         self.is_vm_from_template = self._is_vm_from_template()
 
@@ -624,6 +632,20 @@ class VirtualMachineForTests(VirtualMachine):
             self.res["spec"]["runStrategy"] = self.run_strategy
         else:
             self.res["spec"]["running"] = self.running
+
+    def set_instance_type(self):
+        if self.vm_instance_type:
+            self.res["spec"]["instancetype"] = {
+                "kind": self.vm_instance_type.kind,
+                "name": self.vm_instance_type.name,
+            }
+
+    def set_vm_preference(self):
+        if self.vm_preference:
+            self.res["spec"]["preference"] = {
+                "kind": self.vm_preference.kind,
+                "name": self.vm_preference.name,
+            }
 
     def _is_vm_from_template(self):
         return (

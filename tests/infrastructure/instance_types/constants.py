@@ -1,5 +1,4 @@
 ALL_OPTIONS_VM_PREFERENCE_SPEC = {
-    "name": "all-options-vm-preference",
     "clock_timezone": "America/New_York",
     "clock_utc_seconds_offset": 600,
     "clock_preferred_timer": {
