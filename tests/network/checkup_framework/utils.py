@@ -5,21 +5,22 @@ import packaging.version
 import pytest
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.job import Job
-from ocp_resources.utils import TimeoutExpiredError
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from pytest_testconfig import py_config
 
-from utilities.constants import TIMEOUT_5MIN
-from utilities.infra import cluster_resource
+from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5MIN
+from utilities.infra import cluster_resource, get_pods
 
 
 LOGGER = logging.getLogger(__name__)
 LATENCY_CONFIGMAP = "latency-configmap"
+CHECKUP_FRAMEWORK_NAMESPACE = "kiagnose"
 
 
 @contextlib.contextmanager
 def create_latency_job(service_account, cnv_current_version, name=None):
     current_version = packaging.version.parse(version=cnv_current_version).base_version
-    with Job(
+    with cluster_resource(Job)(
         name=name or "latency-job",
         namespace=service_account.namespace,
         service_account=service_account.name,
@@ -70,7 +71,9 @@ def create_checkup_resources(framework_service_account, cnv_current_version, **k
         namespace=framework_service_account.namespace, name=LATENCY_CONFIGMAP, data=data
     ) as configmap:
         with create_latency_job(
-            latency_configmap=configmap, service_account=framework_service_account
+            latency_configmap=configmap,
+            service_account=framework_service_account,
+            cnv_current_version=cnv_current_version,
         ) as job:
             yield {"job": job, "configmap": configmap}
 
@@ -119,3 +122,43 @@ def assert_checkup_timeout(configmap, job):
     """
     with pytest.raises(TimeoutExpiredError):
         assert_successful_checkup(configmap=configmap, job=job)
+
+
+def get_job_status(job):
+    sample = None
+    sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_1MIN,
+        sleep=1,
+        func=lambda: job.instance.status.conditions[0]["type"],
+    )
+    try:
+        for sample in sampler:
+            if sample:
+                return sample
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Current job {job.name} status type cannot be retrieved. Current job status - {sample}"
+        )
+        raise
+
+
+def assert_configmap_in_use(admin_client, job, framework_ns):
+    job_status = get_job_status(job=job)
+    assert job_status == job.Status.FAILED, (
+        f"Job {job.name} current status is {job_status} and not "
+        f"{job.Status.FAILED} as expected."
+    )
+
+    concurrent_job_pod = None
+    for pod in get_pods(
+        dyn_client=admin_client,
+        namespace=framework_ns,
+        label=f"job-name={job.name}",
+    ):
+        concurrent_job_pod = pod
+        command_output = concurrent_job_pod.log()
+        error_message = "configMap is already in use"
+        assert (
+            error_message in command_output
+        ), f"Error message expected: {error_message}. Error message received: {command_output}."
+    assert concurrent_job_pod, "No pod found for concurrent job"

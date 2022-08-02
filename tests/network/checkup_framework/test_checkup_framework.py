@@ -2,6 +2,7 @@ import pytest
 
 from tests.network.checkup_framework.utils import (
     assert_checkup_timeout,
+    assert_configmap_in_use,
     assert_successful_checkup,
 )
 
@@ -36,10 +37,15 @@ def test_framework_failure(latency_configmap, latency_job):
 
 @pytest.mark.polarion("CNV-8453")
 def test_concurrent_checkup_jobs(
-    default_latency_configmap, latency_job, latency_concurrent_job
+    admin_client,
+    default_latency_configmap,
+    latency_job,
+    latency_concurrent_job,
+    framework_ns,
 ):
-    assert_checkup_timeout(
-        configmap=default_latency_configmap, job=latency_concurrent_job
+    # Make sure the second, concurrent, job failed due to the configMap being already in use:
+    assert_configmap_in_use(
+        admin_client=admin_client, job=latency_concurrent_job, framework_ns=framework_ns
     )
 
 

@@ -6,7 +6,9 @@ from ocp_resources.namespace import Namespace
 from ocp_resources.service_account import ServiceAccount
 
 from tests.network.checkup_framework.utils import (
+    CHECKUP_FRAMEWORK_NAMESPACE,
     LATENCY_CONFIGMAP,
+    assert_successful_checkup,
     compose_configmap_data,
     create_latency_configmap,
     create_latency_job,
@@ -16,7 +18,6 @@ from utilities.infra import cluster_resource, create_ns, name_prefix
 from utilities.network import network_device, network_nad
 
 
-CHECKUP_FRAMEWORK_NAMESPACE = "kiagnose"
 BRIDGE_NAME = "checkup-br"
 DISCONNECTED = "disconnected"
 DISCONNECTED_BR = f"{DISCONNECTED}-br"
@@ -237,7 +238,7 @@ def latency_cluster_role():
 
 @pytest.fixture()
 def default_latency_configmap(
-    checkup_nad, framework_service_account, cnv_current_version, latency_cluster_role
+    cnv_current_version, checkup_nad, framework_service_account, latency_cluster_role
 ):
     with create_latency_configmap(
         framework_service_account=framework_service_account,
@@ -250,11 +251,23 @@ def default_latency_configmap(
 
 
 @pytest.fixture()
+def checkup_ready(default_latency_configmap, latency_job):
+    assert_successful_checkup(configmap=default_latency_configmap, job=latency_job)
+
+
+@pytest.fixture()
 def latency_concurrent_job(
-    framework_service_account, default_latency_configmap, latency_job
+    framework_service_account,
+    default_latency_configmap,
+    latency_job,
+    cnv_current_version,
+    checkup_ready,
 ):
+    # To prevent race condition we must first make sure the first job was configured successfully, and only then
+    # create the concurrent one.
     with create_latency_job(
         service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
         name="concurrent-checkup-job",
     ) as job:
         yield job
@@ -321,7 +334,7 @@ def latency_nonexistent_configmap(
 
 @pytest.fixture()
 def latency_nonexistent_roles_configmap(
-    checkup_nad, cnv_current_version, framework_service_account
+    cnv_current_version, checkup_nad, framework_service_account
 ):
     with create_latency_configmap(
         framework_service_account=framework_service_account,
@@ -335,7 +348,7 @@ def latency_nonexistent_roles_configmap(
 
 @pytest.fixture()
 def latency_no_roles_configmap(
-    checkup_nad, cnv_current_version, framework_service_account
+    cnv_current_version, checkup_nad, framework_service_account
 ):
     with create_latency_configmap(
         framework_service_account=framework_service_account,
@@ -403,7 +416,10 @@ def latency_same_node_configmap(
 
 
 @pytest.fixture()
-def latency_job(framework_service_account, cnv_current_version):
+def latency_job(
+    framework_service_account,
+    cnv_current_version,
+):
     with create_latency_job(
         service_account=framework_service_account,
         cnv_current_version=cnv_current_version,
