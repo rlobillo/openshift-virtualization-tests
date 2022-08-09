@@ -176,6 +176,21 @@ def test_ovs_bridge_sanity(
 
 
 @pytest.mark.ovs_brcnv
+@pytest.mark.polarion("CNV-9038")
+def test_vlan_1_over_bridge_with_primary_and_secondary_ifaces(
+    brcnv_ovs_nad_vlan_1,
+    brcnv_vmb_with_vlan_1,
+    brcnv_vmc_with_vlans_1_2,
+):
+    assert_ping_successful(
+        src_vm=brcnv_vmb_with_vlan_1,
+        dst_ip=get_vmi_ip_v4_by_name(
+            vm=brcnv_vmc_with_vlans_1_2, name=brcnv_ovs_nad_vlan_1.name
+        ),
+    )
+
+
+@pytest.mark.ovs_brcnv
 @pytest.mark.polarion("CNV-8597")
 def test_cnv_bridge_vlan_1_connectivity_same_node(
     brcnv_ovs_nad_vlan_1,
