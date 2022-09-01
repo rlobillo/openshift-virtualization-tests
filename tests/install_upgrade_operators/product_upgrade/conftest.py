@@ -26,9 +26,7 @@ from utilities.operator import (
     create_icsp_command,
     create_icsp_from_file,
     delete_existing_icsp,
-    disable_default_sources_in_operatorhub,
     generate_icsp_file,
-    get_machine_config_pool_by_name,
     update_image_in_catalog_source,
     update_subscription_channel_and_source,
     wait_for_mcp_update_completion,
@@ -36,11 +34,6 @@ from utilities.operator import (
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-@pytest.fixture(scope="session")
-def cnv_image_url(pytestconfig):
-    return pytestconfig.option.cnv_image
 
 
 @pytest.fixture(scope="session")
@@ -53,17 +46,6 @@ def cnv_image_name(cnv_image_url):
         f"(example: registry-proxy.engineering.redhat.com/rh-osbs/iib:45131 should find 'iib')"
     )
     return match.group(1)
-
-
-@pytest.fixture()
-def disabled_default_sources_in_operatorhub(
-    admin_client, is_upgrade_from_production_source
-):
-    if not is_upgrade_from_production_source:
-        with disable_default_sources_in_operatorhub(admin_client=admin_client):
-            yield
-    else:
-        yield
 
 
 @pytest.fixture(scope="session")
@@ -283,14 +265,6 @@ def extracted_ocp_version_from_image_url(ocp_image_url):
     ), f"Cannot extract OCP version. OCP image url: {ocp_image_url} is invalid"
     LOGGER.info(f"OCP version {ocp_version} extracted from ocp image: {ocp_version}")
     return ocp_version
-
-
-@pytest.fixture(scope="session")
-def machine_config_pools():
-    return [
-        get_machine_config_pool_by_name(mcp_name="master"),
-        get_machine_config_pool_by_name(mcp_name="worker"),
-    ]
 
 
 @pytest.fixture(scope="session")

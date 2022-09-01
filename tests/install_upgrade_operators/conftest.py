@@ -6,6 +6,10 @@ from pytest_testconfig import py_config
 
 from tests.install_upgrade_operators.utils import get_network_addon_config
 from utilities.hco import ResourceEditorValidateHCOReconcile, get_hco_version
+from utilities.operator import (
+    disable_default_sources_in_operatorhub,
+    get_machine_config_pool_by_name,
+)
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
 
@@ -103,3 +107,27 @@ def hco_status_related_objects(hyperconverged_resource_scope_module):
 @pytest.fixture(scope="class")
 def hco_version_scope_class(admin_client, hco_namespace):
     return get_hco_version(client=admin_client, hco_ns_name=hco_namespace.name)
+
+
+@pytest.fixture()
+def disabled_default_sources_in_operatorhub(
+    admin_client, is_upgrade_from_production_source
+):
+    if is_upgrade_from_production_source:
+        yield
+    else:
+        with disable_default_sources_in_operatorhub(admin_client=admin_client):
+            yield
+
+
+@pytest.fixture(scope="session")
+def cnv_image_url(pytestconfig):
+    return pytestconfig.option.cnv_image
+
+
+@pytest.fixture(scope="session")
+def machine_config_pools():
+    return [
+        get_machine_config_pool_by_name(mcp_name="master"),
+        get_machine_config_pool_by_name(mcp_name="worker"),
+    ]

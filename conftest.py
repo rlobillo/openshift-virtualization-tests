@@ -136,7 +136,12 @@ def pytest_addoption(parser):
         help="OCP image to upgrade to. Images can be found under "
         "https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/",
     )
-
+    # CNV install options:
+    install_upgrade_group.addoption(
+        "--install",
+        help="Runs cnv install tests",
+        action="store_true",
+    )
     # Matrix addoption
     matrix_group.addoption("--storage-class-matrix", help="Storage class matrix to use")
     matrix_group.addoption("--bridge-device-matrix", help="Bridge device matrix to use")

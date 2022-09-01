@@ -165,7 +165,7 @@ HTPASSWD_PROVIDER_DICT = {
     "htpasswd": {"fileData": {"name": HTTP_SECRET_NAME}},
 }
 ACCESS_TOKEN = {"accessTokenMaxAgeSeconds": 604800}
-
+CNV_NOT_INSTALLED = "CNV not yet installed."
 UPGRADE_Z_STREAM = "z-stream"
 
 AMD_CPU_MODELS = ["Opteron_G1", "Opteron_G2"]
@@ -1121,24 +1121,29 @@ def worker_nodes_ipv4_false_secondary_nics(nodes_available_nics, schedulable_nod
 
 
 @pytest.fixture(scope="session")
-def csv_scope_session(is_downstream_distribution, admin_client, hco_namespace):
-    if is_downstream_distribution:
+def csv_scope_session(
+    is_downstream_distribution, admin_client, hco_namespace, installing_cnv
+):
+    if is_downstream_distribution and not installing_cnv:
         return utilities.hco.get_installed_hco_csv(
             admin_client=admin_client, hco_namespace=hco_namespace
         )
 
 
 @pytest.fixture(scope="session")
-def cnv_current_version(csv_scope_session):
+def cnv_current_version(installing_cnv, csv_scope_session):
+    if installing_cnv:
+        return CNV_NOT_INSTALLED
     if csv_scope_session:
         return csv_scope_session.instance.spec.version
 
 
 @pytest.fixture(scope="session")
-def hco_namespace(admin_client):
-    return utilities.hco.get_hco_namespace(
-        admin_client=admin_client, namespace=py_config["hco_namespace"]
-    )
+def hco_namespace(admin_client, installing_cnv):
+    if not installing_cnv:
+        return utilities.hco.get_hco_namespace(
+            admin_client=admin_client, namespace=py_config["hco_namespace"]
+        )
 
 
 @pytest.fixture(scope="session")
@@ -1396,24 +1401,29 @@ def hyperconverged_resource_scope_class(admin_client, hco_namespace):
 
 
 @pytest.fixture(scope="module")
-def hyperconverged_resource_scope_module(admin_client, hco_namespace):
-    return get_hyperconverged_resource(
-        client=admin_client, hco_ns_name=hco_namespace.name
-    )
+def hyperconverged_resource_scope_module(admin_client, hco_namespace, installing_cnv):
+    if not installing_cnv:
+        return get_hyperconverged_resource(
+            client=admin_client, hco_ns_name=hco_namespace.name
+        )
 
 
 @pytest.fixture(scope="session")
-def hyperconverged_resource_scope_session(admin_client, hco_namespace):
-    return get_hyperconverged_resource(
-        client=admin_client, hco_ns_name=hco_namespace.name
-    )
+def hyperconverged_resource_scope_session(admin_client, hco_namespace, installing_cnv):
+    if not installing_cnv:
+        return get_hyperconverged_resource(
+            client=admin_client, hco_ns_name=hco_namespace.name
+        )
 
 
 @pytest.fixture()
-def kubevirt_hyperconverged_spec_scope_function(admin_client, hco_namespace):
-    return get_kubevirt_hyperconverged_spec(
-        admin_client=admin_client, hco_namespace=hco_namespace
-    )
+def kubevirt_hyperconverged_spec_scope_function(
+    admin_client, hco_namespace, installing_cnv
+):
+    if not installing_cnv:
+        return get_kubevirt_hyperconverged_spec(
+            admin_client=admin_client, hco_namespace=hco_namespace
+        )
 
 
 @pytest.fixture(scope="module")
@@ -1612,21 +1622,23 @@ def cluster_sanity_scope_session(
     hco_namespace,
     junitxml_plugin,
     hyperconverged_resource_scope_session,
+    installing_cnv,
 ):
     """
     Performs various cluster level checks, e.g.: storage class validation, node state, as well as all cnv pod
     check to ensure all are in 'Running' state, to determine current state of cluster
     """
-    cluster_sanity(
-        request=request,
-        admin_client=admin_client,
-        cluster_storage_classes=cluster_storage_classes,
-        nodes=nodes,
-        hco_namespace=hco_namespace,
-        junitxml_property=junitxml_plugin,
-        hco_status_conditions=hyperconverged_resource_scope_session.instance.status.conditions,
-        expected_hco_status=DEFAULT_HCO_CONDITIONS,
-    )
+    if not installing_cnv:
+        cluster_sanity(
+            request=request,
+            admin_client=admin_client,
+            cluster_storage_classes=cluster_storage_classes,
+            nodes=nodes,
+            hco_namespace=hco_namespace,
+            junitxml_property=junitxml_plugin,
+            hco_status_conditions=hyperconverged_resource_scope_session.instance.status.conditions,
+            expected_hco_status=DEFAULT_HCO_CONDITIONS,
+        )
 
 
 @pytest.fixture(scope="module")
@@ -1638,21 +1650,23 @@ def cluster_sanity_scope_module(
     hco_namespace,
     junitxml_plugin,
     hyperconverged_resource_scope_session,
+    installing_cnv,
 ):
     """
     Performs various cluster level checks, e.g.: storage class validation, node state, as well as all cnv pod
     check to ensure all are in 'Running' state, to determine current state of cluster
     """
-    cluster_sanity(
-        request=request,
-        admin_client=admin_client,
-        cluster_storage_classes=cluster_storage_classes,
-        nodes=nodes,
-        hco_namespace=hco_namespace,
-        junitxml_property=junitxml_plugin,
-        hco_status_conditions=hyperconverged_resource_scope_session.instance.status.conditions,
-        expected_hco_status=DEFAULT_HCO_CONDITIONS,
-    )
+    if not installing_cnv:
+        cluster_sanity(
+            request=request,
+            admin_client=admin_client,
+            cluster_storage_classes=cluster_storage_classes,
+            nodes=nodes,
+            hco_namespace=hco_namespace,
+            junitxml_property=junitxml_plugin,
+            hco_status_conditions=hyperconverged_resource_scope_session.instance.status.conditions,
+            expected_hco_status=DEFAULT_HCO_CONDITIONS,
+        )
 
 
 @pytest.fixture(scope="session")
@@ -1728,6 +1742,7 @@ def cluster_info(
     admin_client,
     is_downstream_distribution,
     is_upstream_distribution,
+    installing_cnv,
     openshift_current_version,
     cnv_current_version,
     hco_image,
@@ -1739,9 +1754,12 @@ def cluster_info(
 ):
     title = "\nCluster info:\n"
     if is_downstream_distribution:
-        virtctl_client_version, virtctl_server_version = (
-            run_virtctl_command(command=["version"])[1].strip().splitlines()
-        )
+        virtctl_client_version, virtctl_server_version = None, None
+        if not installing_cnv:
+            virtctl_client_version, virtctl_server_version = (
+                run_virtctl_command(command=["version"])[1].strip().splitlines()
+            )
+
         LOGGER.info(
             f"{title}"
             f"\tOpenshift version: {openshift_current_version}\n"
@@ -1784,7 +1802,14 @@ def openshift_current_version(is_downstream_distribution, admin_client):
 
 
 @pytest.fixture(scope="session")
-def hco_image(is_downstream_distribution, admin_client, cnv_subscription_scope_session):
+def hco_image(
+    is_downstream_distribution,
+    admin_client,
+    installing_cnv,
+    cnv_subscription_scope_session,
+):
+    if installing_cnv:
+        return CNV_NOT_INSTALLED
     if is_downstream_distribution:
         source_name = cnv_subscription_scope_session.instance.spec.source
         for cs in CatalogSource.get(
@@ -1797,9 +1822,12 @@ def hco_image(is_downstream_distribution, admin_client, cnv_subscription_scope_s
 
 @pytest.fixture(scope="session")
 def cnv_subscription_scope_session(
-    is_downstream_distribution, admin_client, hco_namespace
+    is_downstream_distribution,
+    admin_client,
+    installing_cnv,
+    hco_namespace,
 ):
-    if is_downstream_distribution:
+    if is_downstream_distribution and not installing_cnv:
         return get_subscription(
             admin_client=admin_client,
             namespace=hco_namespace.name,
@@ -1808,10 +1836,11 @@ def cnv_subscription_scope_session(
 
 
 @pytest.fixture(scope="session")
-def kubevirt_resource_scope_session(admin_client, hco_namespace):
-    return get_hyperconverged_kubevirt(
-        admin_client=admin_client, hco_namespace=hco_namespace
-    )
+def kubevirt_resource_scope_session(admin_client, installing_cnv, hco_namespace):
+    if not installing_cnv:
+        return get_hyperconverged_kubevirt(
+            admin_client=admin_client, hco_namespace=hco_namespace
+        )
 
 
 @pytest.fixture(scope="session")
@@ -1895,38 +1924,39 @@ def term_handler_scope_session():
 
 
 @pytest.fixture(scope="session")
-def updated_nfs_storage_profile(request, cluster_storage_classes):
-    nfs_sc_name = StorageClass.Types.NFS
-    nfs_sc = [sc for sc in cluster_storage_classes if sc.name == nfs_sc_name]
-    # Update NFS storage profile only if there's no known storage provisioner
-    if (
-        nfs_sc
-        and nfs_sc[0].instance.provisioner == nfs_sc[0].Provisioner.NO_PROVISIONER
-    ):
-        LOGGER.info(
-            f"Automatically executing {request.fixturename} fixture (autouse=True)."
-        )
-        nfs_storage_profile = StorageProfile(name=nfs_sc_name)
-        sc_params = get_storage_class_dict_from_matrix(storage_class=nfs_sc_name)[
-            nfs_sc_name
-        ]
-        with ResourceEditor(
-            patches={
-                nfs_storage_profile: {
-                    "spec": {
-                        "claimPropertySets": [
-                            {
-                                "accessModes": [sc_params["access_mode"]],
-                                "volumeMode": sc_params["volume_mode"],
-                            }
-                        ]
+def updated_nfs_storage_profile(request, cluster_storage_classes, installing_cnv):
+    if installing_cnv:
+        yield
+    else:
+        nfs_sc_name = StorageClass.Types.NFS
+        nfs_sc = [sc for sc in cluster_storage_classes if sc.name == nfs_sc_name]
+        # Update NFS storage profile only if there's no known storage provisioner
+        if (
+            nfs_sc
+            and nfs_sc[0].instance.provisioner == nfs_sc[0].Provisioner.NO_PROVISIONER
+        ):
+            LOGGER.info(f"Automatically executing {request.fixturename} fixture.")
+            nfs_storage_profile = StorageProfile(name=nfs_sc_name)
+            sc_params = get_storage_class_dict_from_matrix(storage_class=nfs_sc_name)[
+                nfs_sc_name
+            ]
+            with ResourceEditor(
+                patches={
+                    nfs_storage_profile: {
+                        "spec": {
+                            "claimPropertySets": [
+                                {
+                                    "accessModes": [sc_params["access_mode"]],
+                                    "volumeMode": sc_params["volume_mode"],
+                                }
+                            ]
+                        }
                     }
                 }
-            }
-        ):
+            ):
+                yield
+        else:
             yield
-    else:
-        yield
 
 
 @pytest.fixture(scope="session")
@@ -2318,8 +2348,10 @@ def os_path_environment():
 
 
 @pytest.fixture(scope="session")
-def virtctl_binary(is_upstream_distribution, os_path_environment, bin_directory):
-    if is_upstream_distribution:
+def virtctl_binary(
+    is_upstream_distribution, installing_cnv, os_path_environment, bin_directory
+):
+    if installing_cnv or is_upstream_distribution:
         return
 
     download_file_from_cluster(
@@ -2435,20 +2467,29 @@ def alert_not_firing(request, prometheus):
 @pytest.fixture(scope="session")
 def disabled_cdi_garbage_collector(
     skip_upstream,
+    installing_cnv,
     hyperconverged_resource_scope_session,
 ):
-    if is_jira_open(jira_id="CNV-17513"):
-        LOGGER.info("Garbage collector disabled while CNV-17513 is open")
-        with utilities.hco.ResourceEditorValidateHCOReconcile(
-            patches={
-                hyperconverged_resource_scope_session: utilities.hco.hco_cr_jsonpatch_annotations_dict(
-                    component="cdi",
-                    path="dataVolumeTTLSeconds",
-                    value=-1,
-                )
-            },
-            list_resource_reconcile=[CDI],
-        ):
-            yield
-    else:
+    if installing_cnv:
         yield
+    else:
+        if is_jira_open(jira_id="CNV-17513"):
+            LOGGER.info("Garbage collector disabled while CNV-17513 is open")
+            with utilities.hco.ResourceEditorValidateHCOReconcile(
+                patches={
+                    hyperconverged_resource_scope_session: utilities.hco.hco_cr_jsonpatch_annotations_dict(
+                        component="cdi",
+                        path="dataVolumeTTLSeconds",
+                        value=-1,
+                    )
+                },
+                list_resource_reconcile=[CDI],
+            ):
+                yield
+        else:
+            yield
+
+
+@pytest.fixture(scope="session")
+def installing_cnv(pytestconfig):
+    return pytestconfig.option.install

@@ -243,7 +243,7 @@ def create_catalog_source(
         publisher="Red Hat",
     )
     catalog_source.deploy(wait=True)
-    yield catalog_source
+    return catalog_source
 
 
 def wait_for_catalogsource_ready(admin_client, catalog_name):
@@ -287,9 +287,6 @@ def wait_for_catalogsource_ready(admin_client, catalog_name):
 
 
 def create_operator_group(operator_group_name, namespace_name):
-    """
-    ### unused_code: ignore ###
-    """
     LOGGER.info(
         f"Create operatorgroup {operator_group_name} in namespace {namespace_name}"
     )
@@ -299,11 +296,12 @@ def create_operator_group(operator_group_name, namespace_name):
         target_namespaces=[namespace_name],
     )
     operator_group.deploy(wait=True)
-    yield operator_group
+    return operator_group
 
 
 def create_subscription(
     subscription_name,
+    package_name,
     namespace_name,
     catalogsource_name,
     channel_name="stable",
@@ -317,6 +315,7 @@ def create_subscription(
     )
     subscription = utilities.infra.cluster_resource(Subscription)(
         name=subscription_name,
+        package_name=package_name,
         namespace=namespace_name,
         channel=channel_name,
         install_plan_approval=install_plan_approval,
