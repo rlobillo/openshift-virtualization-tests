@@ -17,6 +17,7 @@ from utilities.constants import (
     OS_FLAVOR_CIRROS,
     TIMEOUT_1MIN,
     TIMEOUT_2MIN,
+    TIMEOUT_10SEC,
 )
 from utilities.infra import cluster_resource
 from utilities.network import compose_cloud_init_data_dict, get_vmi_ip_v4_by_name, ping
@@ -137,6 +138,7 @@ class ServiceMeshDeployments(Deployment):
         service_port=None,
         host=None,
         port=None,
+        http_readiness_probe=False,
     ):
         self.name = f"{name}-{version}-dp"
         super().__init__(name=self.name, namespace=namespace)
@@ -151,6 +153,7 @@ class ServiceMeshDeployments(Deployment):
         self.command = command
         self.service_port = service_port
         self.host = host
+        self.http_readiness_probe = http_readiness_probe
 
     def to_dict(self):
         res = super().to_dict()
@@ -190,6 +193,18 @@ class ServiceMeshDeployments(Deployment):
             res["spec"]["template"]["spec"]["containers"][0]["ports"] = [
                 {"containerPort": self.port}
             ]
+        if self.http_readiness_probe:
+            res["spec"]["template"]["spec"]["containers"][0].setdefault(
+                "readinessProbe", {}
+            )
+            res["spec"]["template"]["spec"]["containers"][0]["readinessProbe"] = {
+                "httpGet": {
+                    "port": self.service_port,
+                    "initialDelaySeconds": TIMEOUT_10SEC,
+                    "periodSeconds": TIMEOUT_10SEC,
+                    "timeout seconds": TIMEOUT_1MIN,
+                },
+            }
         return res
 
 
@@ -329,11 +344,11 @@ def assert_service_mesh_request(expected_output, request_response):
     )
 
 
-def assert_authentication_request(vm, service):
+def assert_authentication_request(vm, service_app_name):
     expected_output = "127.0.0.1"
     request_response = authentication_request(
         vm=vm,
-        service=service,
+        service=service_app_name,
         expected_output=expected_output,
     )
     assert_service_mesh_request(

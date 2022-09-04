@@ -184,7 +184,7 @@ class TestUpgradeNetwork:
     ):
         assert_authentication_request(
             vm=vm_cirros_with_service_mesh_annotation_for_upgrade,
-            service=httpbin_service_mesh_service_for_upgrade.app_name,
+            service_app_name=httpbin_service_mesh_service_for_upgrade.app_name,
         )
 
     """ Post-upgrade tests """
@@ -368,5 +368,5 @@ class TestUpgradeNetwork:
     ):
         assert_authentication_request(
             vm=vm_cirros_with_service_mesh_annotation_for_upgrade,
-            service=httpbin_service_mesh_service_for_upgrade.app_name,
+            service_app_name=httpbin_service_mesh_service_for_upgrade.app_name,
         )

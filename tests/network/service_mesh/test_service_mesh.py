@@ -53,7 +53,7 @@ class TestSMPeerAuthentication:
     ):
         assert_authentication_request(
             vm=vm_cirros_with_service_mesh_annotation,
-            service=httpbin_service_service_mesh.app_name,
+            service_app_name=httpbin_service_service_mesh.app_name,
         )
 
     @pytest.mark.polarion("CNV-7305")
@@ -67,7 +67,7 @@ class TestSMPeerAuthentication:
         with pytest.raises(AssertionError):
             assert_authentication_request(
                 vm=outside_mesh_vm_cirros_with_service_mesh_annotation,
-                service=httpbin_service_service_mesh.app_name,
+                service_app_name=httpbin_service_service_mesh.app_name,
             )
 
     @pytest.mark.polarion("CNV-7128")

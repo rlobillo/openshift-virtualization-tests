@@ -117,6 +117,7 @@ def httpbin_service_mesh_deployment_for_upgrade(service_mesh_upgrade_ns):
         port=PORT_8080,
         service_port=SERVICE_MESH_PORT,
         service_account=True,
+        http_readiness_probe=True,
     ) as dp:
         yield dp
 
