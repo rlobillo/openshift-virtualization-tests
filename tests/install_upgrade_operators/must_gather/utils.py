@@ -20,12 +20,14 @@ from utilities.infra import ResourceMismatch
 LOGGER = logging.getLogger(__name__)
 MUST_GATHER_VM_NAME_PREFIX = "must-gather-vm"
 VM_FILE_SUFFIX = ["bridge.txt", "ip.txt", "ruletables.txt", "dumpxml.xml"]
-
+VALIDATE_UID_NAME = (("metadata", "uid"), ("metadata", "name"))
 
 # TODO: this is a workaround for an openshift bug
 # An issue was opened in openshift for this:
 # https://github.com/openshift/openshift-restclient-python/issues/320
 # To be removed after the issue is fixed in openshift
+
+
 class ResourceFieldEqBugWorkaround(object):
     def __enter__(self):
         self.prev_eq_func = ResourceField.__eq__

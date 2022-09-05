@@ -393,3 +393,15 @@ def must_gather_long_name_vm(node_gather_unprivileged_namespace, unprivileged_cl
     ) as vm:
         running_vm(vm=vm)
         yield vm
+
+
+@pytest.fixture(scope="class")
+def gathered_images(
+    must_gather_tmpdir,
+    must_gather_image_url,
+):
+    return collect_must_gather(
+        must_gather_tmpdir=must_gather_tmpdir,
+        must_gather_image_url=must_gather_image_url,
+        script_name="gather_images",
+    )

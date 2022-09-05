@@ -22,6 +22,7 @@ from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import config as py_config
 
 from tests.install_upgrade_operators.must_gather.utils import (
+    VALIDATE_UID_NAME,
     check_list_of_resources,
     check_logs,
     check_node_resource,
@@ -44,7 +45,7 @@ from utilities.constants import (
 
 pytestmark = pytest.mark.sno
 LOGGER = logging.getLogger(__name__)
-VALIDATE_UID_NAME = (("metadata", "uid"), ("metadata", "name"))
+
 VALIDATE_FIELDS = (("spec",),) + VALIDATE_UID_NAME
 
 
@@ -488,7 +489,6 @@ class TestMustGatherCluster:
             collected_cluster_must_gather,
             resource_path,
         )
-
         assert len(os.listdir(istag_dir)) == len(
             list(ImageStreamTag.get(admin_client, namespace=OPENSHIFT_NAMESPACE))
         )
