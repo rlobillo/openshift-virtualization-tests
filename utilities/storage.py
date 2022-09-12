@@ -668,6 +668,10 @@ def get_images_server_url(schema):
         URLError: If server is not accessible.
     """
     server = py_config["servers"][f"{schema}_server"]
+    if py_config.get("check_http_server_connectivity", "true").lower() == "false":
+        LOGGER.warning(f"Skip {server} connectivity check")
+        return server
+
     myssl = None
     if schema == "https":
         myssl = ssl.create_default_context()
