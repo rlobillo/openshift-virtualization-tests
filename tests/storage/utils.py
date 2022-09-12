@@ -525,3 +525,21 @@ def get_storage_class_with_specified_volume_mode(volume_mode, sc_names):
                 LOGGER.info(f"{sc_with_volume_mode}: '{storage_class}'")
                 return storage_class
     LOGGER.warning(f"No {sc_with_volume_mode} among {sc_names}")
+
+
+def create_cirros_dv(
+    namespace, name, storage_class, access_modes=None, volume_mode=None
+):
+    with create_dv(
+        dv_name=f"dv-{name}",
+        namespace=namespace,
+        url=get_http_image_url(
+            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
+        ),
+        size=Images.Cirros.DEFAULT_DV_SIZE,
+        storage_class=storage_class,
+        access_modes=access_modes,
+        volume_mode=volume_mode,
+    ) as dv:
+        dv.wait()
+        yield dv

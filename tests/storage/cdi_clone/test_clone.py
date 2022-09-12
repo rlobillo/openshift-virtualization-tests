@@ -6,12 +6,15 @@ Clone tests
 
 import pytest
 from ocp_resources.datavolume import DataVolume
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutSampler
 from ocp_resources.volume_snapshot import VolumeSnapshot
 from pytest_testconfig import config as py_config
 
 from tests.storage import utils
+from tests.storage.utils import (
+    create_cirros_dv,
+    get_storage_class_with_specified_volume_mode,
+)
 from utilities.constants import (
     OS_FLAVOR_CIRROS,
     OS_FLAVOR_WINDOWS,
@@ -20,7 +23,7 @@ from utilities.constants import (
     TIMEOUT_40MIN,
     Images,
 )
-from utilities.infra import cluster_resource, get_http_image_url
+from utilities.infra import cluster_resource
 from utilities.storage import (
     create_dv,
     data_volume,
@@ -36,6 +39,9 @@ from utilities.virt import (
 
 
 WINDOWS_CLONE_TIMEOUT = TIMEOUT_40MIN
+FILESYSTEM = DataVolume.VolumeMode.FILE
+BLOCK = DataVolume.VolumeMode.BLOCK
+RWO = DataVolume.AccessMode.RWO
 
 
 def verify_source_pvc_of_volume_snapshot(source_pvc_name, snapshot):
@@ -51,7 +57,14 @@ def verify_source_pvc_of_volume_snapshot(source_pvc_name, snapshot):
 
 
 def create_vm_from_clone_dv_template(
-    vm_name, dv_name, namespace_name, source_dv, client, volume_mode, size=None
+    vm_name,
+    dv_name,
+    namespace_name,
+    source_dv,
+    client,
+    volume_mode,
+    storage_class,
+    size=None,
 ):
     with cluster_resource(VirtualMachineForTests)(
         name=vm_name,
@@ -65,29 +78,47 @@ def create_vm_from_clone_dv_template(
             source_dv=source_dv,
             volume_mode=volume_mode,
             size=size,
+            storage_class=storage_class,
         ),
     ) as vm:
         running_vm(vm=vm, wait_for_interfaces=False)
         utils.check_disk_count_in_vm(vm=vm)
 
 
-@pytest.fixture()
-def ceph_rbd_data_volume(request, namespace):
-    with create_dv(
-        source="http",
-        dv_name="ceph-rbd-dv",
+@pytest.fixture(scope="session")
+def storage_class_with_block_volume_mode(available_storage_classes_names):
+    yield get_storage_class_with_specified_volume_mode(
+        volume_mode=BLOCK,
+        sc_names=available_storage_classes_names,
+    )
+
+
+@pytest.fixture(scope="module")
+def cirros_dv_with_filesystem_volume_mode(
+    namespace,
+    storage_class_with_filesystem_volume_mode,
+):
+    yield from create_cirros_dv(
         namespace=namespace.name,
-        url=get_http_image_url(
-            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
-        ),
-        content_type=DataVolume.ContentType.KUBEVIRT,
-        size=Images.Cirros.DEFAULT_DV_SIZE,
-        storage_class=StorageClass.Types.CEPH_RBD,
-        access_modes=DataVolume.AccessMode.RWO,
-        volume_mode=request.param["volume_mode"],
-    ) as dv:
-        dv.wait()
-        yield dv
+        name="cirros-fs",
+        storage_class=storage_class_with_filesystem_volume_mode,
+        access_modes=RWO,
+        volume_mode=FILESYSTEM,
+    )
+
+
+@pytest.fixture(scope="module")
+def cirros_dv_with_block_volume_mode(
+    namespace,
+    storage_class_with_block_volume_mode,
+):
+    yield from create_cirros_dv(
+        namespace=namespace.name,
+        name="cirros-block",
+        storage_class=storage_class_with_block_volume_mode,
+        access_modes=RWO,
+        volume_mode=BLOCK,
+    )
 
 
 @pytest.fixture()
@@ -105,16 +136,10 @@ def data_volume_snapshot_capable_storage_scope_function(
     )
 
 
-@pytest.fixture(scope="session")
-def skip_test_if_no_block_sc(cluster_storage_classes):
-    # TODO: Replace CEPH_RBD with Block storage class matrix
-    existing_block_sc = [
-        sc.name
-        for sc in cluster_storage_classes
-        if sc.name == StorageClass.Types.CEPH_RBD
-    ]
-    if not existing_block_sc:
-        pytest.skip("This test runs only on a storage class with Block volume_mode")
+@pytest.fixture(scope="module")
+def skip_test_if_no_block_sc(storage_class_with_block_volume_mode):
+    if not storage_class_with_block_volume_mode:
+        pytest.skip("Skip the test: no Storage class with Block volume mode")
 
 
 @pytest.mark.tier3
@@ -354,65 +379,48 @@ def test_successful_snapshot_clone(
         snapshot.wait_deleted()
 
 
-@pytest.mark.parametrize(
-    "ceph_rbd_data_volume",
-    [
-        pytest.param(
-            {
-                "volume_mode": DataVolume.VolumeMode.FILE,
-            },
-            marks=pytest.mark.polarion("CNV-5607"),
-        ),
-    ],
-    indirect=True,
-)
+@pytest.mark.polarion("CNV-5607")
 def test_clone_from_fs_to_block_using_dv_template(
     skip_test_if_no_filesystem_sc,
     skip_test_if_no_block_sc,
-    namespace,
     unprivileged_client,
-    ceph_rbd_data_volume,
+    namespace,
+    cirros_dv_with_filesystem_volume_mode,
+    storage_class_with_block_volume_mode,
 ):
     create_vm_from_clone_dv_template(
         vm_name="vm-5607",
         dv_name="dv-5607",
         namespace_name=namespace.name,
-        source_dv=ceph_rbd_data_volume,
+        source_dv=cirros_dv_with_filesystem_volume_mode,
         client=unprivileged_client,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
+        volume_mode=BLOCK,
+        storage_class=storage_class_with_block_volume_mode,
     )
 
 
-@pytest.mark.parametrize(
-    "ceph_rbd_data_volume",
-    [
-        pytest.param(
-            {
-                "volume_mode": DataVolume.VolumeMode.BLOCK,
-            },
-            marks=(pytest.mark.polarion("CNV-5608"), pytest.mark.smoke()),
-        ),
-    ],
-    indirect=True,
-)
+@pytest.mark.polarion("CNV-5608")
+@pytest.mark.smoke()
 def test_clone_from_block_to_fs_using_dv_template(
     skip_test_if_no_filesystem_sc,
     skip_test_if_no_block_sc,
-    namespace,
     unprivileged_client,
-    ceph_rbd_data_volume,
+    namespace,
+    cirros_dv_with_block_volume_mode,
+    storage_class_with_filesystem_volume_mode,
     default_fs_overhead,
 ):
     create_vm_from_clone_dv_template(
         vm_name="vm-5608",
         dv_name="dv-5608",
         namespace_name=namespace.name,
-        source_dv=ceph_rbd_data_volume,
+        source_dv=cirros_dv_with_block_volume_mode,
         client=unprivileged_client,
-        volume_mode=DataVolume.VolumeMode.FILE,
+        volume_mode=FILESYSTEM,
         # add fs overhead and round up the result
         size=overhead_size_for_dv(
-            image_size=int(ceph_rbd_data_volume.size[:-2]),
+            image_size=int(cirros_dv_with_block_volume_mode.size[:-2]),
             overhead_value=default_fs_overhead,
         ),
+        storage_class=storage_class_with_filesystem_volume_mode,
     )

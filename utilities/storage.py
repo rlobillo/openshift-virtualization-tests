@@ -603,13 +603,14 @@ def data_volume_template_dict(
     source_dv,
     volume_mode=None,
     size=None,
+    storage_class=None,
 ):
     source_dv_pvc_spec = source_dv.pvc.instance.spec
     return DataVolume(
         name=target_dv_name,
         namespace=target_dv_namespace,
         source="pvc",
-        storage_class=source_dv_pvc_spec.storageClassName,
+        storage_class=storage_class or source_dv_pvc_spec.storageClassName,
         volume_mode=volume_mode or source_dv_pvc_spec.volumeMode,
         access_modes=",".join(source_dv_pvc_spec.accessModes),
         size=size or source_dv.size,

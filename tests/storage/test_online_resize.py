@@ -18,15 +18,10 @@ from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from ocp_utilities.utils import run_ssh_commands
 
 from tests.storage import utils
-from tests.storage.utils import create_cirros_vm
+from tests.storage.utils import create_cirros_dv, create_cirros_vm
 from utilities.constants import TIMEOUT_4MIN, Images
 from utilities.infra import cluster_resource
-from utilities.storage import (
-    ErrorMsg,
-    create_dv,
-    get_images_server_url,
-    is_snapshot_supported_by_sc,
-)
+from utilities.storage import ErrorMsg, create_dv, is_snapshot_supported_by_sc
 from utilities.virt import migrate_vm_and_verify, running_vm
 
 
@@ -184,17 +179,11 @@ def cirros_dv_for_online_resize(
     cirros_vm_name,
     storage_class_matrix_online_resize_matrix__module__,
 ):
-    with create_dv(
-        source="http",
-        dv_name=f"dv-{cirros_vm_name}",
+    yield from create_cirros_dv(
         namespace=namespace.name,
-        url=f"{get_images_server_url(schema='http')}{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
-        content_type=DataVolume.ContentType.KUBEVIRT,
-        size=Images.Cirros.DEFAULT_DV_SIZE,
+        name=cirros_vm_name,
         storage_class=[*storage_class_matrix_online_resize_matrix__module__][0],
-    ) as dv:
-        dv.wait()
-        yield dv
+    )
 
 
 @pytest.fixture()
