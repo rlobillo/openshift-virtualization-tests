@@ -3,7 +3,6 @@
 import logging
 
 import pytest
-from ocp_resources.migration_policy import MigrationPolicy
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.compute.virt.constants import MIGRATION_POLICY_VM_LABEL
@@ -81,16 +80,6 @@ def vm_for_migration_progress_test(
     ) as vm:
         running_vm(vm=vm)
         yield vm
-
-
-@pytest.fixture()
-def migration_policy_with_bandwidth():
-    with cluster_resource(MigrationPolicy)(
-        name="migration-policy",
-        bandwidth_per_migration="128Ki",
-        vmi_selector=MIGRATION_POLICY_VM_LABEL,
-    ) as mp:
-        yield mp
 
 
 @pytest.fixture()

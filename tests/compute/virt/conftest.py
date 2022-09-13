@@ -1,11 +1,13 @@
 import pytest
+from ocp_resources.migration_policy import MigrationPolicy
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
 from pytest_testconfig import py_config
 
 from tests.compute.utils import generate_rhsm_secret
+from tests.compute.virt.constants import MIGRATION_POLICY_VM_LABEL
 from tests.compute.virt.utils import append_feature_gate_to_hco
-from utilities.infra import get_daemonset_by_name
+from utilities.infra import cluster_resource, get_daemonset_by_name
 from utilities.storage import create_or_update_data_source
 
 
@@ -69,3 +71,13 @@ def virt_pods(request, admin_client, hco_namespace):
 @pytest.fixture()
 def rhsm_created_secret(namespace):
     yield from generate_rhsm_secret(namespace=namespace)
+
+
+@pytest.fixture()
+def migration_policy_with_bandwidth():
+    with cluster_resource(MigrationPolicy)(
+        name="migration-policy",
+        bandwidth_per_migration="128Ki",
+        vmi_selector=MIGRATION_POLICY_VM_LABEL,
+    ) as mp:
+        yield mp
