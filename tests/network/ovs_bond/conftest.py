@@ -1,8 +1,8 @@
 import logging
 
 import pytest
+from ocp_utilities.exceptions import CommandExecFailed
 
-from utilities.exceptions import CommandExecFailed
 from utilities.infra import ExecCommandOnPod, cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 

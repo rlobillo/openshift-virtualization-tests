@@ -6,11 +6,11 @@ import shlex
 
 import pytest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.utils import run_ssh_commands
 from pytest_testconfig import py_config
 
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
 from utilities.constants import TIMEOUT_1MIN
-from utilities.infra import run_ssh_commands
 from utilities.virt import migrate_vm_and_verify, running_vm, vm_instance_from_template
 
 

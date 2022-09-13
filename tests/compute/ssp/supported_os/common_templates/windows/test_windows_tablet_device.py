@@ -11,12 +11,12 @@ import re
 import shlex
 
 import pytest
+from ocp_utilities.utils import run_ssh_commands
 from pytest_testconfig import config as py_config
 
 from tests.compute.ssp.constants import VIRTIO
 from tests.compute.ssp.supported_os.common_templates import utils
 from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS, WINDOWS_LATEST_OS
-from utilities.infra import run_ssh_commands
 from utilities.virt import get_windows_os_dict
 
 

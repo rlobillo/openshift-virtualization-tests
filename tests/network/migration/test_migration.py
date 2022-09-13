@@ -10,6 +10,7 @@ import shlex
 import pytest
 from ocp_resources.service import Service
 from ocp_resources.utils import TimeoutSampler
+from ocp_utilities.utils import run_ssh_commands
 
 from tests.network.utils import (
     assert_ssh_alive,
@@ -24,7 +25,7 @@ from utilities.constants import (
     OS_LOGIN_PARAMS,
     TIMEOUT_2MIN,
 )
-from utilities.infra import cluster_resource, run_ssh_commands
+from utilities.infra import cluster_resource
 from utilities.network import (
     assert_ping_successful,
     compose_cloud_init_data_dict,

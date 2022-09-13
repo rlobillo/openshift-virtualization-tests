@@ -8,6 +8,7 @@ import logging
 import shlex
 
 import pytest
+from ocp_utilities.utils import run_ssh_commands
 
 from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
@@ -17,7 +18,7 @@ from tests.compute.utils import (
     validate_pause_optional_migrate_unpause_linux_vm,
 )
 from utilities import console
-from utilities.infra import is_bug_open, run_ssh_commands
+from utilities.infra import is_bug_open
 from utilities.virt import migrate_vm_and_verify, running_vm, wait_for_console
 
 

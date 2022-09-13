@@ -4,6 +4,7 @@ import re
 import shlex
 
 import pytest
+from ocp_utilities.utils import run_ssh_commands
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import py_config
 
@@ -14,7 +15,7 @@ from tests.os_params import (
     RHEL_7_6,
     RHEL_7_6_TEMPLATE_LABELS,
 )
-from utilities.infra import cluster_resource, run_ssh_commands
+from utilities.infra import cluster_resource
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,

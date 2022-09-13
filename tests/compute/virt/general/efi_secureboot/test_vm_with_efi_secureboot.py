@@ -9,6 +9,7 @@ import shlex
 import pytest
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.template import Template
+from ocp_utilities.utils import run_ssh_commands
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 
@@ -18,7 +19,7 @@ from tests.compute.utils import (
     validate_linux_efi,
 )
 from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_5MIN, Images
-from utilities.infra import cluster_resource, run_ssh_commands
+from utilities.infra import cluster_resource
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,

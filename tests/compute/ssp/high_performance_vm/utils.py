@@ -3,8 +3,9 @@ import re
 import shlex
 
 import xmltodict
+from ocp_utilities.utils import run_ssh_commands
 
-from utilities.infra import ExecCommandOnPod, run_ssh_commands
+from utilities.infra import ExecCommandOnPod
 
 
 LOGGER = logging.getLogger(__name__)

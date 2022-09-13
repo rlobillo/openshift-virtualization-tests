@@ -11,9 +11,10 @@ import urllib.request
 import pytest
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutSampler
+from ocp_utilities.utils import run_ssh_commands
 
 from utilities.constants import MTU_9000, SRIOV, TIMEOUT_10MIN, TIMEOUT_20SEC
-from utilities.infra import cluster_resource, run_ssh_commands
+from utilities.infra import cluster_resource
 from utilities.network import cloud_init_network_data, network_nad, sriov_network_dict
 from utilities.virt import (
     VirtualMachineForTests,

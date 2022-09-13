@@ -11,10 +11,10 @@ import shlex
 import pytest
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutSampler
+from ocp_utilities.utils import run_ssh_commands
 from pytest_testconfig import config as py_config
 
 from utilities.constants import INTEL, TIMEOUT_1MIN, Images
-from utilities.infra import run_ssh_commands
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     get_windows_os_dict,

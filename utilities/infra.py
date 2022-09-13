@@ -59,9 +59,8 @@ from utilities.constants import (
     TIMEOUT_2MIN,
     TIMEOUT_6MIN,
     TIMEOUT_10MIN,
-    TIMEOUT_30MIN,
 )
-from utilities.exceptions import CommandExecFailed, UtilityPodNotFoundError
+from utilities.exceptions import UtilityPodNotFoundError
 from utilities.storage import get_images_server_url
 
 
@@ -245,44 +244,6 @@ def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace, get_all=False):
     elif pods:
         return pods[0]
     raise ResourceNotFoundError(f"A pod with the {pod_prefix} prefix does not exist")
-
-
-def run_ssh_commands(
-    host, commands, get_pty=False, check_rc=True, timeout=TIMEOUT_30MIN
-):
-    """
-    Run commands via SSH
-
-    Args:
-        host (Host): rrmngmnt host to execute the commands from.
-        commands (list): List of multiple command lists [[cmd1, cmd2, cmd3]] or a list with a single command [cmd]
-            Examples:
-                 ["sudo", "reboot"], [["sleep", "5"], ["date"]]
-
-        get_pty (bool): get_pty parameter for remote session (equivalent to -t argument for ssh)
-        check_rc (bool): if True checks command return code and raises if rc != 0
-        timeout (int): ssh exec timeout
-
-    Returns:
-        list: List of commands output.
-
-    Raise:
-        CommandExecFailed: If command failed to execute.
-    """
-    results = []
-    commands = commands if isinstance(commands[0], list) else [commands]
-    with host.executor().session() as ssh_session:
-        for cmd in commands:
-            rc, out, err = ssh_session.run_cmd(
-                cmd=cmd, get_pty=get_pty, timeout=timeout
-            )
-            LOGGER.info(f"[SSH][{host.fqdn}] Executed: {' '.join(cmd)}")
-            if rc and check_rc:
-                raise CommandExecFailed(name=cmd, err=err)
-
-            results.append(out)
-
-    return results
 
 
 def generate_namespace_name(file_path):

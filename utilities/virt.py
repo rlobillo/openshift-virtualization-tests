@@ -32,6 +32,7 @@ from ocp_resources.virtual_machine import VirtualMachine
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
+from ocp_utilities.exceptions import CommandExecFailed
 from pytest_testconfig import config as py_config
 from rrmngmnt import Host, ssh, user
 
@@ -65,7 +66,6 @@ from utilities.constants import (
     TIMEOUT_30MIN,
     Images,
 )
-from utilities.exceptions import CommandExecFailed
 from utilities.hco import wait_for_hco_conditions
 
 

@@ -21,6 +21,7 @@ from ocp_resources.resource import NamespacedResource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.volume_snapshot_class import VolumeSnapshotClass
+from ocp_utilities.utils import run_ssh_commands
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
@@ -697,8 +698,7 @@ def run_command_on_cirros_vm_and_check_output(vm, command, expected_result):
 
 def assert_disk_serial(vm, command=shlex.split("sudo ls /dev/disk/by-id")):
     assert (
-        HOTPLUG_DISK_SERIAL
-        in utilities.infra.run_ssh_commands(host=vm.ssh_exec, commands=command)[0]
+        HOTPLUG_DISK_SERIAL in run_ssh_commands(host=vm.ssh_exec, commands=command)[0]
     ), f"hotplug disk serial id {HOTPLUG_DISK_SERIAL} is not in VM"
 
 

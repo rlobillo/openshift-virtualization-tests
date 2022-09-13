@@ -9,12 +9,13 @@ import shlex
 import pytest
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
+from ocp_utilities.utils import run_ssh_commands
 
 from tests.storage.snapshots.constants import WINDOWS_DIRECTORY_PATH
 from tests.storage.snapshots.utils import assert_directory_existence
 from tests.storage.utils import create_cirros_vm, create_windows19_vm, set_permissions
 from utilities.constants import TIMEOUT_10MIN, UNPRIVILEGED_USER
-from utilities.infra import cluster_resource, run_ssh_commands
+from utilities.infra import cluster_resource
 from utilities.storage import create_cirros_dv_for_snapshot, write_file
 
 

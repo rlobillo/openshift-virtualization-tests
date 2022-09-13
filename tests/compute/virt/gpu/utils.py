@@ -1,12 +1,13 @@
 import shlex
 
+from ocp_utilities.utils import run_ssh_commands
+
 from utilities.constants import (
     NVIDIA_GRID_DRIVER_NAME,
     OS_FLAVOR_WINDOWS,
     TIMEOUT_3MIN,
     VGPU_DEVICE_NAME,
 )
-from utilities.infra import run_ssh_commands
 from utilities.virt import restart_vm_wait_for_running_vm, running_vm
 
 

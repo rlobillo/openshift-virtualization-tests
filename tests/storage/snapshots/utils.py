@@ -4,10 +4,11 @@ import shlex
 import pytest
 from kubernetes.client.rest import ApiException
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
+from ocp_utilities.utils import run_ssh_commands
 
 from tests.storage.snapshots.constants import ERROR_MSG_USER_CANNOT_CREATE_VM_SNAPSHOTS
 from utilities.constants import TIMEOUT_10MIN
-from utilities.infra import cluster_resource, run_ssh_commands
+from utilities.infra import cluster_resource
 from utilities.virt import running_vm
 
 

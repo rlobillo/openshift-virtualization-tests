@@ -15,11 +15,12 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
+from ocp_utilities.utils import run_ssh_commands
 
 from tests.storage import utils
 from tests.storage.utils import create_cirros_vm
 from utilities.constants import TIMEOUT_4MIN, Images
-from utilities.infra import cluster_resource, run_ssh_commands
+from utilities.infra import cluster_resource
 from utilities.storage import (
     ErrorMsg,
     create_dv,

@@ -5,9 +5,10 @@ import shlex
 
 import pytest
 from ocp_resources.network_policy import NetworkPolicy
+from ocp_utilities.exceptions import CommandExecFailed
+from ocp_utilities.utils import run_ssh_commands
 
-from utilities.exceptions import CommandExecFailed
-from utilities.infra import cluster_resource, create_ns, run_ssh_commands
+from utilities.infra import cluster_resource, create_ns
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 

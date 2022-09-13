@@ -10,6 +10,7 @@ from ocp_resources.node import Node
 from ocp_resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
+from ocp_utilities.utils import run_ssh_commands
 
 from tests.compute.ssp.constants import VIRTIO
 from tests.compute.ssp.high_performance_vm.utils import (
@@ -30,7 +31,7 @@ from tests.compute.utils import (
 )
 from utilities import console
 from utilities.constants import SRIOV, TSC_FREQUENCY
-from utilities.infra import ExecCommandOnPod, run_ssh_commands
+from utilities.infra import ExecCommandOnPod
 from utilities.network import is_destination_pingable_from_vm, network_nad
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,

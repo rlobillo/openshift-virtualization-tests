@@ -12,6 +12,7 @@ import logging
 import shlex
 
 import pytest
+from ocp_utilities.utils import run_ssh_commands
 from pytest_testconfig import config as py_config
 
 from tests.compute.utils import (
@@ -20,7 +21,6 @@ from tests.compute.utils import (
     register_vm_to_rhsm,
 )
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
-from utilities.infra import run_ssh_commands
 from utilities.virt import vm_instance_from_template
 
 

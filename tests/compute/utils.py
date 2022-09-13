@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from ocp_resources.pod_disruption_budget import PodDisruptionBudget
 from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.utils import run_ssh_commands
 
 from tests.compute.contants import DISK_SERIAL, RHSM_SECRET_NAME
 from utilities.constants import RHSM_PASSWD, RHSM_USER, TIMEOUT_5MIN, TIMEOUT_10SEC
@@ -13,7 +14,7 @@ from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
     hco_cr_jsonpatch_annotations_dict,
 )
-from utilities.infra import base64_encode_str, cluster_resource, run_ssh_commands
+from utilities.infra import base64_encode_str, cluster_resource
 from utilities.virt import (
     migrate_vm_and_verify,
     prepare_cloud_init_user_data,

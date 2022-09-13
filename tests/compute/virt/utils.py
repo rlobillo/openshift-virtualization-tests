@@ -3,6 +3,7 @@ import shlex
 from contextlib import contextmanager
 
 from ocp_resources.utils import TimeoutExpiredError
+from ocp_utilities.utils import run_ssh_commands
 
 from tests.compute.utils import (
     fetch_pid_from_linux_vm,
@@ -10,7 +11,6 @@ from tests.compute.utils import (
     start_and_fetch_processid_on_linux_vm,
     update_hco_annotations,
 )
-from utilities.infra import run_ssh_commands
 from utilities.virt import (
     migrate_vm_and_verify,
     verify_vm_migrated,

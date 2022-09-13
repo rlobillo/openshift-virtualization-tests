@@ -4,12 +4,13 @@ import logging
 import shlex
 
 import pytest
+from ocp_utilities.utils import run_ssh_commands
 from pytest_testconfig import config as py_config
 
 from tests.compute.virt.utils import get_stress_ng_pid
 from tests.os_params import FEDORA_LATEST
 from utilities.constants import TIMEOUT_10MIN, TIMEOUT_30MIN
-from utilities.infra import cluster_resource, run_ssh_commands
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, migrate_vm_and_verify, running_vm
 
 

@@ -7,6 +7,7 @@ import pytest
 from ocp_resources.node_network_configuration_policy import (
     NodeNetworkConfigurationPolicy,
 )
+from ocp_utilities.utils import run_ssh_commands
 
 from tests.network.host_network.vlan.utils import (
     DHCP_IP_SUBNET,
@@ -16,7 +17,7 @@ from tests.network.host_network.vlan.utils import (
 )
 from tests.network.utils import DHCP_SERVICE_RESTART
 from utilities.constants import LINUX_BRIDGE, NODE_TYPE_WORKER_LABEL
-from utilities.infra import cluster_resource, is_bug_open, run_ssh_commands
+from utilities.infra import cluster_resource, is_bug_open
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     EthernetNetworkConfigurationPolicy,

@@ -3,6 +3,7 @@ import shlex
 from ipaddress import ip_interface
 
 import pytest
+from ocp_utilities.utils import run_ssh_commands
 
 from tests.network.constants import DHCP_IP_RANGE_END, DHCP_IP_RANGE_START
 from tests.network.utils import (
@@ -10,7 +11,7 @@ from tests.network.utils import (
     DHCP_SERVICE_RESTART,
     update_cloud_init_extra_user_data,
 )
-from utilities.infra import name_prefix, run_ssh_commands
+from utilities.infra import name_prefix
 from utilities.network import cloud_init_network_data, network_device, network_nad
 from utilities.virt import (
     VirtualMachineForTests,

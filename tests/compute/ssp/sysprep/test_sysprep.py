@@ -9,12 +9,13 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.secret import Secret
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutSampler
+from ocp_utilities.utils import run_ssh_commands
 from pytest_testconfig import py_config
 
 from tests.compute.utils import get_windows_timezone
 from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS, WINDOWS_LATEST_OS
 from utilities.constants import TIMEOUT_5MIN
-from utilities.infra import cluster_resource, run_ssh_commands
+from utilities.infra import cluster_resource
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     migrate_vm_and_verify,

@@ -19,6 +19,7 @@ from ocp_resources.service import Service
 from ocp_resources.template import Template
 from ocp_resources.upload_token_request import UploadTokenRequest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.utils import run_ssh_commands
 from pytest_testconfig import config as py_config
 
 from utilities.constants import (
@@ -34,7 +35,6 @@ from utilities.infra import (
     get_cert,
     get_http_image_url,
     get_pod_by_name_prefix,
-    run_ssh_commands,
 )
 from utilities.storage import create_dv, is_snapshot_supported_by_sc
 from utilities.virt import (

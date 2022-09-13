@@ -10,6 +10,8 @@ from xml.etree import ElementTree
 import bitmath
 from ocp_resources import pod
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.exceptions import CommandExecFailed
+from ocp_utilities.utils import run_ssh_commands
 from packaging import version
 
 from tests.compute.ssp.constants import HYPERV_FEATURES_LABELS_DOM_XML
@@ -24,12 +26,7 @@ from utilities.constants import (
     TIMEOUT_3MIN,
     TIMEOUT_90SEC,
 )
-from utilities.exceptions import CommandExecFailed
-from utilities.infra import (
-    raise_multiple_exceptions,
-    run_ssh_commands,
-    run_virtctl_command,
-)
+from utilities.infra import raise_multiple_exceptions, run_virtctl_command
 from utilities.virt import get_guest_os_info, running_vm
 
 

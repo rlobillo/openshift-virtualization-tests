@@ -8,6 +8,7 @@ from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.service import Service
 from ocp_resources.service_mesh_member_roll import ServiceMeshMemberRoll
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.utils import run_ssh_commands
 
 from tests.network.constants import BRCNV, SERVICE_MESH_PORT
 from utilities import console
@@ -17,7 +18,7 @@ from utilities.constants import (
     TIMEOUT_1MIN,
     TIMEOUT_2MIN,
 )
-from utilities.infra import cluster_resource, run_ssh_commands
+from utilities.infra import cluster_resource
 from utilities.network import compose_cloud_init_data_dict, get_vmi_ip_v4_by_name, ping
 from utilities.virt import (
     CIRROS_IMAGE,

@@ -4,6 +4,7 @@ import shlex
 
 import pytest
 from ocp_resources.utils import TimeoutSampler
+from ocp_utilities.utils import run_ssh_commands
 from paramiko import ProxyCommandFailure
 from pytest_testconfig import py_config
 
@@ -21,7 +22,6 @@ from utilities.constants import (
     TIMEOUT_5MIN,
     TIMEOUT_30MIN,
 )
-from utilities.infra import run_ssh_commands
 from utilities.virt import (
     vm_instance_from_template,
     wait_for_ssh_connectivity,
