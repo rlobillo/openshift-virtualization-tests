@@ -108,6 +108,7 @@ from utilities.infra import (
     get_schedulable_nodes_ips,
     get_subscription,
     get_utility_pods_from_nodes,
+    is_jira_open,
     label_nodes,
     name_prefix,
     run_virtctl_command,
@@ -2359,6 +2360,7 @@ def autouse_fixtures(
     cluster_sanity_scope_session,
     cluster_sanity_scope_module,
     updated_nfs_storage_profile,
+    disabled_cdi_garbage_collector,
 ):
     """call all autouse fixtures"""
 
@@ -2428,3 +2430,25 @@ def alert_not_firing(request, prometheus):
             f"Alert {alert} should not be in Firing or in Pending state on a cluster before running test"
         )
     return alert
+
+
+@pytest.fixture(scope="session")
+def disabled_cdi_garbage_collector(
+    skip_upstream,
+    hyperconverged_resource_scope_session,
+):
+    if is_jira_open(jira_id="CNV-17513"):
+        LOGGER.info("Garbage collector disabled while CNV-17513 is open")
+        with utilities.hco.ResourceEditorValidateHCOReconcile(
+            patches={
+                hyperconverged_resource_scope_session: utilities.hco.hco_cr_jsonpatch_annotations_dict(
+                    component="cdi",
+                    path="dataVolumeTTLSeconds",
+                    value=-1,
+                )
+            },
+            list_resource_reconcile=[CDI],
+        ):
+            yield
+    else:
+        yield
