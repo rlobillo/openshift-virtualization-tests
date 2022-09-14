@@ -83,7 +83,7 @@ class TestCommonTemplatesWindows:
     def test_efi_secureboot_enabled_by_default(
         self,
         skip_upstream,
-        skip_efi_on_non_win_11,
+        skip_efi_if_win_ver_below_11_or_win_server,
         windows_os_matrix__class__,
         golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,

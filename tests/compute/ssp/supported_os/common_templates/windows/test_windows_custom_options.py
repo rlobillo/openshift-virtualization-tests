@@ -21,7 +21,7 @@ from utilities.virt import (
 )
 
 
-WINDOWS_19 = get_windows_os_dict(windows_version="win-19")
+WINDOWS_19 = get_windows_os_dict(windows_version="win-2019")
 
 FIRMWARE_UUID = "A6074E4A-13ED-5222-9CC5-4DC445BE1EC5"
 TESTS_CLASS_NAME = "TestCustomWindowsOptions"

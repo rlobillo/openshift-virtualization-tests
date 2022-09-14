@@ -311,7 +311,7 @@ windows_os_matrix = [
         }
     },
     {
-        "win-12": {
+        "win-2012": {
             "os_version": "12",
             "image_name": Images.Windows.WIN12_IMG,
             "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN12_IMG),
@@ -325,7 +325,7 @@ windows_os_matrix = [
         }
     },
     {
-        "win-16": {
+        "win-2016": {
             "os_version": "16",
             "image_name": Images.Windows.WIN16_IMG,
             "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN16_IMG),
@@ -339,7 +339,7 @@ windows_os_matrix = [
         }
     },
     {
-        "win-19": {
+        "win-2019": {
             "os_version": "19",
             "image_name": Images.Windows.WIN19_IMG,
             "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),

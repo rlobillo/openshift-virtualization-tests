@@ -299,9 +299,12 @@ def skip_if_os_version_below_rhel9(rhel_os_matrix__class__):
 
 
 @pytest.fixture()
-def skip_efi_on_non_win_11(windows_os_matrix__class__):
-    if "win-11" not in [*windows_os_matrix__class__][0]:
-        pytest.skip("EFI is enabled by default only on Windows 11")
+def skip_efi_if_win_ver_below_11_or_win_server(windows_os_matrix__class__):
+    parsed_os_ver = version.parse(version=[*windows_os_matrix__class__][0])
+    if parsed_os_ver < version.parse("11"):
+        pytest.skip("EFI is enabled by default only on Windows 11 and above")
+    if parsed_os_ver > version.parse("2000"):
+        pytest.skip("EFI is not enabled by default on Windows servers")
 
 
 @pytest.fixture()
@@ -314,8 +317,8 @@ def skip_win_11_on_fips_enabled_cluster(
 
 @pytest.fixture()
 def skip_guest_agent_on_win12(windows_os_matrix__class__):
-    if "win-12" in [*windows_os_matrix__class__][0]:
-        pytest.skip("win-12 doesn't support powershell commands")
+    if "win-2012" in [*windows_os_matrix__class__][0]:
+        pytest.skip("win-2012 doesn't support powershell commands")
 
 
 def skip_on_guest_agent_version(vm, ga_version):
