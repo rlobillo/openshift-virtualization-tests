@@ -299,20 +299,28 @@ def skip_if_os_version_below_rhel9(rhel_os_matrix__class__):
 
 
 @pytest.fixture()
-def skip_efi_if_win_ver_below_11_or_win_server(windows_os_matrix__class__):
-    parsed_os_ver = version.parse(version=[*windows_os_matrix__class__][0])
-    if parsed_os_ver < version.parse("11"):
-        pytest.skip("EFI is enabled by default only on Windows 11 and above")
-    if parsed_os_ver > version.parse("2000"):
-        pytest.skip("EFI is not enabled by default on Windows servers")
+def skip_efi_if_win_ver_below_11_or_2022(windows_os_matrix__class__):
+    os_ver = [*windows_os_matrix__class__][0]
+    parsed_os_ver = version.parse(version=os_ver)
+    os_type = windows_os_matrix__class__[os_ver]["template_labels"]["workload"]
+
+    if os_type == Template.Workload.DESKTOP and parsed_os_ver < version.parse("win-11"):
+        pytest.skip("EFI is enabled by default only on desktop Windows 11 and above")
+    if os_type == Template.Workload.SERVER and version.parse(
+        "win-2000"
+    ) < parsed_os_ver < version.parse("win-2022"):
+        pytest.skip("EFI is enabled by default only on Windows Server 2022 and above")
 
 
 @pytest.fixture()
-def skip_win_11_on_fips_enabled_cluster(
+def skip_win_11_and_2022_on_fips_enabled_cluster(
     fips_enabled_cluster, windows_os_matrix__class__
 ):
-    if fips_enabled_cluster and "win-11" in [*windows_os_matrix__class__][0]:
-        pytest.skip("Skip Win-11 test on FIPS enabled cluster (BZ 2089301)")
+    win_ver = [*windows_os_matrix__class__][0]
+    if fips_enabled_cluster and win_ver in ("win-11", "win-2022"):
+        pytest.skip(
+            "Skip Win-11 and Win-2022 tests on FIPS enabled cluster (BZ 2089301)"
+        )
 
 
 @pytest.fixture()

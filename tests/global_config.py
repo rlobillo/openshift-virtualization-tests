@@ -265,7 +265,7 @@ windows_os_matrix = [
     },
     {
         "win-2012": {
-            "os_version": "12",
+            "os_version": "2012",
             "image_name": Images.Windows.WIN12_IMG,
             "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN12_IMG),
             "dv_size": Images.Windows.DEFAULT_DV_SIZE,
@@ -279,7 +279,7 @@ windows_os_matrix = [
     },
     {
         "win-2016": {
-            "os_version": "16",
+            "os_version": "2016",
             "image_name": Images.Windows.WIN16_IMG,
             "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN16_IMG),
             "dv_size": Images.Windows.DEFAULT_DV_SIZE,
@@ -293,7 +293,7 @@ windows_os_matrix = [
     },
     {
         "win-2019": {
-            "os_version": "19",
+            "os_version": "2019",
             "image_name": Images.Windows.WIN19_IMG,
             "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
             "dv_size": Images.Windows.DEFAULT_DV_SIZE,
@@ -318,6 +318,20 @@ windows_os_matrix = [
                 "flavor": Template.Flavor.MEDIUM,
             },
             "license": "FMJBN-MMJ6V-TGTWY-XKY73-BG9TT",
+        }
+    },
+    {
+        "win-2022": {
+            "os_version": "2022",
+            "image_name": Images.Windows.WIN2022_IMG,
+            "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN2022_IMG),
+            "dv_size": Images.Windows.DEFAULT_DV_SIZE,
+            "template_labels": {
+                "os": "win2k22",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.MEDIUM,
+            },
+            "license": "VTVFN-R9H2P-GBXF7-TBY2B-XBW9Y",
         }
     },
 ]
