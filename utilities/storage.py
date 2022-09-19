@@ -375,6 +375,40 @@ def virtctl_volume(
     yield utilities.infra.run_virtctl_command(command=command, namespace=namespace)
 
 
+def virtctl_memory_dump(
+    namespace,
+    action,
+    vm_name,
+    claim_name=None,
+    storage_class=None,
+    create_claim=None,
+):
+    """
+    Dump the memory of a running VM to a PVC.
+
+    Args:
+        namespace (:obj: `Namespace`): namespace resource
+        action (str): get - trigger memory dump; remove - disassociation of the memory dump pvc
+        vm_name (str): virtual machine name
+        claim_name (str): PVC name to contain the memory dump
+        storage_class (str): Storage class for the memory dump PVC
+        create_claim (bool): If true, create new PVC that will contain memory dump
+    """
+    command = [
+        "memory-dump",
+        action,
+        vm_name,
+    ]
+    if claim_name:
+        command.append(f"--claim-name={claim_name}")
+    if create_claim:
+        command.append("--create-claim")
+    if storage_class:
+        command.append(f"--storage-class={storage_class}")
+
+    return utilities.infra.run_virtctl_command(command=command, namespace=namespace)
+
+
 @contextmanager
 def virtctl_upload_dv(
     namespace,
