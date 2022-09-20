@@ -11,6 +11,7 @@ import os
 import pytest
 from ocp_resources.cdi import CDI
 from ocp_resources.configmap import ConfigMap
+from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.route import Route
@@ -24,6 +25,7 @@ from tests.storage.constants import HPP_STORAGE_CLASSES
 from tests.storage.utils import (
     HttpService,
     get_hpp_daemonset,
+    get_storage_class_with_specified_volume_mode,
     hpp_cr_suffix,
     is_hpp_cr_legacy,
 )
@@ -435,3 +437,21 @@ def available_hpp_storage_class(skip_test_if_no_hpp_sc, cluster_storage_classes)
     for storage_class in cluster_storage_classes:
         if storage_class.name in HPP_STORAGE_CLASSES:
             return storage_class
+
+
+@pytest.fixture(scope="session")
+def available_storage_classes_names():
+    return [[*sc][0] for sc in py_config["storage_class_matrix"]]
+
+
+@pytest.fixture(scope="session")
+def storage_class_with_filesystem_volume_mode(available_storage_classes_names):
+    yield get_storage_class_with_specified_volume_mode(
+        volume_mode=DataVolume.VolumeMode.FILE, sc_names=available_storage_classes_names
+    )
+
+
+@pytest.fixture(scope="session")
+def skip_test_if_no_filesystem_sc(storage_class_with_filesystem_volume_mode):
+    if not storage_class_with_filesystem_volume_mode:
+        pytest.skip("Skip the test: no Storage class with Filesystem volume mode")

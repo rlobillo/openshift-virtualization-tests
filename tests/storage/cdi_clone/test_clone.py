@@ -367,7 +367,11 @@ def test_successful_snapshot_clone(
     indirect=True,
 )
 def test_clone_from_fs_to_block_using_dv_template(
-    skip_test_if_no_block_sc, namespace, unprivileged_client, ceph_rbd_data_volume
+    skip_test_if_no_filesystem_sc,
+    skip_test_if_no_block_sc,
+    namespace,
+    unprivileged_client,
+    ceph_rbd_data_volume,
 ):
     create_vm_from_clone_dv_template(
         vm_name="vm-5607",
@@ -392,6 +396,7 @@ def test_clone_from_fs_to_block_using_dv_template(
     indirect=True,
 )
 def test_clone_from_block_to_fs_using_dv_template(
+    skip_test_if_no_filesystem_sc,
     skip_test_if_no_block_sc,
     namespace,
     unprivileged_client,

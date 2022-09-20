@@ -16,6 +16,7 @@ from ocp_resources.resource import NamespacedResource, ResourceEditor
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.route import Route
 from ocp_resources.service import Service
+from ocp_resources.storage_profile import StorageProfile
 from ocp_resources.template import Template
 from ocp_resources.upload_token_request import UploadTokenRequest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -512,3 +513,15 @@ def update_scratch_space_sc(cdi_config, new_sc, hco):
         _wait_for_sc_update()
 
         yield edited_cdi_config
+
+
+def get_storage_class_with_specified_volume_mode(volume_mode, sc_names):
+    sc_with_volume_mode = f"Storage class with volume mode '{volume_mode}'"
+    for storage_class in sc_names:
+        for claim_property_set in cluster_resource(StorageProfile)(
+            name=storage_class
+        ).instance.status["claimPropertySets"]:
+            if claim_property_set["volumeMode"] == volume_mode:
+                LOGGER.info(f"{sc_with_volume_mode}: '{storage_class}'")
+                return storage_class
+    LOGGER.warning(f"No {sc_with_volume_mode} among {sc_names}")
