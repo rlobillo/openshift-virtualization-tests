@@ -28,6 +28,7 @@ from utilities.constants import (
     WORKER_NODE_LABEL_KEY,
 )
 from utilities.hco import wait_for_hco_post_update_stable_state
+from utilities.infra import cluster_resource
 
 
 LOGGER = logging.getLogger(__name__)
@@ -352,7 +353,7 @@ def get_pod_per_nodes(admin_client, hco_namespace):
 
     def _get_pods_per_nodes():
         pods_per_nodes = defaultdict(list)
-        for pod in Pod.get(
+        for pod in cluster_resource(Pod).get(
             dyn_client=admin_client,
             namespace=hco_namespace.name,
         ):

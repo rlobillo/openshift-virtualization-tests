@@ -12,6 +12,7 @@ from tests.install_upgrade_operators.pod_validation.utils import (
     validate_priority_class_value,
 )
 from utilities.constants import ALL_CNV_PODS, HOSTPATH_PROVISIONER, HPP_POOL
+from utilities.infra import cluster_resource
 
 
 pytestmark = pytest.mark.sno
@@ -23,7 +24,9 @@ LOGGER = logging.getLogger(__name__)
 def cnv_jobs(admin_client, hco_namespace):
     return [
         job.name
-        for job in Job.get(dyn_client=admin_client, namespace=hco_namespace.name)
+        for job in cluster_resource(Job).get(
+            dyn_client=admin_client, namespace=hco_namespace.name
+        )
     ]
 
 

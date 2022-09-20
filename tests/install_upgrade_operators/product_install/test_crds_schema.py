@@ -2,6 +2,8 @@
 import pytest
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 
+from utilities.infra import cluster_resource
+
 
 @pytest.fixture(scope="module")
 def crd_operator_resources(request, admin_client):
@@ -15,7 +17,11 @@ def crd_operator_resources(request, admin_client):
     Returns:
         list: A list of CRD resources based on the info from request param.
     """
-    return list(CustomResourceDefinition.get(admin_client, group=request.param))
+    return list(
+        cluster_resource(CustomResourceDefinition).get(
+            dyn_client=admin_client, group=request.param
+        )
+    )
 
 
 @pytest.mark.parametrize(

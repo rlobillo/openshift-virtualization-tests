@@ -14,7 +14,7 @@ from ocp_utilities.must_gather import run_must_gather
 from openshift.dynamic.client import ResourceField
 
 from utilities.constants import DEFAULT_NAMESPACE
-from utilities.infra import ResourceMismatch
+from utilities.infra import ResourceMismatch, cluster_resource
 
 
 LOGGER = logging.getLogger(__name__)
@@ -90,8 +90,8 @@ def check_list_of_resources(
     label_selector=None,
     filter_resource=None,
 ):
-    for resource_instance in resource_type.get(
-        dyn_client, namespace=namespace, label_selector=label_selector
+    for resource_instance in cluster_resource(resource_type).get(
+        dyn_client=dyn_client, namespace=namespace, label_selector=label_selector
     ):
         if filter_resource is None or filter_resource in resource_instance.name:
             compare_resources(
@@ -285,7 +285,11 @@ def compare_webhook_svc_contents(
         webhooks_svc_namespace = webhooks_resource_instance[0]["clientConfig"][
             "service"
         ]["namespace"]
-        svc_resources = list(Service.get(dyn_client, namespace=webhooks_svc_namespace))
+        svc_resources = list(
+            cluster_resource(Service).get(
+                dyn_client=dyn_client, namespace=webhooks_svc_namespace
+            )
+        )
         for svc_resource in svc_resources:
             if webhooks_svc_name == svc_resource.name:
                 compare_resource_values(

@@ -12,6 +12,7 @@ from tests.install_upgrade_operators.relationship_labels.utils import (
     verify_no_missing_labels_in_olm_deployments,
 )
 from utilities.constants import MANAGED_BY_LABEL_VALUE_OLM
+from utilities.infra import cluster_resource
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
@@ -30,7 +31,7 @@ def init_labels_dicts(hco_version_scope_class):
 def pod_name_labels_managed_by_olm_dict(admin_client, hco_namespace):
     return {
         pod.name: pod.labels
-        for pod in Pod.get(
+        for pod in cluster_resource(Pod).get(
             dyn_client=admin_client,
             namespace=hco_namespace.name,
             label_selector=f"{MANAGED_BY_LABEL_KEY}={MANAGED_BY_LABEL_VALUE_OLM}",

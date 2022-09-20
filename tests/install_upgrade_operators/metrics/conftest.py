@@ -21,7 +21,7 @@ from tests.install_upgrade_operators.metrics.utils import (
 from tests.install_upgrade_operators.utils import create_vms, wait_for_cr_labels_change
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_10MIN
 from utilities.hco import wait_for_hco_conditions
-from utilities.infra import create_ns, unique_name
+from utilities.infra import cluster_resource, create_ns, unique_name
 from utilities.virt import Prometheus, running_vm, vm_instance_from_template
 
 
@@ -346,7 +346,7 @@ def virt_pod_names_by_label(request, admin_client, hco_namespace):
     """Get pod names by a given label (request.param) in the list."""
     return [
         pod.name
-        for pod in Pod.get(
+        for pod in cluster_resource(Pod).get(
             dyn_client=admin_client,
             namespace=hco_namespace.name,
             label_selector=request.param,

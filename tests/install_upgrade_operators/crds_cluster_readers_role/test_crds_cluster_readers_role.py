@@ -7,7 +7,7 @@ from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.resource import Resource
 
 from utilities.constants import VM_CLONE_CRD, VM_EXPORT_CRD
-from utilities.infra import is_bug_open
+from utilities.infra import cluster_resource, is_bug_open
 
 
 LOGGER = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ LOGGER = logging.getLogger(__name__)
 @pytest.fixture()
 def crds(admin_client):
     crds_to_check = []
-    for crd in CustomResourceDefinition.get(dyn_client=admin_client):
+    for crd in cluster_resource(CustomResourceDefinition).get(dyn_client=admin_client):
         if any(
             [
                 crd.name.endswith(suffix)

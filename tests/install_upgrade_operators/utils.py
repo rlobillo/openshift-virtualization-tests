@@ -33,7 +33,7 @@ def wait_for_operator_condition(dyn_client, hco_namespace, name, upgradable):
     samples = TimeoutSampler(
         wait_timeout=TIMEOUT_30MIN,
         sleep=1,
-        func=OperatorCondition.get,
+        func=cluster_resource(OperatorCondition).get,
         dyn_client=dyn_client,
         namespace=hco_namespace,
         name=name,
@@ -71,7 +71,7 @@ def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
     install_plan_sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_40MIN,
         sleep=1,
-        func=InstallPlan.get,
+        func=cluster_resource(InstallPlan).get,
         exceptions_dict={
             ConflictError: []
         },  # Ignore ConflictError during install plan reconciliation
@@ -128,7 +128,7 @@ def get_deployment_by_name(admin_client, namespace_name, deployment_name):
     Returns:
         Deployment: Deployment object
     """
-    for dp in Deployment.get(
+    for dp in cluster_resource(Deployment).get(
         dyn_client=admin_client,
         namespace=namespace_name,
         name=deployment_name,
@@ -146,7 +146,9 @@ def get_network_addon_config(admin_client):
     Returns:
         Generator of NetworkAddonsConfig: Generator of NetworkAddonsConfig
     """
-    for nao in NetworkAddonsConfig.get(dyn_client=admin_client, name="cluster"):
+    for nao in cluster_resource(NetworkAddonsConfig).get(
+        dyn_client=admin_client, name="cluster"
+    ):
         return nao
 
 

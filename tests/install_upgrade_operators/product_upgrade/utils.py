@@ -28,6 +28,7 @@ from utilities.constants import (
 )
 from utilities.hco import wait_for_hco_conditions, wait_for_hco_version
 from utilities.infra import (
+    cluster_resource,
     cnv_target_images,
     get_clusterversion,
     get_deployments,
@@ -157,7 +158,9 @@ def get_cluster_pods(dyn_client, hco_namespace, pods_type):
     pods_type - operator/tier-2 (non-operator) /all
     """
     # pods_type is "all"
-    cluster_pods = list(Pod.get(dyn_client=dyn_client, namespace=hco_namespace))
+    cluster_pods = list(
+        cluster_resource(Pod).get(dyn_client=dyn_client, namespace=hco_namespace)
+    )
     # Operator pods
     if pods_type == OPERATOR_NAME_SUFFIX:
         cluster_pods = [pod for pod in cluster_pods if OPERATOR_NAME_SUFFIX in pod.name]
@@ -172,7 +175,9 @@ def get_cluster_pods(dyn_client, hco_namespace, pods_type):
 
 
 def get_operator_by_name(dyn_client, hco_namespace, operator_name):
-    pods = list(Pod.get(dyn_client=dyn_client, namespace=hco_namespace))
+    pods = list(
+        cluster_resource(Pod).get(dyn_client=dyn_client, namespace=hco_namespace)
+    )
     operator_pod = list(filter(lambda x: operator_name in x.name, pods))[0]
     return operator_pod
 

@@ -4,7 +4,7 @@ from ocp_resources.storage_class import StorageClass
 
 from tests.install_upgrade_operators.utils import get_deployment_by_name
 from utilities.constants import HPP_POOL
-from utilities.infra import get_deployments
+from utilities.infra import cluster_resource, get_deployments
 
 
 @pytest.fixture()
@@ -41,7 +41,7 @@ def cnv_deployment_by_name(
 ):
     if cnv_deployment_matrix__function__ == HPP_POOL:
         hpp_pool_deployments = list(
-            Deployment.get(
+            cluster_resource(Deployment).get(
                 dyn_client=admin_client,
                 namespace=hco_namespace.name,
                 label_selector=f"{StorageClass.Provisioner.HOSTPATH_CSI}/storagePool=hpp-csi-pvc-block-hpp",

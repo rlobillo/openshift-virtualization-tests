@@ -22,7 +22,11 @@ from tests.install_upgrade_operators.product_upgrade.utils import (
 )
 from tests.install_upgrade_operators.utils import wait_for_operator_condition
 from utilities.constants import BREW_REGISTERY_SOURCE, HCO_CATALOG_SOURCE, TIMEOUT_10MIN
-from utilities.infra import get_csv_by_name, get_related_images_name_and_version
+from utilities.infra import (
+    cluster_resource,
+    get_csv_by_name,
+    get_related_images_name_and_version,
+)
 from utilities.operator import (
     create_icsp_command,
     create_icsp_from_file,
@@ -104,7 +108,7 @@ def updated_image_content_source(
     with ResourceEditor(
         patches={
             mcp: {"spec": {"paused": True}}
-            for mcp in MachineConfigPool.get(dyn_client=admin_client)
+            for mcp in cluster_resource(MachineConfigPool).get(dyn_client=admin_client)
         }
     ):
         # Due to the amount of annotations in ICSP yaml, `oc apply` may fail. Existing ICSP is deleted.

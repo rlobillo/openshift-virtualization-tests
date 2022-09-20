@@ -15,6 +15,7 @@ from utilities.constants import (
     HCO_OPERATOR,
     SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME,
 )
+from utilities.infra import cluster_resource
 from utilities.ssp import get_ssp_resource
 
 
@@ -53,7 +54,7 @@ def deleted_hco_operator_pod(
 def image_stream_names(admin_client, golden_images_namespace):
     return [
         image_stream.name
-        for image_stream in ImageStream.get(
+        for image_stream in cluster_resource(ImageStream).get(
             dyn_client=admin_client, namespace=golden_images_namespace.name
         )
     ]

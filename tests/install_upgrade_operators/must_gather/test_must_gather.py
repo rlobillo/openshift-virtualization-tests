@@ -41,6 +41,7 @@ from utilities.constants import (
     OPENSHIFT_NAMESPACE,
     VM_CRD,
 )
+from utilities.infra import cluster_resource
 
 
 pytestmark = pytest.mark.sno
@@ -229,7 +230,9 @@ class TestMustGatherCluster:
         self, admin_client, collected_cluster_must_gather
     ):
         template_resources = list(
-            Template.get(admin_client, singular_name="template", namespace="openshift")
+            cluster_resource(Template).get(
+                dyn_client=admin_client, singular_name="template", namespace="openshift"
+            )
         )
         template_log = os.path.join(
             collected_cluster_must_gather,
@@ -415,8 +418,16 @@ class TestMustGatherCluster:
         )
 
         for webhook_resources in [
-            list(ValidatingWebhookConfiguration.get(admin_client)),
-            list(MutatingWebhookConfiguration.get(admin_client)),
+            list(
+                cluster_resource(ValidatingWebhookConfiguration).get(
+                    dyn_client=admin_client
+                )
+            ),
+            list(
+                cluster_resource(MutatingWebhookConfiguration).get(
+                    dyn_client=admin_client
+                )
+            ),
         ]:
             compare_webhook_svc_contents(
                 webhook_resources=webhook_resources,
@@ -490,7 +501,11 @@ class TestMustGatherCluster:
             resource_path,
         )
         assert len(os.listdir(istag_dir)) == len(
-            list(ImageStreamTag.get(admin_client, namespace=OPENSHIFT_NAMESPACE))
+            list(
+                cluster_resource(ImageStreamTag).get(
+                    dyn_client=admin_client, namespace=OPENSHIFT_NAMESPACE
+                )
+            )
         )
         check_list_of_resources(
             dyn_client=admin_client,

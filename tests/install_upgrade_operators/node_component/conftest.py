@@ -104,7 +104,7 @@ def expected_node_by_label(node_placement_labels):
 def np_nodes_labels_dict(admin_client):
     return {
         node.name: node.instance.metadata.labels
-        for node in Node.get(dyn_client=admin_client)
+        for node in cluster_resource(Node).get(dyn_client=admin_client)
     }
 
 
