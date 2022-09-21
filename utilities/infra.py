@@ -98,6 +98,10 @@ ALL_CNV_CRDS = [
     VM_CRD,
     f"virtualmachinesnapshotcontents.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
     f"virtualmachinesnapshots.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
+    f"virtualmachineclones.clone.{Resource.ApiGroup.KUBEVIRT_IO}",
+    f"virtualmachineclusterpreferences.{Resource.ApiGroup.INSTANCE_TYPE_KUBEVIRT_IO}",
+    f"virtualmachineexports.export.{Resource.ApiGroup.KUBEVIRT_IO}",
+    f"virtualmachinepreferences.{Resource.ApiGroup.INSTANCE_TYPE_KUBEVIRT_IO}",
 ]
 
 
