@@ -68,16 +68,6 @@ def paused_ssp_operator(admin_client, hco_namespace, ssp_resource_scope_function
 
 
 @pytest.fixture()
-def alert_not_firing_before_running_test(request, prometheus):
-    alert = request.param
-    if prometheus.get_alert(alert):
-        pytest.xfail(
-            f"Alert {alert} should not be in Firing or in Pending state on a cluster before running test"
-        )
-    return alert
-
-
-@pytest.fixture()
 def template_validator_finalizer(hco_namespace):
     deployment = Deployment(name=VIRT_TEMPLATE_VALIDATOR, namespace=hco_namespace.name)
     with ResourceEditorValidateHCOReconcile(
@@ -222,7 +212,7 @@ class TestSSPAlerts:
 
     @pytest.mark.order(after="test_no_ssp_alerts_on_healthy_cluster")
     @pytest.mark.parametrize(
-        "scaled_deployment, alert_not_firing_before_running_test",
+        "scaled_deployment, alert_not_firing",
         [
             pytest.param(
                 {"deployment_name": VIRT_TEMPLATE_VALIDATOR, "replicas": 0},
@@ -240,15 +230,15 @@ class TestSSPAlerts:
     def test_alert_ssp_pods_down(
         self,
         prometheus,
-        alert_not_firing_before_running_test,
+        alert_not_firing,
         paused_ssp_operator,
         scaled_deployment,
     ):
-        prometheus.alert_sampler(alert=alert_not_firing_before_running_test)
+        prometheus.alert_sampler(alert=alert_not_firing)
 
     @pytest.mark.order(after="test_no_ssp_alerts_on_healthy_cluster")
     @pytest.mark.parametrize(
-        "alert_not_firing_before_running_test",
+        "alert_not_firing",
         [
             pytest.param(
                 SSP_FAILING_TO_RECONCILE,
@@ -260,16 +250,16 @@ class TestSSPAlerts:
     def test_alert_ssp_failing_to_reconcile(
         self,
         prometheus,
-        alert_not_firing_before_running_test,
+        alert_not_firing,
         paused_ssp_operator,
         template_validator_finalizer,
         deleted_ssp_operator_pod,
     ):
-        prometheus.alert_sampler(alert=alert_not_firing_before_running_test)
+        prometheus.alert_sampler(alert=alert_not_firing)
 
     @pytest.mark.order(after="test_no_additional_ssp_alerts_on_healthy_cluster")
     @pytest.mark.parametrize(
-        "alert_not_firing_before_running_test",
+        "alert_not_firing",
         [
             pytest.param(
                 SSP_COMMON_TEMPLATES_MODIFICATION_REVERTED,
@@ -281,14 +271,14 @@ class TestSSPAlerts:
     def test_alert_template_modification_reverted(
         self,
         prometheus,
-        alert_not_firing_before_running_test,
+        alert_not_firing,
         template_modified,
     ):
-        prometheus.alert_sampler(alert=alert_not_firing_before_running_test)
+        prometheus.alert_sampler(alert=alert_not_firing)
 
     @pytest.mark.order(after="test_no_additional_ssp_alerts_on_healthy_cluster")
     @pytest.mark.parametrize(
-        "alert_not_firing_before_running_test",
+        "alert_not_firing",
         [
             pytest.param(
                 SSP_HIGH_RATE_REJECTED_VMS,
@@ -300,7 +290,7 @@ class TestSSPAlerts:
     def test_alert_high_rate_rejected_vms(
         self,
         prometheus,
-        alert_not_firing_before_running_test,
+        alert_not_firing,
         created_multiple_failed_vms_from_template,
     ):
-        prometheus.alert_sampler(alert=alert_not_firing_before_running_test)
+        prometheus.alert_sampler(alert=alert_not_firing)

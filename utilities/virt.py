@@ -1530,9 +1530,16 @@ class Prometheus(object):
             func=self.get_alert,
             alert=alert,
         )
-        for sample in sampler:
-            if sample and sample[0]["value"][-1] == "1":
-                return
+        sample = None
+        try:
+            for sample in sampler:
+                if sample and sample[0]["value"][-1] == "1":
+                    return
+        except TimeoutExpiredError:
+            LOGGER.error(
+                f"Failed to get successful alert {alert}. Current data: {sample}"
+            )
+            raise
 
     def query_sampler(self, query, timeout=TIMEOUT_10MIN, sleep=1):
         sampler = TimeoutSampler(

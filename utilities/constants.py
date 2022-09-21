@@ -17,6 +17,7 @@ from urllib3.exceptions import (
 
 # Images
 BASE_IMAGES_DIR = "cnv-tests"
+NON_EXISTS_IMAGE = "non-exists-image-test-cnao-alerts"
 
 
 class Images:

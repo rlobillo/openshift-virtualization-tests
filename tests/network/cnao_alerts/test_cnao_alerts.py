@@ -13,6 +13,7 @@ from utilities.constants import (
     KUBE_CNI_LINUX_BRIDGE_PLUGIN,
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     LINUX_BRIDGE,
+    NON_EXISTS_IMAGE,
     TIMEOUT_5MIN,
     TIMEOUT_10MIN,
 )
@@ -28,7 +29,7 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
 LOGGER = logging.getLogger(__name__)
-NON_EXISTS_IMAGE = "non-exists-image-test-cnao-alerts"
+
 DUPLICATE_MAC_STR = "duplicate-mac"
 
 
@@ -256,3 +257,18 @@ def test_duplicate_mac_alert(
     restarted_kmp_controller,
 ):
     prometheus.alert_sampler(alert="KubeMacPoolDuplicateMacsFound")
+
+
+@pytest.mark.parametrize(
+    "alert_not_firing",
+    [
+        pytest.param("KubemacpoolDown", marks=(pytest.mark.polarion("CNV-8820"))),
+    ],
+    indirect=True,
+)
+def test_kubemacpooldown(
+    prometheus,
+    alert_not_firing,
+    updated_cnao_kubemacpool_with_bad_image_csv,
+):
+    prometheus.alert_sampler(alert=alert_not_firing)
