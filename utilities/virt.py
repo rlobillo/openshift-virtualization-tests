@@ -2,6 +2,7 @@ import io
 import ipaddress
 import json
 import logging
+import os
 import re
 import shlex
 from collections import defaultdict
@@ -65,6 +66,7 @@ from utilities.constants import (
     TIMEOUT_12MIN,
     TIMEOUT_25MIN,
     TIMEOUT_30MIN,
+    WORKERS_TYPE,
     Images,
 )
 from utilities.hco import wait_for_hco_conditions
@@ -1248,6 +1250,19 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             and DataVolume.AccessMode.RWX not in self.access_modes
         ):
             spec.pop("evictionStrategy", None)
+
+        # On PSI cluster Windows VM with hyperv/reenlightenment flag can't be migrated,
+        # current workaround removes the flag when VM created from the template
+        jira_id = "CNV-20418"
+        if (
+            os.environ.get(WORKERS_TYPE) == utilities.infra.ClusterHosts.Type.VIRTUAL
+            and OS_FLAVOR_WINDOWS in self.os_flavor
+            and utilities.infra.is_jira_open(jira_id=jira_id)
+        ):
+            LOGGER.warning(
+                f"Removing hyperv/reenlightenment flag for Windows VM on PSI cluster, Jira: {jira_id}"
+            )
+            del spec["domain"]["features"]["hyperv"]["reenlightenment"]
 
         return res
 
