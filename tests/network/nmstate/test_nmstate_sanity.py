@@ -111,7 +111,7 @@ def dns_new_resolver(
     """
     dns_resolver = {
         "config": {
-            "server": [dns_gathered_current_nameservers[1], PUBLIC_DNS_SERVER_IP],
+            "server": [dns_gathered_current_nameservers[-1], PUBLIC_DNS_SERVER_IP],
         }
     }
 
