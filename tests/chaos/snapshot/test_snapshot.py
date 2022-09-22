@@ -52,6 +52,26 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
             marks=pytest.mark.polarion("CNV-8382"),
             id="snapshot-controller",
         ),
+        pytest.param(
+            {
+                "experiment_name": ExperimentNames.POD_DELETE,
+                "app_info": {
+                    "namespace": "openshift-cnv",
+                    "label": "kubevirt.io=virt-api",
+                    "kind": "deployment",
+                },
+                "components": [
+                    {"name": "FORCE", "value": "true"},
+                    {"name": "TOTAL_CHAOS_DURATION", "value": str(TIMEOUT_2MIN)},
+                    {"name": "CHAOS_NAMESPACE", "value": LITMUS_NAMESPACE},
+                    {"name": "CHAOSENGINE", "value": CHAOS_ENGINE_NAME},
+                    {"name": "CHAOS_INTERVAL", "value": "30"},
+                ],
+            },
+            {"number_of_snapshots": 3},
+            marks=pytest.mark.polarion("CNV-8534"),
+            id="cnv-control-plane-virt-api",
+        ),
     ],
     indirect=True,
 )
@@ -65,7 +85,7 @@ def test_pod_delete_snapshot(
 ):
     """
     This experiment tests the robustness of the VM snapshot feature
-    by killing random apiserver pods in the `openshift-apiserver` namespace
+    by killing random function supported pods in their corresponding namespace
     and asserting that VM snapshots can be taken, restored and deleted during the process.
     """
     chaos_snapshot_vm.stop(wait=True)
