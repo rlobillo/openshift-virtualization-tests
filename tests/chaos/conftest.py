@@ -52,7 +52,7 @@ def litmus_service_account(litmus_namespace):
 
 
 @pytest.fixture()
-def cluster_role_pod_delete(litmus_service_account):
+def litmus_cluster_role(litmus_service_account):
     with cluster_resource(ClusterRole)(
         name=litmus_service_account.name,
         api_groups=[
@@ -96,10 +96,12 @@ def cluster_role_pod_delete(litmus_service_account):
 
 
 @pytest.fixture()
-def litmus_cluster_role_binding(litmus_namespace, litmus_service_account):
+def litmus_cluster_role_binding(
+    litmus_namespace, litmus_service_account, litmus_cluster_role
+):
     with cluster_resource(ClusterRoleBinding)(
-        name=litmus_service_account.name,
-        cluster_role=litmus_service_account.name,
+        name=litmus_cluster_role.name,
+        cluster_role=litmus_cluster_role.name,
         subjects=[
             {
                 "kind": "ServiceAccount",
@@ -127,7 +129,7 @@ def vm_cirros_chaos(admin_client, chaos_namespace):
 
 
 @pytest.fixture()
-def chaos_engine_from_yaml(request):
+def chaos_engine_from_yaml(request, litmus_cluster_role_binding):
     experiment_name = request.param["experiment_name"]
     app_info_data = request.param.get("app_info")
     components_data = request.param["components"]

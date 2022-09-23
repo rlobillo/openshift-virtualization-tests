@@ -58,9 +58,6 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
 @pytest.mark.chaos
 def test_pod_delete_snapshot(
     admin_client,
-    litmus_service_account,
-    cluster_role_pod_delete,
-    litmus_cluster_role_binding,
     chaos_snapshot_vm,
     running_chaos_engine,
     krkn_process,

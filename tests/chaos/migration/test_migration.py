@@ -94,9 +94,6 @@ def taint_node_and_verify_migration(admin_client, vm):
 @pytest.mark.polarion("CNV-5455")
 def test_pod_delete_openshift_apiserver_migration(
     admin_client,
-    litmus_service_account,
-    cluster_role_pod_delete,
-    litmus_cluster_role_binding,
     vm_cirros_chaos,
     running_chaos_engine,
     krkn_process,

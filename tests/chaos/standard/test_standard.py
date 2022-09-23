@@ -36,9 +36,6 @@ from utilities.constants import TIMEOUT_30SEC
 @pytest.mark.polarion("CNV-5428")
 def test_pod_delete_openshift_apiserver(
     admin_client,
-    litmus_service_account,
-    cluster_role_pod_delete,
-    litmus_cluster_role_binding,
     vm_cirros_chaos,
     running_chaos_engine,
     krkn_process,
