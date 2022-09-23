@@ -1,4 +1,5 @@
 import pytest
+from ocp_resources.resource import Resource
 
 from utilities.constants import TIMEOUT_5MIN, TIMEOUT_5SEC, Images
 from utilities.infra import cluster_resource
@@ -67,3 +68,52 @@ def test_master_node_restart(admin_client, chaos_namespace, rebooting_master_nod
         memory_requests=Images.Rhel.DEFAULT_MEMORY_SIZE,
     ) as vm:
         running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
+
+
+@pytest.mark.parametrize(
+    "chaos_dv_cirros, downscaled_storage_provisioner_deployment",
+    [
+        pytest.param(
+            {"storage_class": "ocs-storagecluster-ceph-rbd"},
+            {"storage_provisioner_deployment": "csi-rbdplugin-provisioner"},
+            id="ceph-rbd",
+        ),
+        pytest.param(
+            {"storage_class": "ocs-storagecluster-cephfs"},
+            {"storage_provisioner_deployment": "csi-cephfsplugin-provisioner"},
+            id="cephfs",
+        ),
+    ],
+    indirect=True,
+)
+@pytest.mark.polarion("CNV-5438")
+def test_ceph_storage_outage(
+    admin_client,
+    chaos_namespace,
+    chaos_dv_cirros,
+    chaos_vm_with_dv,
+    downscaled_storage_provisioner_deployment,
+):
+    """
+    This test makes storage unavailable by downscaling the csi-rbdplugin-provisioner deployment to 0
+    while creating a vm with a dv, then it verifies
+    that the vm can only be created when storage becomes available again.
+    """
+
+    # Create a vm with a dv while storage is unavailable.
+    chaos_vm_with_dv.deploy()
+
+    # Verify that dv and vm are not ready while chaos is being injected.
+    chaos_dv_cirros.wait_for_status(status=Resource.Status.PENDING)
+    chaos_vm_with_dv.wait_for_specific_status(
+        status=chaos_vm_with_dv.Status.WAITING_FOR_VOLUME_BINDING
+    )
+
+    # Verify that vm creation is resumed and vm reaches running state after deployment is restored.
+    downscaled_storage_provisioner_deployment["deployment"].scale_replicas(
+        replica_count=downscaled_storage_provisioner_deployment["initial_replicas"]
+    )
+    downscaled_storage_provisioner_deployment["deployment"].wait_for_replicas()
+    running_vm(
+        vm=chaos_vm_with_dv, wait_for_interfaces=False, check_ssh_connectivity=False
+    )

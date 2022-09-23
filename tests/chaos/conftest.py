@@ -9,6 +9,7 @@ import pytest
 from git import Repo
 from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.cluster_role_binding import ClusterRoleBinding
+from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.utils import TimeoutSampler
@@ -47,10 +48,13 @@ from utilities.infra import (
     ExecCommandOnPod,
     cluster_resource,
     create_ns,
+    get_http_image_url,
     get_pod_by_name_prefix,
+    scale_deployment_replicas,
     wait_for_node_status,
 )
 from utilities.virt import (
+    CIRROS_IMAGE,
     VirtualMachineForTests,
     running_vm,
     taint_node_no_schedule,
@@ -139,6 +143,51 @@ def tainted_node_for_vm_migration(admin_client, chaos_vm_rhel9):
     )
     yield initial_node
     node_editor.restore()
+
+
+@pytest.fixture()
+def chaos_vm_with_dv(admin_client, chaos_namespace, chaos_dv_cirros):
+    dv_dict = chaos_dv_cirros.to_dict()
+    yield cluster_resource(VirtualMachineForTests)(
+        client=admin_client,
+        name="vm-chaos",
+        namespace=chaos_namespace.name,
+        image=CIRROS_IMAGE,
+        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
+        data_volume_template={"metadata": dv_dict["metadata"], "spec": dv_dict["spec"]},
+        running=True,
+    )
+
+
+@pytest.fixture()
+def chaos_dv_cirros(request, chaos_namespace):
+    yield cluster_resource(DataVolume)(
+        api_name="storage",
+        name="dv-chaos",
+        namespace=chaos_namespace.name,
+        source="http",
+        url=get_http_image_url(
+            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
+        ),
+        storage_class=request.param["storage_class"],
+        size=Images.Cirros.DEFAULT_DV_SIZE,
+        access_modes=DataVolume.AccessMode.RWO,
+    )
+
+
+@pytest.fixture()
+def downscaled_storage_provisioner_deployment(request):
+    deployment = cluster_resource(Deployment)(
+        namespace="openshift-storage",
+        name=request.param["storage_provisioner_deployment"],
+    )
+    initial_replicas = deployment.instance.spec.replicas
+    with scale_deployment_replicas(
+        deployment_name=deployment.name,
+        namespace=deployment.namespace,
+        replica_count=0,
+    ):
+        yield {"deployment": deployment, "initial_replicas": initial_replicas}
 
 
 @pytest.fixture()

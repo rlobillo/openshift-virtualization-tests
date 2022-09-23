@@ -58,6 +58,7 @@ from utilities.constants import (
     TIMEOUT_2MIN,
     TIMEOUT_3MIN,
     TIMEOUT_4MIN,
+    TIMEOUT_5SEC,
     TIMEOUT_6MIN,
     TIMEOUT_8MIN,
     TIMEOUT_10MIN,
@@ -1017,6 +1018,21 @@ class VirtualMachineForTests(VirtualMachine):
             else None,
         )
         return host
+
+    def wait_for_specific_status(
+        self, status, timeout=TIMEOUT_3MIN, sleep=TIMEOUT_5SEC
+    ):
+        LOGGER.info(f"Wait for {self.kind} {self.name} status to be {status}")
+        samples = TimeoutSampler(
+            wait_timeout=timeout, sleep=sleep, func=lambda: self.printable_status
+        )
+        try:
+            for sample in samples:
+                if sample == status:
+                    return
+        except TimeoutExpiredError:
+            LOGGER.error(f"Status of {self.kind} {self.name} is {status}")
+            raise
 
 
 class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
