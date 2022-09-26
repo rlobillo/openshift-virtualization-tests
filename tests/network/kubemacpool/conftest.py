@@ -305,7 +305,7 @@ def no_label_ns_vm(no_label_ns, no_label_ns_nad, mac_pool):
 @pytest.fixture(scope="class")
 def disabled_ns(kmp_vm_label):
     kmp_vm_label[KMP_VM_ASSIGNMENT_LABEL] = "ignore"
-    yield from create_ns(name="kmp-disabled", kmp_vm_label=kmp_vm_label)
+    yield from create_ns(name="kmp-disabled", labels=kmp_vm_label)
 
 
 @pytest.fixture(scope="class")

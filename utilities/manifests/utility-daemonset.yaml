@@ -8,7 +8,7 @@ metadata:
     cnv-test: utility
     tier: node
   name: utility
-  namespace: kube-system
+  namespace: cnv-tests-utilities
 spec:
   revisionHistoryLimit: 10
   selector:
@@ -87,7 +87,8 @@ spec:
       priority: 0
       restartPolicy: Always
       schedulerName: default-scheduler
-      securityContext: {}
+      securityContext:
+        privileged: true
       serviceAccount: default
       serviceAccountName: default
       terminationGracePeriodSeconds: 30

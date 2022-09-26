@@ -40,7 +40,7 @@ def vms_mac(mac_pool):
 @pytest.fixture()
 def kmp_disabled_namespace(kmp_vm_label):
     kmp_vm_label[KMP_VM_ASSIGNMENT_LABEL] = "ignore"
-    yield from create_ns(name="kmp-disabled", kmp_vm_label=kmp_vm_label)
+    yield from create_ns(name="kmp-disabled", labels=kmp_vm_label)
 
 
 @pytest.fixture()

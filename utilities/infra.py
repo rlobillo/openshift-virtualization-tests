@@ -123,7 +123,7 @@ def label_project(name, label, admin_client):
 def create_ns(
     name,
     unprivileged_client=None,
-    kmp_vm_label=None,
+    labels=None,
     admin_client=None,
     teardown=True,
     delete_timeout=TIMEOUT_6MIN,
@@ -135,7 +135,7 @@ def create_ns(
         with cluster_resource(Namespace)(
             client=admin_client,
             name=name,
-            label=kmp_vm_label,
+            label=labels,
             teardown=teardown,
             delete_timeout=delete_timeout,
         ) as ns:
@@ -152,7 +152,7 @@ def create_ns(
                 delete_timeout=delete_timeout,
             )
             project.wait_for_status(project.Status.ACTIVE, timeout=TIMEOUT_2MIN)
-            label_project(name=name, label=kmp_vm_label, admin_client=admin_client)
+            label_project(name=name, label=labels, admin_client=admin_client)
             yield project
 
 
@@ -1100,7 +1100,7 @@ def get_nodes_with_label(nodes, label):
 
 
 def get_daemonset_yaml_file_with_image_hash(
-    is_upstream_distribution, generated_pulled_secret=None
+    is_upstream_distribution, generated_pulled_secret=None, service_account=None
 ):
     ds_yaml_file = os.path.abspath(
         f"utilities/manifests/utility-daemonset"
@@ -1114,9 +1114,13 @@ def get_daemonset_yaml_file_with_image_hash(
     with open(ds_yaml_file, "r") as fd:
         ds_yaml = yaml.safe_load(fd.read())
 
-    container = ds_yaml["spec"]["template"]["spec"]["containers"][0]
+    template_spec = ds_yaml["spec"]["template"]["spec"]
+    container = template_spec["containers"][0]
     container["image"] = f"{container['image']}@{image_info['digest']}"
-    ds_yaml["spec"]["template"]["spec"]["containers"][0] = container
+    template_spec["containers"][0] = container
+    if service_account:
+        template_spec["serviceAccount"] = service_account.name
+        template_spec["serviceAccountName"] = service_account.name
     return io.StringIO(yaml.dump(ds_yaml))
 
 

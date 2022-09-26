@@ -8,6 +8,7 @@ import logging
 import os
 import os.path
 import re
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -44,6 +45,7 @@ from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.secret import Secret
+from ocp_resources.service_account import ServiceAccount
 from ocp_resources.sriov_network_node_state import SriovNetworkNodeState
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.storage_profile import StorageProfile
@@ -155,7 +157,7 @@ from utilities.virt import (
 
 LOGGER = logging.getLogger(__name__)
 HTTP_SECRET_NAME = "htpass-secret-for-cnv-tests"
-
+CNV_TEST_SERVICE_ACCOUNT = "cnv-tests-sa"
 HTPASSWD_PROVIDER_DICT = {
     "name": "htpasswd_provider",
     "mappingMethod": "claim",
@@ -481,7 +483,45 @@ def masters(nodes):
 
 
 @pytest.fixture(scope="session")
-def utility_daemonset(admin_client, is_upstream_distribution, generated_pulled_secret):
+def cnv_tests_utilities_namespace(admin_client):
+    yield from create_ns(
+        admin_client=admin_client,
+        labels={
+            "pod-security.kubernetes.io/enforce": "privileged",
+            "security.openshift.io/scc.podSecurityLabelSync": "false",
+        },
+        name="cnv-tests-utilities",
+    )
+
+
+@pytest.fixture(scope="session")
+def cnv_tests_utilities_service_account(cnv_tests_utilities_namespace):
+    scc_name = "privileged"
+    with cluster_resource(ServiceAccount)(
+        name=CNV_TEST_SERVICE_ACCOUNT,
+        namespace=cnv_tests_utilities_namespace.name,
+    ) as service_account:
+        output = check_output(
+            shlex.split(
+                f"oc adm policy add-scc-to-user {scc_name} system:serviceaccount:"
+                f"{cnv_tests_utilities_namespace.name}:{service_account.name}"
+            )
+        )
+        if f'added: "{service_account.name}"' not in str(output):
+            raise AssertionError(
+                f"Unable to add {service_account.name} to {scc_name} scc"
+            )
+        yield service_account
+
+
+@pytest.fixture(scope="session")
+def utility_daemonset(
+    admin_client,
+    is_upstream_distribution,
+    generated_pulled_secret,
+    cnv_tests_utilities_namespace,
+    cnv_tests_utilities_service_account,
+):
     """
     Deploy utility daemonset into the kube-system namespace.
 
@@ -491,6 +531,7 @@ def utility_daemonset(admin_client, is_upstream_distribution, generated_pulled_s
     modified_ds_yaml_file = get_daemonset_yaml_file_with_image_hash(
         is_upstream_distribution=is_upstream_distribution,
         generated_pulled_secret=generated_pulled_secret,
+        service_account=cnv_tests_utilities_service_account,
     )
     with cluster_resource(DaemonSet)(yaml_file=modified_ds_yaml_file) as ds:
         ds.wait_until_deployed()
@@ -1622,7 +1663,7 @@ def kmp_vm_label(admin_client):
 def kmp_enabled_ns(kmp_vm_label):
     # Enabling label "allocate" (or any other non-configured label) - Allocates.
     kmp_vm_label[KMP_VM_ASSIGNMENT_LABEL] = KMP_ENABLED_LABEL
-    yield from create_ns(name="kmp-enabled", kmp_vm_label=kmp_vm_label)
+    yield from create_ns(name="kmp-enabled", ns_label=kmp_vm_label)
 
 
 @pytest.fixture(scope="session")
@@ -2076,7 +2117,7 @@ def kmp_enabled_namespace(kmp_vm_label, unprivileged_client, admin_client):
     kmp_vm_label[KMP_VM_ASSIGNMENT_LABEL] = KMP_ENABLED_LABEL
     yield from create_ns(
         name="kmp-enabled-for-upgrade",
-        kmp_vm_label=kmp_vm_label,
+        labels=kmp_vm_label,
         unprivileged_client=unprivileged_client,
         admin_client=admin_client,
     )
