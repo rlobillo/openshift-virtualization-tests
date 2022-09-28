@@ -46,7 +46,9 @@ def create_latency_job(service_account, name=None):
 
 @contextlib.contextmanager
 def create_latency_configmap(framework_service_account, **kwargs):
-    data = compose_configmap_data(**kwargs)
+    data = compose_configmap_data(
+        framework_service_account=framework_service_account, **kwargs
+    )
     with cluster_resource(ConfigMap)(
         namespace=framework_service_account.namespace, name=LATENCY_CONFIGMAP, data=data
     ) as configmap:
@@ -55,7 +57,9 @@ def create_latency_configmap(framework_service_account, **kwargs):
 
 @contextlib.contextmanager
 def create_checkup_resources(framework_service_account, **kwargs):
-    data = compose_configmap_data(**kwargs)
+    data = compose_configmap_data(
+        framework_service_account=framework_service_account, **kwargs
+    )
     with cluster_resource(ConfigMap)(
         namespace=framework_service_account.namespace, name=LATENCY_CONFIGMAP, data=data
     ) as configmap:
@@ -66,6 +70,7 @@ def create_checkup_resources(framework_service_account, **kwargs):
 
 
 def compose_configmap_data(
+    framework_service_account,
     image="container-native-virtualization-vm-network-latency-checkup",
     timeout=f"{TIMEOUT_5MIN}m",
     cluster_role=None,
@@ -74,6 +79,7 @@ def compose_configmap_data(
     data_dict = {
         "spec.image": f"{py_config['cnv_registry_sources']['osbs']['source_map']}/{image}",
         "spec.timeout": timeout,
+        "spec.serviceAccountName": framework_service_account.name,
     }
     if cluster_role:
         data_dict["spec.clusterRoles"] = cluster_role

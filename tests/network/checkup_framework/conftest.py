@@ -303,6 +303,7 @@ def latency_nonexistent_configmap(
     checkup_nad, framework_service_account, latency_cluster_role
 ):
     data = compose_configmap_data(
+        framework_service_account=framework_service_account,
         cluster_role=latency_cluster_role,
         network_attachment_definition_namespace=checkup_nad.namespace,
         network_attachment_definition_name=checkup_nad.name,
