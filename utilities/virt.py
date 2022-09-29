@@ -20,7 +20,7 @@ from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.node import Node
 from ocp_resources.pod import Pod
 from ocp_resources.pod_disruption_budget import PodDisruptionBudget
-from ocp_resources.resource import Resource
+from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.route import Route
 from ocp_resources.secret import Secret
 from ocp_resources.service import Service
@@ -2239,3 +2239,21 @@ def get_oc_image_info(image, pull_secret=None):
         LOGGER.error(f"Failed to parse {base_command} output. {out}")
         raise
     return image_info
+
+
+def taint_node_no_schedule(node):
+    return ResourceEditor(
+        patches={
+            node: {
+                "spec": {
+                    "taints": [
+                        {
+                            "effect": "NoSchedule",
+                            "key": f"{Resource.ApiGroup.KUBEVIRT_IO}/drain",
+                            "value": "draining",
+                        }
+                    ]
+                }
+            }
+        }
+    )

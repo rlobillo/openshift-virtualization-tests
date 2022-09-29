@@ -5,7 +5,6 @@ from contextlib import contextmanager
 
 from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
 from ocp_resources.pod import Pod
-from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import InternalServerError, NotFoundError
 
@@ -164,24 +163,6 @@ def assert_vm_migrated_through_dedicated_network_with_tcpdump(utility_pods, node
         command=f"cat {TCPDUMP_LOG_FILE}", chroot_host=False
     )
     assert tcpdump_out, "Migration didn't go through dedicated network!"
-
-
-def taint_node_no_schedule(node):
-    return ResourceEditor(
-        patches={
-            node: {
-                "spec": {
-                    "taints": [
-                        {
-                            "effect": "NoSchedule",
-                            "key": "migration-key",
-                            "value": "migration-val",
-                        }
-                    ]
-                }
-            }
-        }
-    )
 
 
 @contextmanager

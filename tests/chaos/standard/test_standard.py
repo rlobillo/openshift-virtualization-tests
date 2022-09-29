@@ -1,56 +1,39 @@
 import pytest
-from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
-from tests.chaos.constants import CHAOS_ENGINE_NAME, LITMUS_NAMESPACE, ExperimentNames
-from utilities.constants import TIMEOUT_30SEC, Images
+from utilities.constants import TIMEOUT_5MIN, TIMEOUT_5SEC, Images
 from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, running_vm
 
 
 @pytest.mark.parametrize(
-    "chaos_engine_from_yaml",
+    "chaos_vms_list_rhel9, pod_deleting_process",
     [
         pytest.param(
             {
-                "experiment_name": ExperimentNames.POD_DELETE,
-                "app_info": {
-                    "namespace": "openshift-apiserver",
-                    "label": "apiserver=true",
-                    "kind": "deployment",
-                },
-                "components": [
-                    {"name": "FORCE", "value": "true"},
-                    {"name": "TOTAL_CHAOS_DURATION", "value": str(TIMEOUT_30SEC)},
-                    {"name": "CHAOS_NAMESPACE", "value": LITMUS_NAMESPACE},
-                    {"name": "CHAOSENGINE", "value": CHAOS_ENGINE_NAME},
-                    {"name": "CHAOS_INTERVAL", "value": "1"},
-                    {
-                        "name": "PODS_AFFECTED_PERC",
-                        "value": "67",
-                    },  # Kill 2/3 of pods in the deployment
-                ],
+                "number_of_vms": 3,
+            },
+            {
+                "kind": "deployment",
+                "pod_prefix": "apiserver",
+                "namespace_name": "openshift-apiserver",
+                "ratio": 0.5,
+                "interval": TIMEOUT_5SEC,
+                "max_duration": TIMEOUT_5MIN,
             },
         )
     ],
     indirect=True,
 )
-@pytest.mark.chaos
 @pytest.mark.polarion("CNV-5428")
-def test_pod_delete_openshift_apiserver(
-    admin_client,
-    vm_cirros_chaos,
-    running_chaos_engine,
-    krkn_process,
-):
+@pytest.mark.chaos
+def test_pod_delete_openshift_apiserver(pod_deleting_process, chaos_vms_list_rhel9):
     """
-    This experiment tests the robustness of the cluster
-    by killing a random apiserver pod in the `openshift-apiserver` namespace
-    and asserting that a given running VMI instance is still running before and after the test completes
+    Verifies that VMs can be created, started, stopped and deleted
+    while openshift-apiserver pods are continuously being deleted.
     """
-    assert krkn_process.wait(), "Krkn process finished with errors."
-    assert (
-        vm_cirros_chaos.vmi.status == VirtualMachineInstance.Status.RUNNING
-    ), "VirtualMachineInstance not running after chaos."
+    for vm in chaos_vms_list_rhel9:
+        vm.deploy()
+        running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
 
 
 @pytest.mark.parametrize(

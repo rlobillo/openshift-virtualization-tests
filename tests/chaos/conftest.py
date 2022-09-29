@@ -9,8 +9,12 @@ import pytest
 from git import Repo
 from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.cluster_role_binding import ClusterRoleBinding
+from ocp_resources.deployment import Deployment
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.utils import TimeoutSampler
+from ocp_resources.virtual_machine_instance_migration import (
+    VirtualMachineInstanceMigration,
+)
 from pytest_testconfig import py_config
 
 from tests.chaos.constants import (
@@ -20,7 +24,6 @@ from tests.chaos.constants import (
     KRKN_REPO,
     LITMUS_NAMESPACE,
     LITMUS_SERVICE_ACCOUNT,
-    VM_LABEL,
 )
 from tests.chaos.utils.chaos_engine import (
     AppInfo,
@@ -31,6 +34,7 @@ from tests.chaos.utils.chaos_engine import (
     K8SProbe,
 )
 from tests.chaos.utils.krkn_process import KrknProcess
+from tests.chaos.utils.utils import create_pod_deleting_process
 from utilities.constants import (
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     TIMEOUT_1MIN,
@@ -46,7 +50,13 @@ from utilities.infra import (
     get_pod_by_name_prefix,
     wait_for_node_status,
 )
-from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests, running_vm
+from utilities.virt import (
+    VirtualMachineForTests,
+    running_vm,
+    taint_node_no_schedule,
+    verify_vm_migrated,
+    wait_for_migration_finished,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -55,6 +65,80 @@ LOGGER = logging.getLogger(__name__)
 @pytest.fixture()
 def chaos_namespace():
     yield from create_ns(name=CHAOS_NAMESPACE)
+
+
+@pytest.fixture()
+def chaos_vms_list_rhel9(request, admin_client, chaos_namespace):
+    vms_list = []
+    for idx in range(request.param["number_of_vms"]):
+        vm = cluster_resource(VirtualMachineForTests)(
+            client=admin_client,
+            name=f"vm-chaos-{idx}",
+            namespace=chaos_namespace.name,
+            image=Images.Rhel.RHEL9_REGISTRY_GUEST_IMG,
+            memory_requests=Images.Rhel.DEFAULT_MEMORY_SIZE,
+        )
+        vms_list.append(vm)
+    yield vms_list
+    for vm in vms_list:
+        vm.clean_up()
+
+
+@pytest.fixture()
+def chaos_vm_rhel9(admin_client, chaos_namespace):
+    with cluster_resource(VirtualMachineForTests)(
+        client=admin_client,
+        name="vm-chaos",
+        namespace=chaos_namespace.name,
+        image=Images.Rhel.RHEL9_REGISTRY_GUEST_IMG,
+        memory_requests=Images.Rhel.DEFAULT_MEMORY_SIZE,
+        eviction=True,
+    ) as vm:
+        running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
+        yield vm
+
+
+def wait_for_vmi_migration_and_verify(
+    dyn_client, vm, initial_node, initial_vmi_source_pod
+):
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_1MIN,
+        sleep=TIMEOUT_5SEC,
+        func=lambda: list(
+            cluster_resource(VirtualMachineInstanceMigration).get(
+                dyn_client=dyn_client, namespace=vm.namespace
+            )
+        ),
+    )
+    for sample in samples:
+        if sample and vm.vmi.name == sample[0].instance.spec.vmiName:
+            migration = sample[0]
+            break
+
+    wait_for_migration_finished(vm=vm, migration=migration)
+    verify_vm_migrated(
+        vm=vm,
+        node_before=initial_node,
+        vmi_source_pod=initial_vmi_source_pod,
+        wait_for_interfaces=False,
+        check_ssh_connectivity=False,
+    )
+
+
+@pytest.fixture()
+def tainted_node_for_vm_migration(admin_client, chaos_vm_rhel9):
+    initial_node = chaos_vm_rhel9.vmi.node
+    initial_vmi_source_pod = chaos_vm_rhel9.vmi.virt_launcher_pod
+    node_editor = taint_node_no_schedule(node=initial_node)
+    node_editor.update(backup_resources=True)
+    wait_for_vmi_migration_and_verify(
+        dyn_client=admin_client,
+        vm=chaos_vm_rhel9,
+        initial_node=initial_node,
+        initial_vmi_source_pod=initial_vmi_source_pod,
+    )
+    yield initial_node
+    node_editor.restore()
 
 
 @pytest.fixture()
@@ -130,21 +214,6 @@ def litmus_cluster_role_binding(
         ],
     ) as cluster_role_binding:
         yield cluster_role_binding
-
-
-@pytest.fixture()
-def vm_cirros_chaos(admin_client, chaos_namespace):
-    with cluster_resource(VirtualMachineForTests)(
-        client=admin_client,
-        name="vm-chaos",
-        namespace=chaos_namespace.name,
-        image=CIRROS_IMAGE,
-        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-        additional_labels=VM_LABEL,
-        eviction=True,
-    ) as vm:
-        running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
-        yield vm
 
 
 @pytest.fixture()
@@ -317,3 +386,29 @@ def rebooting_master_node(
     )
     yield rebooted_master_node
     wait_for_node_status(node=rebooted_master_node, wait_timeout=TIMEOUT_10MIN)
+
+
+@pytest.fixture()
+def pod_deleting_process(request, admin_client):
+    pod_prefix = request.param["pod_prefix"]
+    kind = request.param["kind"].lower()
+    namespace_name = request.param["namespace_name"]
+
+    pod_deleting_process = create_pod_deleting_process(
+        dyn_client=admin_client,
+        pod_prefix=pod_prefix,
+        namespace_name=namespace_name,
+        ratio=request.param["ratio"],
+        interval=request.param["interval"],
+        max_duration=request.param["max_duration"],
+    )
+    pod_deleting_process.start()
+    yield pod_deleting_process
+    if pod_deleting_process.is_alive():
+        LOGGER.info("Terminating pod deleting process...")
+        pod_deleting_process.terminate()
+        pod_deleting_process.join()
+        pod_deleting_process.close()
+    # Make sure that the replicas from the affected deployment recover after the test.
+    if kind == "deployment":
+        Deployment(name=pod_prefix, namespace=namespace_name).wait_for_replicas()

@@ -11,7 +11,6 @@ from tests.compute.virt.general.migration_network.utils import (
     assert_vm_migrated_through_dedicated_network_with_tcpdump,
     get_virt_handler_pods,
     run_tcpdump_on_source_node,
-    taint_node_no_schedule,
     update_hco_migration_config,
     wait_for_virt_handler_pods_network_updated,
 )
@@ -23,6 +22,7 @@ from utilities.virt import (
     migrate_vm_and_verify,
     restart_vm_wait_for_running_vm,
     running_vm,
+    taint_node_no_schedule,
     wait_for_updated_kv_value,
 )
 
