@@ -68,7 +68,7 @@ BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED", "RELEASE_PENDING")
 JIRA_STATUS_CLOSED = ("closed", "done", "obsolete", "resolved")
 NON_EXIST_URL = "https://noneexist.test"  # Use 'test' domain rfc6761
 EXCLUDED_FROM_URL_VALIDATION = ("", NON_EXIST_URL)
-INTERNAL_HTTP_SERVER_ADDRESS = "internal-http.kube-system"
+INTERNAL_HTTP_SERVER_ADDRESS = "internal-http.cnv-tests-utilities"
 
 VM_CRD = f"virtualmachines.{Resource.ApiGroup.KUBEVIRT_IO}"
 ALL_CNV_CRDS = [

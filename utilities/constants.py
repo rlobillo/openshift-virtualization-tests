@@ -423,3 +423,4 @@ BASE_EXCEPTIONS_DICT = {
 }
 OC_ADM_LOGS_COMMAND = "oc adm node-logs"
 AUDIT_LOGS_PATH = "--path=kube-apiserver"
+CNV_TEST_SERVICE_ACCOUNT = "cnv-tests-sa"

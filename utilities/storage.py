@@ -28,6 +28,7 @@ from pytest_testconfig import config as py_config
 import utilities.infra
 from utilities import console
 from utilities.constants import (
+    CNV_TEST_SERVICE_ACCOUNT,
     HOTPLUG_DISK_SERIAL,
     OS_FLAVOR_WINDOWS,
     TIMEOUT_2MIN,
@@ -40,6 +41,7 @@ from utilities.constants import (
 )
 
 
+SECURITY_CONTEXT = "securityContext"
 HOTPLUG_VOLUME = "hotplugVolume"
 DATA_IMPORT_CRON_SUFFIX = "-image-cron"
 RESOURCE_MANAGED_BY_DATA_IMPORT_CRON_LABEL = (
@@ -486,7 +488,7 @@ class HttpDeployment(Deployment):
                                         "initialDelaySeconds": 20,
                                         "periodSeconds": 20,
                                     },
-                                    "securityContext": {"privileged": True},
+                                    SECURITY_CONTEXT: {"privileged": True},
                                     "livenessProbe": {
                                         "httpGet": {"path": "/", "port": 80},
                                         "initialDelaySeconds": 20,
@@ -494,6 +496,8 @@ class HttpDeployment(Deployment):
                                     },
                                 }
                             ],
+                            "serviceAccount": CNV_TEST_SERVICE_ACCOUNT,
+                            "serviceAccountName": CNV_TEST_SERVICE_ACCOUNT,
                         },
                     },
                 }
@@ -553,6 +557,11 @@ class PodWithPVC(Pod):
         res.update(
             {
                 "spec": {
+                    SECURITY_CONTEXT: {
+                        "seccompProfile": {"type": "RuntimeDefault"},
+                        "runAsNonRoot": True,
+                        "runAsUser": 1000,
+                    },
                     "containers": [
                         {
                             "name": "runner",
@@ -562,6 +571,10 @@ class PodWithPVC(Pod):
                                 "-c",
                                 "echo ok > /tmp/healthy && sleep INF",
                             ],
+                            SECURITY_CONTEXT: {
+                                "allowPrivilegeEscalation": False,
+                                "capabilities": {"drop": ["ALL"]},
+                            },
                             **volume_path,
                         }
                     ],
