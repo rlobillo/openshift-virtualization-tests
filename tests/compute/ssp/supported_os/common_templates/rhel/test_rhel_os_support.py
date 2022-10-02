@@ -38,7 +38,7 @@ class TestCommonTemplatesRhel:
     def test_create_vm(
         self,
         skip_upstream,
-        cluster_cpu_model_scope_class,
+        cluster_cpu_model_scope_module,
         unprivileged_client,
         namespace,
         rhel_os_matrix__class__,
