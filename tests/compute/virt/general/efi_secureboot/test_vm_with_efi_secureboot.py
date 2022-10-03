@@ -13,11 +13,7 @@ from ocp_utilities.utils import run_ssh_commands
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import config as py_config
 
-from tests.compute.utils import (
-    assert_vm_xml_efi,
-    assert_windows_efi,
-    validate_linux_efi,
-)
+from tests.compute.utils import assert_linux_efi, assert_vm_xml_efi, assert_windows_efi
 from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_5MIN, Images
 from utilities.infra import cluster_resource
 from utilities.virt import (
@@ -128,7 +124,7 @@ class TestEFISecureBootRHEL:
         Test VM boots with efi secureboot and check vm_xml values
         """
         assert_vm_xml_efi(vm=rhel_efi_secureboot_vm)
-        validate_linux_efi(vm=rhel_efi_secureboot_vm)
+        assert_linux_efi(vm=rhel_efi_secureboot_vm)
 
     @pytest.mark.order(before="test_efi_secureboot_is_default")
     @pytest.mark.polarion("CNV-1789")
@@ -166,7 +162,7 @@ class TestEFISecureBootRHEL:
         """
         _update_vm_efi_spec(vm=rhel_efi_secureboot_vm)
         assert_vm_xml_efi(vm=rhel_efi_secureboot_vm)
-        validate_linux_efi(vm=rhel_efi_secureboot_vm)
+        assert_linux_efi(vm=rhel_efi_secureboot_vm)
 
     @pytest.mark.polarion("CNV-6951")
     def test_efi_secureboot_disabled(self, rhel_efi_secureboot_vm):
@@ -175,7 +171,7 @@ class TestEFISecureBootRHEL:
         """
         _update_vm_efi_spec(vm=rhel_efi_secureboot_vm, spec={"secureBoot": False})
         assert_vm_xml_efi(vm=rhel_efi_secureboot_vm, secure_boot_enabled=False)
-        validate_linux_efi(vm=rhel_efi_secureboot_vm)
+        assert_linux_efi(vm=rhel_efi_secureboot_vm)
 
 
 @pytest.mark.polarion("CNV-4465")

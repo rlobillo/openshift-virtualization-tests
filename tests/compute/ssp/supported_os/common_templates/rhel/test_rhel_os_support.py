@@ -14,9 +14,9 @@ from tests.compute.ssp.supported_os.common_templates import (
 )
 from tests.compute.ssp.supported_os.utils import check_qemu_guest_agent_installed
 from tests.compute.utils import (
+    assert_linux_efi,
     assert_vm_xml_efi,
     validate_libvirt_persistent_domain,
-    validate_linux_efi,
     validate_pause_optional_migrate_unpause_linux_vm,
 )
 from utilities import console
@@ -133,7 +133,7 @@ class TestCommonTemplatesRhel:
             golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         )
         assert_vm_xml_efi(vm=vm)
-        validate_linux_efi(vm=vm)
+        assert_linux_efi(vm=vm)
 
     @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::create_vm"])

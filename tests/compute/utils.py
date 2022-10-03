@@ -307,11 +307,12 @@ def check_pod_disruption_budget_for_completed_migrations(
 def assert_vm_xml_efi(vm, secure_boot_enabled=True):
     LOGGER.info("Verify VM XML - EFI secureBoot values.")
     xml_dict_os = vm.vmi.xml_dict["domain"]["os"]
-    efi_path = "/usr/share/OVMF/OVMF_CODE.secboot.fd"
+    ovmf_path = "/usr/share/OVMF"
+    efi_path = f"{ovmf_path}/OVMF_CODE.secboot.fd"
     # efi vars path when secure boot is enabled: /usr/share/OVMF/OVMF_VARS.secboot.fd
     # efi vars path when secure boot is disabled: /usr/share/OVMF/OVMF_VARS.fd
     efi_vars_path = (
-        f"/usr/share/OVMF/OVMF_VARS.{'secboot.' if secure_boot_enabled else ''}fd"
+        f"{ovmf_path}/OVMF_VARS.{'secboot.' if secure_boot_enabled else ''}fd"
     )
     vmi_xml_efi_path = xml_dict_os["loader"]["#text"]
     vmi_xml_efi_vars_path = xml_dict_os["nvram"]["@template"]
@@ -328,7 +329,7 @@ def assert_vm_xml_efi(vm, secure_boot_enabled=True):
     ), f"EFIVarsPath value {vmi_xml_efi_vars_path} does not match expected {efi_vars_path} value"
 
 
-def validate_linux_efi(vm):
+def assert_linux_efi(vm):
     """
     Verify guest OS is using EFI.
     """
