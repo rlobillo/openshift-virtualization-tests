@@ -13,7 +13,7 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 
-from utilities.constants import TIMEOUT_1MIN, TIMEOUT_2MIN, TIMEOUT_6MIN
+from utilities.constants import TIMEOUT_1MIN, TIMEOUT_2MIN, TIMEOUT_6MIN, Images
 from utilities.infra import cluster_resource
 
 
@@ -47,7 +47,7 @@ def rhel8_image_stream(admin_client, namespace):
         {
             "from": {
                 "kind": "DockerImage",
-                "name": "registry.redhat.io/rhel8/rhel-guest-image",
+                "name": Images.Rhel.RHEL8_REGISTRY_GUEST_IMG,
             },
             "importPolicy": {"scheduled": True},
             "name": "latest",

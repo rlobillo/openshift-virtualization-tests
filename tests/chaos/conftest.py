@@ -1,4 +1,6 @@
+import logging
 import os
+import random
 import shutil
 import subprocess
 import sys
@@ -9,6 +11,7 @@ from ocp_resources.cluster_role import ClusterRole
 from ocp_resources.cluster_role_binding import ClusterRoleBinding
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.utils import TimeoutSampler
+from pytest_testconfig import py_config
 
 from tests.chaos.constants import (
     CHAOS_ENGINE_FILE_PATH,
@@ -28,9 +31,25 @@ from tests.chaos.utils.chaos_engine import (
     K8SProbe,
 )
 from tests.chaos.utils.krkn_process import KrknProcess
-from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC, Images
-from utilities.infra import cluster_resource, create_ns
+from utilities.constants import (
+    KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
+    TIMEOUT_1MIN,
+    TIMEOUT_3MIN,
+    TIMEOUT_5SEC,
+    TIMEOUT_10MIN,
+    Images,
+)
+from utilities.infra import (
+    ExecCommandOnPod,
+    cluster_resource,
+    create_ns,
+    get_pod_by_name_prefix,
+    wait_for_node_status,
+)
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests, running_vm
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -253,3 +272,48 @@ def running_chaos_engine(chaos_engine_from_yaml, krkn_process):
     for sample in samples:
         if sample and sample == chaos_engine_from_yaml.Status.RUNNING:
             return chaos_engine_from_yaml
+
+
+@pytest.fixture()
+def kmp_manager_nodes(admin_client):
+    yield [
+        pod.node
+        for pod in get_pod_by_name_prefix(
+            dyn_client=admin_client,
+            pod_prefix=KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
+            namespace=py_config["hco_namespace"],
+            get_all=True,
+        )
+    ]
+
+
+@pytest.fixture()
+def rebooted_master_node(request, admin_client, masters, kmp_manager_nodes):
+    master_node_to_reboot = request.param["master_node_to_reboot"]
+
+    if master_node_to_reboot == "node_with_kmp_manager":
+        yield random.choice(seq=kmp_manager_nodes)
+    else:
+        yield random.choice(
+            seq=[
+                node
+                for node in masters
+                if node.name not in [node.name for node in kmp_manager_nodes]
+            ]
+        )
+
+
+@pytest.fixture()
+def rebooting_master_node(
+    rebooted_master_node,
+    masters_utility_pods,
+):
+    LOGGER.info(f"Rebooting master node {rebooted_master_node.name}...")
+    ExecCommandOnPod(utility_pods=masters_utility_pods, node=rebooted_master_node).exec(
+        command="shutdown -r", ignore_rc=True
+    )
+    wait_for_node_status(
+        node=rebooted_master_node, status=False, wait_timeout=TIMEOUT_3MIN
+    )
+    yield rebooted_master_node
+    wait_for_node_status(node=rebooted_master_node, wait_timeout=TIMEOUT_10MIN)

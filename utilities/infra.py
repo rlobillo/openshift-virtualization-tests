@@ -56,6 +56,7 @@ from utilities.constants import (
     OPENSHIFT_CONFIG_NAMESPACE,
     OPERATOR_NAME_SUFFIX,
     SANITY_TESTS_FAILURE,
+    TIMEOUT_1MIN,
     TIMEOUT_2MIN,
     TIMEOUT_6MIN,
     TIMEOUT_10MIN,
@@ -1287,3 +1288,12 @@ def get_node_audit_log_line_dict(logs, node, log_entry):
                 except json.decoder.JSONDecodeError:
                     LOGGER.error(f"Unable to parse line: {line!r}")
                     raise
+
+
+def wait_for_node_status(node, status=True, wait_timeout=TIMEOUT_1MIN):
+    """Wait for node status Ready (status=True) or NotReady (status=False)"""
+    for sample in TimeoutSampler(
+        wait_timeout=wait_timeout, sleep=1, func=lambda: node.kubelet_ready
+    ):
+        if (status and sample) or (not status and not sample):
+            return

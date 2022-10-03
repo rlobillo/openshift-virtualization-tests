@@ -51,6 +51,8 @@ class Images:
         RHEL8_7_IMG = "rhel-87.qcow2"
         RHEL9_0_IMG = "rhel-90.qcow2"
         RHEL9_1_IMG = "rhel-91.qcow2"
+        RHEL8_REGISTRY_GUEST_IMG = "registry.redhat.io/rhel8/rhel-guest-image"
+        RHEL9_REGISTRY_GUEST_IMG = "registry.redhat.io/rhel9/rhel-guest-image"
         DIR = f"{BASE_IMAGES_DIR}/rhel-images"
         DEFAULT_DV_SIZE = "20Gi"
         DEFAULT_MEMORY_SIZE = "1.5Gi"

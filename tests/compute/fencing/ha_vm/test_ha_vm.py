@@ -10,11 +10,10 @@ import pytest
 from ocp_resources.machine import Machine
 from ocp_resources.machine_health_check import MachineHealthCheck
 from ocp_resources.template import Template
-from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
-from utilities.constants import TIMEOUT_1MIN, TIMEOUT_20MIN
-from utilities.infra import ExecCommandOnPod, cluster_resource
+from utilities.constants import TIMEOUT_20MIN
+from utilities.infra import ExecCommandOnPod, cluster_resource, wait_for_node_status
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
@@ -97,7 +96,7 @@ def stop_kubelet_on_node(utility_pods, node):
     ExecCommandOnPod(utility_pods=utility_pods, node=node).exec(
         command="sudo systemctl stop kubelet.service"
     )
-    wait_node_status(node=node, status=False)
+    wait_for_node_status(node=node, status=False)
 
 
 def wait_and_verify_vmi_failover(vm):
@@ -122,16 +121,7 @@ def wait_and_verify_vmi_failover(vm):
 def wait_node_restored(node):
     LOGGER.info(f"Waiting node {node.name} to be added to cluster and Ready")
     node.wait(timeout=TIMEOUT_20MIN)
-    wait_node_status(node=node)
-
-
-def wait_node_status(node, status=True):
-    """Wait for node status Ready (status=True) or NotReady (status=False)"""
-    for sample in TimeoutSampler(
-        wait_timeout=TIMEOUT_1MIN, sleep=1, func=lambda: node.kubelet_ready
-    ):
-        if (status and sample) or (not status and not sample):
-            return
+    wait_for_node_status(node=node)
 
 
 @pytest.mark.parametrize(
