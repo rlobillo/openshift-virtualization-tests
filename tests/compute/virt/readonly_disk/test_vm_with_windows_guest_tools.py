@@ -4,8 +4,13 @@ import pytest
 from ocp_resources.template import Template
 from pytest_testconfig import py_config
 
-from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS, WINDOWS_LATEST_OS
-from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
+from tests.os_params import WINDOWS_10
+from utilities.virt import (
+    VirtualMachineForTestsFromTemplate,
+    get_windows_os_dict,
+    migrate_vm_and_verify,
+    running_vm,
+)
 
 
 pytestmark = pytest.mark.usefixtures("skip_upstream")
@@ -13,6 +18,10 @@ pytestmark = pytest.mark.usefixtures("skip_upstream")
 
 LOGGER = logging.getLogger(__name__)
 TESTS_CLASS_NAME = "TestWindowsGuestTools"
+
+
+class MissingCDRoomDeviceError(Exception):
+    pass
 
 
 class WindowsVMWithGuestTools(VirtualMachineForTestsFromTemplate):
@@ -28,7 +37,9 @@ class WindowsVMWithGuestTools(VirtualMachineForTestsFromTemplate):
             namespace=namespace,
             client=client,
             data_source=data_source,
-            labels=Template.generate_template_labels(**WINDOWS_LATEST_LABELS),
+            labels=Template.generate_template_labels(
+                **get_windows_os_dict(windows_version="win-10")["template_labels"]
+            ),
         )
 
     def to_dict(self):
@@ -51,6 +62,20 @@ class WindowsVMWithGuestTools(VirtualMachineForTestsFromTemplate):
         )
 
 
+def verify_cdrom_in_xml(vm):
+    vmi_devices = vm.vmi.xml_dict["domain"]["devices"]
+    for device_dict in vmi_devices["disk"]:
+        for entry in device_dict.items():
+            if entry == ("@device", "cdrom"):
+                assert not device_dict.get(
+                    "readonly"
+                ), f"readonly is not set {device_dict}"
+                return
+    raise MissingCDRoomDeviceError(
+        "cdrom device is missing; VMI devices: {vmi_devices}"
+    )
+
+
 @pytest.fixture(scope="class")
 def vm_with_guest_tools(
     cluster_cpu_model_scope_class,
@@ -69,23 +94,11 @@ def vm_with_guest_tools(
         yield vm
 
 
-def verify_cdrom_in_xml(vm):
-    vmi_devices = vm.vmi.xml_dict["domain"]["devices"]
-    cdrom_device_list = [
-        device_dict
-        for device_dict in vmi_devices["disk"]
-        for element, value in device_dict.items()
-        if element == "@device" and value == "cdrom"
-    ]
-
-    assert cdrom_device_list, f"cdrom device is missing; VMI devices: {vmi_devices}"
-
-    cdrom_device = cdrom_device_list[0]
-    try:
-        cdrom_device["readonly"]
-    except KeyError:
-        LOGGER.error(f"readonly is not set, VMI cdrom: {cdrom_device}")
-        raise
+@pytest.fixture(scope="class")
+def migrated_vm_with_guest_tools(
+    vm_with_guest_tools,
+):
+    migrate_vm_and_verify(vm=vm_with_guest_tools)
 
 
 @pytest.mark.parametrize(
@@ -93,9 +106,9 @@ def verify_cdrom_in_xml(vm):
     [
         pytest.param(
             {
-                "dv_name": WINDOWS_LATEST_OS,
-                "image": WINDOWS_LATEST["image_path"],
-                "dv_size": WINDOWS_LATEST["dv_size"],
+                "dv_name": "dv-win10",
+                "image": WINDOWS_10["image_path"],
+                "dv_size": WINDOWS_10["dv_size"],
                 "storage_class": py_config["default_storage_class"],
             },
         ),
@@ -110,4 +123,16 @@ class TestWindowsGuestTools:
         vm_with_guest_tools,
     ):
         LOGGER.info("Test VM with Windows guest tools")
+        verify_cdrom_in_xml(vm=vm_with_guest_tools)
+
+    @pytest.mark.polarion("CNV-6518")
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::vm_with_guest_tools"])
+    def test_migrate_vm_with_windows_guest_tools(
+        self,
+        skip_when_one_node,
+        skip_rwo_default_access_mode,
+        vm_with_guest_tools,
+        migrated_vm_with_guest_tools,
+    ):
+        LOGGER.info("Test migration of a VM with Windows guest tools")
         verify_cdrom_in_xml(vm=vm_with_guest_tools)
