@@ -60,6 +60,7 @@ from utilities.constants import (
     AMD,
     AUDIT_LOGS_PATH,
     CDI_KUBEVIRT_HYPERCONVERGED,
+    CNV_TEST_SERVICE_ACCOUNT,
     CPU_MODEL_LABEL_PREFIX,
     DEFAULT_HCO_CONDITIONS,
     HCO_SUBSCRIPTION,
@@ -157,7 +158,6 @@ from utilities.virt import (
 
 LOGGER = logging.getLogger(__name__)
 HTTP_SECRET_NAME = "htpass-secret-for-cnv-tests"
-CNV_TEST_SERVICE_ACCOUNT = "cnv-tests-sa"
 HTPASSWD_PROVIDER_DICT = {
     "name": "htpasswd_provider",
     "mappingMethod": "claim",
