@@ -65,10 +65,9 @@ def test_csv_icon(csv_scope_session):
     assert csv_scope_session.instance.spec.icon[0].mediatype == "image/svg+xml"
     svg = b64decode(s=csv_scope_session.instance.spec.icon[0].base64data)
     with open("tests/install_upgrade_operators/csv/logo.svg", "rb") as logo_file:
-        expected_svg = logo_file.read()
+        expected_svg = logo_file.read().rstrip()
 
-    icon_match = svg == expected_svg
-    assert icon_match
+    assert svg == expected_svg, f"Expected icon: {expected_svg} and actual icon: {svg}"
 
 
 @pytest.mark.polarion("CNV-4376")
