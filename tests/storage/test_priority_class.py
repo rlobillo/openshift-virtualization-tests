@@ -114,9 +114,7 @@ def test_dv_template_has_the_same_priority_as_vm_when_not_specified(
     indirect=True,
 )
 def test_dv_template_has_the_different_priority_as_vm_when_specify(
-    priority_class,
-    importer_pod,
-    vm_with_priority_class,
+    priority_class, vm_with_priority_class, importer_pod
 ):
     assert (
         importer_pod.instance.spec.priority != priority_class["vm_priority_class"].value
