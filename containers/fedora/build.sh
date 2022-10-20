@@ -5,6 +5,10 @@ BUILD_DIR="fedora_build"
 FEDORA_IMAGE=$1
 CLOUD_INIT_ISO="cidata.iso"
 NAME="fedora${FEDORA_VERSION}"
+FEDORA_CONTAINER_IMAGE="localhost/fedora:${FEDORA_VERSION}"
+
+IMAGE_BUILD_CMD=$(which podman 2>/dev/null || which docker)
+
 mkdir $BUILD_DIR
 
 echo "Create cloud-init user data ISO"
@@ -17,7 +21,6 @@ virt-install \
   --name $NAME \
   --disk $FEDORA_IMAGE,device=disk \
   --disk $CLOUD_INIT_ISO,device=cdrom \
-  --os-type Linux \
   --os-variant $NAME \
   --virt-type kvm \
   --graphics none \
@@ -30,18 +33,21 @@ virsh undefine $NAME
 
 rm -rf $CLOUD_INIT_ISO
 
-echo "Convert image"
+echo "Snapshot image"
 qemu-img convert -c -O qcow2 $FEDORA_IMAGE $BUILD_DIR/$FEDORA_IMAGE
 
 echo "Create Dockerfile"
-echo "FROM kubevirt/container-disk-v1alpha" >> $BUILD_DIR/Dockerfile
-echo "ADD $FEDORA_IMAGE /disk" >> $BUILD_DIR/Dockerfile
+
+cat <<EOF > "${BUILD_DIR}/Dockerfile"
+FROM scratch
+COPY --chown=107:107 ${FEDORA_IMAGE} /disk/
+EOF
 
 pushd $BUILD_DIR
 echo "Build docker image"
-docker build -t fedora:$FEDORA_VERSION .
+${IMAGE_BUILD_CMD} build -t "${FEDORA_CONTAINER_IMAGE}" .
 
 echo "Save docker image as TAR"
-docker save --output fedora-$FEDORA_VERSION.tar fedora
+${IMAGE_BUILD_CMD} save --output "fedora-${FEDORA_VERSION}.tar" "${FEDORA_CONTAINER_IMAGE}"
 popd
-echo "Fedora image locate at $BUILD_DIR"
+echo "Fedora image located in ${BUILD_DIR}/"

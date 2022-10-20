@@ -116,6 +116,7 @@ venv.bak/
 
 # Fedora container build folder
 fedora_build
+containers/*/*.qcow2
 
 # Sphinx docs
 docs/source/rst

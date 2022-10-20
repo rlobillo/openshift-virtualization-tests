@@ -6,13 +6,13 @@ export FEDORA_VERSION=32
 
 # Fedora VM container
 
-Image can be download from https://alt.fedoraproject.org/cloud/
+Image can be downloaded from https://alt.fedoraproject.org/cloud/
 To create a Fedora VM container execute build.sh.
 
 To execute the build script the following packages needed:
 
     cloud-utils
-    docker (https://docs.docker.com/install/linux/docker-ce/fedora)
+    podman or docker (https://docs.docker.com/install/linux/docker-ce/fedora)
     virt-install
     qemu-img
 
