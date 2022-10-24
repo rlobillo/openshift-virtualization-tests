@@ -213,6 +213,7 @@ def get_cnv_qe_server_url(cluster_host_url):
     Returns:
         str: cnv-qe-server in the same region of the cluster.
     """
+    LOGGER.info(f"Getting cnv-qe-server for {cluster_host_url}")
     default_server = "cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com"
     ibm_server = f"cnv-qe-server.{cluster_host_url.replace('https://api.', '').replace(':6443', '')}"
     rhood_server = "cnv-qe-server.cnv-qe.rhood.us"
@@ -226,6 +227,11 @@ def get_cnv_qe_server_url(cluster_host_url):
 
     for domain, server in servers.items():
         if domain in cluster_host_url:
+            LOGGER.info(f"Server was found for {cluster_host_url}: {server}")
+
             return server
 
+    LOGGER.info(
+        f"No server was found for {cluster_host_url}, using default server {default_server}"
+    )
     return default_server
