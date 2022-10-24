@@ -6,11 +6,11 @@ import time
 
 import bitmath
 import pytest
+from ocp_utilities.infra import cluster_resource
 from ocp_utilities.utils import run_ssh_commands
 
 from tests.compute.virt.utils import get_stress_ng_pid
 from utilities.constants import TIMEOUT_12HRS
-from utilities.infra import cluster_resource
 from utilities.virt import LOGGER, VirtualMachineForTests, fedora_vm_body, running_vm
 
 

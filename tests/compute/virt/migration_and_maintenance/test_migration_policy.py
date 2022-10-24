@@ -1,9 +1,10 @@
 import pytest
 from ocp_resources.migration_policy import MigrationPolicy
 from ocp_resources.resource import ResourceEditor
+from ocp_utilities.infra import cluster_resource
 
 from tests.compute.virt.constants import MIGRATION_POLICY_VM_LABEL
-from utilities.infra import cluster_resource, label_project
+from utilities.infra import label_project
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,

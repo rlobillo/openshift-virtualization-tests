@@ -3,12 +3,12 @@ import logging
 
 import pytest
 from ocp_resources.template import Template
+from ocp_utilities.infra import cluster_resource
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import py_config
 
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_OS
 from utilities.constants import OPENSHIFT_NAMESPACE
-from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
 

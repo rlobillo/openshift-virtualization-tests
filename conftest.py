@@ -34,11 +34,16 @@ from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
+from ocp_utilities.data_collector import (
+    collect_pods_data,
+    collect_resources_yaml_instance,
+    prepare_pytest_item_data_dir,
+)
+from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import config as py_config
 
-import utilities.data_collector
 import utilities.infra
-from utilities.infra import cluster_resource, get_admin_client
+from utilities.infra import get_admin_client
 from utilities.logger import setup_logging
 from utilities.pytest_utils import (
     config_default_storage_class,
@@ -449,27 +454,35 @@ def pytest_runtest_setup(item):
             pytest.xfail("previous test failed (%s)" % previousfailed.name)
 
     if item.session.config.getoption("--data-collector"):
+        base_directory = py_config["data_collector"]["data_collector_base_directory"]
         py_config["data_collector"][
             "collector_directory"
-        ] = utilities.data_collector.prepare_test_data_dir(item=item, prefix="setup")
+        ] = prepare_pytest_item_data_dir(
+            item=item, base_directory=base_directory, subdirectory_name="setup"
+        )
 
 
 def pytest_runtest_call(item):
     BASIC_LOGGER.info(f"{separator(symbol_='-', val='CALL')}")
     if item.session.config.getoption("--data-collector"):
+        base_directory = py_config["data_collector"]["data_collector_base_directory"]
         py_config["data_collector"][
             "collector_directory"
-        ] = utilities.data_collector.prepare_test_data_dir(item=item, prefix="call")
+        ] = prepare_pytest_item_data_dir(
+            item=item, base_directory=base_directory, subdirectory_name="call"
+        )
 
 
 def pytest_runtest_teardown(item):
     BASIC_LOGGER.info(f"{separator(symbol_='-', val='TEARDOWN')}")
     if item.session.config.getoption("--data-collector"):
+        base_directory = py_config["data_collector"]["data_collector_base_directory"]
         py_config["data_collector"][
             "collector_directory"
-        ] = utilities.data_collector.prepare_test_data_dir(
+        ] = prepare_pytest_item_data_dir(
             item=item,
-            prefix="teardown",
+            base_directory=base_directory,
+            subdirectory_name="teardown",
         )
 
 
@@ -661,16 +674,25 @@ def pytest_exception_interact(node, call, report):
     BASIC_LOGGER.error(report.longreprtext)
     if node.session.config.getoption("--data-collector"):
         try:
+            base_directory = os.path.join(
+                py_config["data_collector"]["collector_directory"],
+                "pytest_exception_interact",
+            )
             namespace_name = utilities.infra.generate_namespace_name(
                 file_path=node.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
             )
             dyn_client = utilities.infra.get_admin_client()
-            utilities.data_collector.collect_resources_yaml_instance(
+            collect_resources_yaml_instance(
                 namespace_name=namespace_name,
                 resources_to_collect=RESOURCES_TO_COLLECT_INFO,
+                base_directory=base_directory,
             )
             pods = list(Pod.get(dyn_client=dyn_client))
-            utilities.data_collector.collect_pods_data(pods=pods)
+            collect_pods_data(
+                pods_list=pods,
+                base_directory=base_directory,
+                collect_pod_logs=py_config["data_collector"]["collect_pod_logs"],
+            )
 
         except Exception as exp:
             LOGGER.warning(f"Failed to collect logs: {exp}")

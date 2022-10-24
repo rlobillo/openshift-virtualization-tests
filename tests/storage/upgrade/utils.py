@@ -2,9 +2,10 @@ from contextlib import contextmanager
 
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
+from ocp_utilities.infra import cluster_resource
 
 from utilities.constants import Images
-from utilities.infra import cluster_resource, get_http_image_url
+from utilities.infra import get_http_image_url
 from utilities.storage import write_file
 from utilities.virt import VirtualMachineForTests
 

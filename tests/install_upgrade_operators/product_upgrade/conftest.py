@@ -7,6 +7,7 @@ from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.data_collector import collect_resources_yaml_instance
 from ocp_utilities.utils import run_command
 from pytest_testconfig import py_config
 
@@ -20,7 +21,6 @@ from tests.install_upgrade_operators.product_upgrade.utils import (
 )
 from tests.install_upgrade_operators.utils import wait_for_operator_condition
 from utilities.constants import BREW_REGISTERY_SOURCE, HCO_CATALOG_SOURCE, TIMEOUT_10MIN
-from utilities.data_collector import collect_resources_yaml_instance
 from utilities.infra import get_csv_by_name, get_related_images_name_and_version
 from utilities.operator import (
     create_icsp_command,
@@ -174,7 +174,10 @@ def target_csv(admin_client, hco_namespace, hco_target_version):
         )
         if py_config.get("data_collector"):
             collect_resources_yaml_instance(
-                resources_to_collect=[ClusterServiceVersion]
+                resources_to_collect=[ClusterServiceVersion],
+                base_directory=py_config["data_collector"][
+                    "data_collector_base_directory"
+                ],
             )
         raise
 

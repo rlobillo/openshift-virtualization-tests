@@ -1,8 +1,8 @@
 import pytest
 from ocp_resources.utils import TimeoutSampler
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
+from ocp_utilities.infra import cluster_resource
 
-from utilities.infra import cluster_resource
 from utilities.virt import LOGGER, VirtualMachineForTests, fedora_vm_body, running_vm
 
 

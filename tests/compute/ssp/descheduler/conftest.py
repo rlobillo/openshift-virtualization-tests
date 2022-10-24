@@ -13,6 +13,7 @@ from ocp_resources.subscription import Subscription
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
+from ocp_utilities.infra import cluster_resource
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 
 from tests.compute.ssp.descheduler.constants import (
@@ -38,7 +39,6 @@ from tests.compute.ssp.descheduler.utils import (
 from tests.compute.utils import check_pod_disruption_budget_for_completed_migrations
 from utilities.constants import TIMEOUT_5SEC
 from utilities.infra import (
-    cluster_resource,
     create_ns,
     get_raw_package_manifest,
     scale_deployment_replicas,

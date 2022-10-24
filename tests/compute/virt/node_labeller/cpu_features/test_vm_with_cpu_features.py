@@ -2,10 +2,10 @@
 VM with CPU features
 """
 import pytest
+from ocp_utilities.infra import cluster_resource
 from openshift.dynamic.exceptions import UnprocessibleEntityError
 
 from utilities.constants import AMD
-from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 

@@ -4,10 +4,10 @@ Test node feature discovery.
 from xml.etree import ElementTree
 
 import pytest
+from ocp_utilities.infra import cluster_resource
 
 from tests.compute.utils import update_hco_annotations
 from tests.compute.virt.node_labeller.constants import CPU_MODEL_LABEL_PREFIX
-from utilities.infra import cluster_resource
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,

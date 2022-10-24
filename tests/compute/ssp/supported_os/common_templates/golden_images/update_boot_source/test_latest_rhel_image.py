@@ -4,10 +4,10 @@ import shlex
 from pathlib import Path
 
 import pytest
+from ocp_utilities.infra import cluster_resource
 from ocp_utilities.utils import run_ssh_commands
 
 from utilities.constants import Images
-from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, running_vm
 
 

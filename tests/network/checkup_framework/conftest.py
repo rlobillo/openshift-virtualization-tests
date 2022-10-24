@@ -4,6 +4,7 @@ from ocp_resources.cluster_role_binding import ClusterRoleBinding
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.namespace import Namespace
 from ocp_resources.service_account import ServiceAccount
+from ocp_utilities.infra import cluster_resource
 
 from tests.network.checkup_framework.utils import (
     CHECKUP_FRAMEWORK_NAMESPACE,
@@ -14,7 +15,7 @@ from tests.network.checkup_framework.utils import (
     create_latency_job,
 )
 from utilities.constants import DEFAULT_NAMESPACE, LINUX_BRIDGE, SRIOV, TIMEOUT_10SEC
-from utilities.infra import cluster_resource, create_ns, name_prefix
+from utilities.infra import create_ns, name_prefix
 from utilities.network import network_device, network_nad
 
 

@@ -3,9 +3,9 @@ VM with CPU flag
 """
 import pytest
 from ocp_resources.utils import TimeoutExpiredError
+from ocp_utilities.infra import cluster_resource
 
 from utilities.constants import TIMEOUT_1MIN
-from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 

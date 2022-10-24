@@ -1,8 +1,8 @@
 import pytest
 from kubernetes.client.rest import ApiException
 from ocp_resources.pod import Pod
+from ocp_utilities.infra import cluster_resource
 
-from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 

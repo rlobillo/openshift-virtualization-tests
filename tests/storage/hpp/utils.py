@@ -9,6 +9,7 @@ from ocp_resources.daemonset import DaemonSet
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
 from ocp_resources.utils import TimeoutSampler
+from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
 from tests.storage.utils import check_disk_count_in_vm
@@ -21,12 +22,7 @@ from utilities.constants import (
     TIMEOUT_5MIN,
     Images,
 )
-from utilities.infra import (
-    ExecCommandOnPod,
-    cluster_resource,
-    get_http_image_url,
-    get_pod_by_name_prefix,
-)
+from utilities.infra import ExecCommandOnPod, get_http_image_url, get_pod_by_name_prefix
 from utilities.storage import create_dv
 
 

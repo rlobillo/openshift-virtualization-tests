@@ -8,6 +8,7 @@ import pytest
 import yaml
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.storage_class import StorageClass
+from ocp_utilities.infra import cluster_resource
 from pkg_resources import resource_stream
 
 from tests.storage.hpp.utils import (
@@ -18,7 +19,6 @@ from tests.storage.hpp.utils import (
     verify_hpp_cr_installed_successfully,
 )
 from tests.storage.utils import create_vm_from_dv
-from utilities.infra import cluster_resource
 from utilities.storage import HppCsiStorageClass
 
 

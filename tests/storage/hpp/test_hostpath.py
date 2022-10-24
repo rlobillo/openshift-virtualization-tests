@@ -26,6 +26,7 @@ from ocp_resources.service_monitor import ServiceMonitor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutSampler
+from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
@@ -42,7 +43,7 @@ from utilities.constants import (
     TIMEOUT_30SEC,
     Images,
 )
-from utilities.infra import cluster_resource, get_http_image_url, get_pod_by_name_prefix
+from utilities.infra import get_http_image_url, get_pod_by_name_prefix
 from utilities.storage import (
     PodWithPVC,
     check_upload_virtctl_result,

@@ -6,10 +6,11 @@ import pytest
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.job import Job
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5MIN
-from utilities.infra import cluster_resource, get_pods
+from utilities.infra import get_pods
 
 
 LOGGER = logging.getLogger(__name__)

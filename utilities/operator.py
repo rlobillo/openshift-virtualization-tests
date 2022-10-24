@@ -19,6 +19,7 @@ from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.data_collector import collect_resources_yaml_instance
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
@@ -32,10 +33,7 @@ from utilities.constants import (
     TIMEOUT_20MIN,
     TIMEOUT_75MIN,
 )
-from utilities.data_collector import (
-    collect_mcp_information,
-    collect_resources_yaml_instance,
-)
+from utilities.data_collector import collect_mcp_information
 
 
 LOGGER = logging.getLogger(__name__)
@@ -124,7 +122,10 @@ def wait_for_machine_config_pools_condition_status(
         )
         if py_config.get("data_collector"):
             collect_resources_yaml_instance(
-                resources_to_collect=[MachineConfigPool, Node]
+                resources_to_collect=[MachineConfigPool, Node],
+                base_directory=py_config["data_collector"][
+                    "data_collector_base_directory"
+                ],
             )
             collect_mcp_information()
         raise

@@ -3,13 +3,13 @@ import os
 
 import pytest
 from ocp_resources.virtual_machine_restore import VirtualMachineRestore
+from ocp_utilities.infra import cluster_resource
 
 from tests.upgrade_params import (
     IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
     IUO_UPGRADE_TEST_ORDERING_NODE_ID,
 )
 from utilities.constants import DEPENDENCY_SCOPE_SESSION, LS_COMMAND
-from utilities.infra import cluster_resource
 from utilities.storage import (
     assert_disk_serial,
     assert_hotplugvolume_nonexist_optional_restart,

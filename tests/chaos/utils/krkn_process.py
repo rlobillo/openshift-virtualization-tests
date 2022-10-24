@@ -4,6 +4,8 @@ import subprocess
 import sys
 
 import yaml
+from ocp_utilities.data_collector import write_to_file
+from pytest_testconfig import config as py_config
 
 from tests.chaos.constants import (
     CHAOS_ENGINE_FILE_PATH,
@@ -11,7 +13,6 @@ from tests.chaos.constants import (
     KRKN_CONFIG_PATH,
     KUBECONFIG_PATH,
 )
-from utilities.data_collector import write_to_file
 
 
 LOGGER = logging.getLogger(__name__)
@@ -85,4 +86,5 @@ class KrknProcess:
             file_name="krkn_process_logs.txt",
             content=stderr,
             extra_dir_name="krkn",
+            base_directory=py_config["data_collector"]["data_collector_base_directory"],
         )

@@ -9,6 +9,8 @@ from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.operator_condition import OperatorCondition
 from ocp_resources.resource import Resource
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.data_collector import collect_resources_yaml_instance
+from ocp_utilities.infra import cluster_resource
 from openshift.dynamic.exceptions import ConflictError
 from pytest_testconfig import py_config
 
@@ -18,8 +20,7 @@ from utilities.constants import (
     TIMEOUT_30MIN,
     TIMEOUT_40MIN,
 )
-from utilities.data_collector import collect_resources_yaml_instance
-from utilities.infra import cluster_resource, get_subscription
+from utilities.infra import get_subscription
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -106,7 +107,12 @@ def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
             f"subscription install plan: {install_plan_name_in_subscription}"
         )
         if py_config.get("data_collector"):
-            collect_resources_yaml_instance(resources_to_collect=[InstallPlan])
+            collect_resources_yaml_instance(
+                resources_to_collect=[InstallPlan],
+                base_directory=py_config["data_collector"][
+                    "data_collector_base_directory"
+                ],
+            )
         raise
 
 

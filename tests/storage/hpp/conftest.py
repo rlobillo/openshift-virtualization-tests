@@ -3,9 +3,9 @@ import io
 import pytest
 import yaml
 from ocp_resources.daemonset import DaemonSet
+from ocp_utilities.infra import cluster_resource
 
 from utilities.infra import (
-    cluster_resource,
     get_daemonset_yaml_file_with_image_hash,
     get_utility_pods_from_nodes,
 )

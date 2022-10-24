@@ -6,6 +6,7 @@ import logging
 
 import pytest
 from ocp_resources.utils import TimeoutSampler
+from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import config as py_config
 
 from tests.compute.utils import pause_optional_migrate_unpause_and_check_connectivity
@@ -18,7 +19,6 @@ from tests.compute.virt.gpu.utils import (
 from tests.compute.virt.utils import running_sleep_in_linux
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
 from utilities.constants import GPU_DEVICE_NAME, TIMEOUT_5SEC, VGPU_DEVICE_NAME
-from utilities.infra import cluster_resource
 from utilities.virt import CIRROS_IMAGE, VirtualMachineForTests
 
 

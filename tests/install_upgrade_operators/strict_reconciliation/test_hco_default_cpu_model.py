@@ -1,9 +1,9 @@
 import pytest
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.kubevirt import KubeVirt
+from ocp_utilities.infra import cluster_resource
 
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 

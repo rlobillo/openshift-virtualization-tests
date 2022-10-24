@@ -5,6 +5,7 @@ import pytest
 from ocp_resources.data_source import DataSource
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
 from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_source.constants import (
@@ -22,7 +23,6 @@ from tests.compute.ssp.supported_os.common_templates.utils import (
     validate_os_info_vmi_vs_linux_os,
 )
 from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_5MIN, TIMEOUT_10MIN, Images
-from utilities.infra import cluster_resource
 from utilities.virt import running_vm
 
 

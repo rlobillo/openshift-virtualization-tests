@@ -6,12 +6,12 @@ from ocp_resources.template import Template
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
+from ocp_utilities.infra import cluster_resource
 from ocp_utilities.utils import run_ssh_commands
 from pytest_testconfig import py_config
 
 from tests.compute.ssp.constants import VIRTIO
 from utilities.constants import LINUX_BRIDGE, TIMEOUT_12MIN
-from utilities.infra import cluster_resource
 from utilities.network import network_device, network_nad
 from utilities.storage import get_storage_class_dict_from_matrix
 from utilities.virt import (

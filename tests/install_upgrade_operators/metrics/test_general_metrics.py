@@ -2,13 +2,13 @@ import logging
 
 import pytest
 from ocp_resources.resource import Resource
+from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import config as py_config
 
 from tests.install_upgrade_operators.metrics.utils import (
     validate_vm_vcpu_cpu_affinity_with_prometheus,
 )
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
-from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 

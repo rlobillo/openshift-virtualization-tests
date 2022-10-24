@@ -5,6 +5,7 @@ Test VM with static key injection.
 import pytest
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.secret import Secret
+from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import config as py_config
 
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_OS
@@ -13,7 +14,7 @@ from utilities.constants import (
     CNV_SSH_KEY_PATH,
     OS_FLAVOR_RHEL,
 )
-from utilities.infra import authorized_key, base64_encode_str, cluster_resource
+from utilities.infra import authorized_key, base64_encode_str
 from utilities.virt import VirtualMachineForTests, running_vm
 
 

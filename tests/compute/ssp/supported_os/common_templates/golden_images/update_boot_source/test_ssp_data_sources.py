@@ -7,6 +7,7 @@ from ocp_resources.data_source import DataSource
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.infra import cluster_resource
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import py_config
 
@@ -28,7 +29,7 @@ from utilities.constants import (
     Images,
 )
 from utilities.exceptions import ResourceValueError
-from utilities.infra import cluster_resource, get_http_image_url
+from utilities.infra import get_http_image_url
 
 
 LOGGER = logging.getLogger(__name__)
