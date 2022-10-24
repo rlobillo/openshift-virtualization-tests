@@ -77,6 +77,26 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
                 "experiment_name": ExperimentNames.POD_DELETE,
                 "app_info": {
                     "namespace": "openshift-storage",
+                    "label": "app=rook-ceph-osd",
+                    "kind": "deployment",
+                },
+                "components": [
+                    {"name": "FORCE", "value": "true"},
+                    {"name": "TOTAL_CHAOS_DURATION", "value": str(TIMEOUT_2MIN)},
+                    {"name": "CHAOS_NAMESPACE", "value": LITMUS_NAMESPACE},
+                    {"name": "CHAOSENGINE", "value": CHAOS_ENGINE_NAME},
+                    {"name": "CHAOS_INTERVAL", "value": "30"},
+                ],
+            },
+            {"number_of_snapshots": 3},
+            marks=pytest.mark.polarion("CNV-8930"),
+            id="rook-ceph-osd",
+        ),
+        pytest.param(
+            {
+                "experiment_name": ExperimentNames.POD_DELETE,
+                "app_info": {
+                    "namespace": "openshift-storage",
                     "label": "app=csi-rbdplugin",
                     "kind": "daemonset",
                 },
