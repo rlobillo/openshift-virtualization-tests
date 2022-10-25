@@ -2235,7 +2235,7 @@ def get_oc_image_info(image, pull_secret=None):
     out = utilities.infra.run_command(command=shlex.split(base_command))[1]
     try:
         image_info = json.loads(out)
-    except json.decoder.JSONDecodeError:
+    except (json.decoder.JSONDecodeError, TypeError):
         LOGGER.error(f"Failed to parse {base_command} output. {out}")
         raise
     return image_info
