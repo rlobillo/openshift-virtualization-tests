@@ -72,6 +72,26 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
             marks=pytest.mark.polarion("CNV-8534"),
             id="cnv-control-plane-virt-api",
         ),
+        pytest.param(
+            {
+                "experiment_name": ExperimentNames.POD_DELETE,
+                "app_info": {
+                    "namespace": "openshift-storage",
+                    "label": "app=csi-rbdplugin",
+                    "kind": "daemonset",
+                },
+                "components": [
+                    {"name": "FORCE", "value": "true"},
+                    {"name": "TOTAL_CHAOS_DURATION", "value": str(TIMEOUT_2MIN)},
+                    {"name": "CHAOS_NAMESPACE", "value": LITMUS_NAMESPACE},
+                    {"name": "CHAOSENGINE", "value": CHAOS_ENGINE_NAME},
+                    {"name": "CHAOS_INTERVAL", "value": "30"},
+                ],
+            },
+            {"number_of_snapshots": 3},
+            marks=pytest.mark.polarion("CNV-8750"),
+            id="csi-driver",
+        ),
     ],
     indirect=True,
 )
