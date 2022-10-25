@@ -87,8 +87,8 @@ ALL_CNV_CRDS = [
     f"ssps.{Resource.ApiGroup.SSP_KUBEVIRT_IO}",
     f"storageprofiles.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
     f"tektontasks.{Resource.ApiGroup.TEKTONTASKS_KUBEVIRT_IO}",
-    f"virtualmachineclusterinstancetypes.{Resource.ApiGroup.INSTANCE_TYPE_KUBEVIRT_IO}",
-    f"virtualmachineinstancetypes.{Resource.ApiGroup.INSTANCE_TYPE_KUBEVIRT_IO}",
+    f"virtualmachineclusterinstancetypes.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
+    f"virtualmachineinstancetypes.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
     f"virtualmachineinstancemigrations.{Resource.ApiGroup.KUBEVIRT_IO}",
     f"virtualmachineinstancepresets.{Resource.ApiGroup.KUBEVIRT_IO}",
     f"virtualmachineinstancereplicasets.{Resource.ApiGroup.KUBEVIRT_IO}",
@@ -99,9 +99,9 @@ ALL_CNV_CRDS = [
     f"virtualmachinesnapshotcontents.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
     f"virtualmachinesnapshots.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
     f"virtualmachineclones.clone.{Resource.ApiGroup.KUBEVIRT_IO}",
-    f"virtualmachineclusterpreferences.{Resource.ApiGroup.INSTANCE_TYPE_KUBEVIRT_IO}",
+    f"virtualmachineclusterpreferences.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
     f"virtualmachineexports.export.{Resource.ApiGroup.KUBEVIRT_IO}",
-    f"virtualmachinepreferences.{Resource.ApiGroup.INSTANCE_TYPE_KUBEVIRT_IO}",
+    f"virtualmachinepreferences.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
 ]
 
 
