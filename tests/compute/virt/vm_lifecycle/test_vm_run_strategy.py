@@ -162,7 +162,7 @@ def run_vm_action(vm, vm_action, expected_exceptions=None):
 
 def verify_vm_vmi_status(vm, ready):
     LOGGER.info(f"Verify VMI status: {ready}")
-    vm.wait_for_status(status=ready, timeout=TIMEOUT_10MIN)
+    vm.wait_for_ready_status(status=ready, timeout=TIMEOUT_10MIN)
     if ready:
         running_vm(vm=vm)
 

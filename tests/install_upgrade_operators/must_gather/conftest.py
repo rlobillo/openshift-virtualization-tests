@@ -373,7 +373,7 @@ def must_gather_stopped_vms(must_gather_vms_from_alternate_namespace):
         vm.stop()
     for vm in must_gather_vms_from_alternate_namespace[:3]:
         if vm.instance.spec.running:
-            vm.wait_for_status(status=False)
+            vm.wait_for_ready_status(status=False)
         stopped_vms_list.append(vm)
     yield stopped_vms_list
     for vm in stopped_vms_list:

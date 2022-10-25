@@ -241,5 +241,5 @@ def test_missing_golden_image_pvc(
         }
     ).update()
 
-    vm_from_golden_image.wait_for_status(status=True, timeout=TIMEOUT_8MIN)
+    vm_from_golden_image.wait_for_ready_status(status=True, timeout=TIMEOUT_8MIN)
     wait_for_vm_interfaces(vmi=vm_from_golden_image.vmi)
