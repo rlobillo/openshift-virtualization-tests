@@ -154,14 +154,6 @@ def skip_test_if_no_block_sc(storage_class_with_block_volume_mode):
             },
             marks=(pytest.mark.polarion("CNV-1892")),
         ),
-        pytest.param(
-            {
-                "dv_name": "dv-source",
-                "image": f"{Images.Windows.RAW_DIR}/{Images.Windows.WIN19_RAW}",
-                "dv_size": Images.Windows.DEFAULT_DV_SIZE,
-            },
-            marks=(pytest.mark.polarion("CNV-3409")),
-        ),
     ],
     indirect=True,
 )
@@ -274,7 +266,7 @@ def test_successful_vm_from_cloned_dv_windows(
         storage_class=data_volume_multi_storage_scope_function.storage_class,
     ) as cdv:
         cdv.wait(timeout=WINDOWS_CLONE_TIMEOUT)
-        assert cdv.pvc.bound()
+        assert cdv.pvc.bound(), f"{cdv.name}'s PVC is not bound"
         utils.create_windows_vm_validate_guest_agent_info(
             dv=cdv,
             namespace=namespace,
