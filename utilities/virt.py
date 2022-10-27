@@ -1767,7 +1767,15 @@ def running_vm(
             matched_exception = True
             # Need to increase how much time we wait for a VMI in case a VM is started before calling this function
             # and has a DV which is cloned from another DV
-            if vm.printable_status == VirtualMachine.Status.PROVISIONING:
+            LOGGER.info(f"VM Status: {vm.printable_status}")
+            if vm.printable_status == VirtualMachine.Status.PROVISIONING or (
+                utilities.infra.is_jira_open(jira_id="CNV-22223")
+                and vm.printable_status
+                in [
+                    VirtualMachine.Status.WAITING_FOR_VOLUME_BINDING,
+                    VirtualMachine.Status.STOPPED,
+                ]
+            ):
                 wait_until_running_timeout = start_vm_timeout
 
         if not matched_exception:
