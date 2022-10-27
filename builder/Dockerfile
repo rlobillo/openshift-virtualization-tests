@@ -1,4 +1,5 @@
 FROM quay.io/centos/centos:stream8
+#TODO: remove pipenv commands and exports once our infra move to poetry
 
 ENV PIPENV_VENV_IN_PROJECT=1 \
     CNV_TESTS_CONTAINER=Yes \
@@ -24,9 +25,11 @@ RUN dnf -y install epel-release \
 COPY / cnv-tests/
 WORKDIR cnv-tests
 
-RUN pip3 install pipenv \
+RUN python3 -m pip install pip --upgrade \
+    && python3 -m pip install poetry pipenv \
     && pipenv install --skip-lock \
-    && pipenv run pip freeze \
-    && if [[ -n "${OPENSHIFT_PYTHON_WRAPPER_COMMIT}" ]]; then pipenv run pip install git+https://github.com/RedHatQE/openshift-python-wrapper.git@$OPENSHIFT_PYTHON_WRAPPER_COMMIT -U; fi
+    && poetry install \
+    && poetry export --without-hashes -n \
+    && if [[ -n "${OPENSHIFT_PYTHON_WRAPPER_COMMIT}" ]]; then poetry run pip install git+https://github.com/RedHatQE/openshift-python-wrapper.git@$OPENSHIFT_PYTHON_WRAPPER_COMMIT -U; fi
 
-CMD pipenv run pytest --tc=server_url:"$HTTP_IMAGE_SERVER" --collect-only
+CMD poetry run pytest --tc=server_url:"$HTTP_IMAGE_SERVER" --collect-only
