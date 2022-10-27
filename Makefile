@@ -1,3 +1,5 @@
+#TODO: Remove all pipenv code once our infra support poetry
+
 # Pytest args handling
 PYTEST_ARGS ?= tests
 
@@ -35,8 +37,9 @@ VIRTCTL_DEST := $(BIN_DIR)
 # Expose local binaries to tests
 export PATH := $(BIN_DIR):$(PATH)
 
+
 # Building cnv-tests container for disconnected clusters
-IMAGE_BUILD_CMD ?= "docker"
+IMAGE_BUILD_CMD = $(shell which podman 2>/dev/null || which docker)
 IMAGE_REGISTRY ?= "quay.io"
 REGISTRY_NAMESPACE ?= "openshift-cnv"
 OPERATOR_IMAGE_NAME="cnv-tests"
@@ -44,23 +47,26 @@ OPERATOR_IMAGE_NAME="cnv-tests"
 IMAGE_TAG ?= "4.12"
 
 FULL_OPERATOR_IMAGE ?= "$(IMAGE_REGISTRY)/$(REGISTRY_NAMESPACE)/$(OPERATOR_IMAGE_NAME):$(IMAGE_TAG)"
+POETRY_CMD = $(shell which poetry 2>/dev/null || which pipenv)
+POETRY_PYTEST_CMD = $(POETRY_CMD) run pytest
 
 all: check
 
 check:
 	tox
 
-pipenv:
-	-pipenv --rm # '-' for ignore error when pipenv venv is not exists
-	pipenv install --skip-lock
-	pipenv run pip freeze
+venv-install:
+	if [ "$(POETRY_CMD) == poetry" ]; then \
+        $(POETRY_CMD) install; \
+    else \
+        $(POETRY_CMD) install --skip-lock; \
+    fi
 
+tests: virtctl venv-install
+	$(POETRY_PYTEST_CMD)  $(PYTEST_ARGS)
 
-tests: virtctl pipenv
-	pipenv run pytest $(PYTEST_ARGS)
-
-ci-tests: virtctl pipenv
-	pipenv run pytest --tc-file=tests/global_config_ci.py --tc-format=python --data-collector=data-collector.yaml --junit-xml xunit_results.xml --cluster-sanity-skip-check --skip-deprecated-api-test -s -m ci
+ci-tests: virtctl venv-install
+	$(POETRY_PYTEST_CMD) --tc-file=tests/global_config_ci.py --tc-format=python --data-collector=data-collector.yaml --junit-xml xunit_results.xml --cluster-sanity-skip-check --skip-deprecated-api-test -s -m ci
 
 cluster-down: $(CLUSTER_DOWN)
 	$(CLUSTER_DOWN)
