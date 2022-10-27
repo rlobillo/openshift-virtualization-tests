@@ -1,32 +1,25 @@
 import pytest
 from ocp_resources.virtual_machine_restore import VirtualMachineRestore
+from ocp_utilities.infra import cluster_resource
+from pytest_testconfig import py_config
 
-from tests.chaos.constants import CHAOS_ENGINE_NAME, LITMUS_NAMESPACE, ExperimentNames
-from utilities.constants import TIMEOUT_2MIN, TIMEOUT_3MIN
+from utilities.constants import TIMEOUT_5MIN, TIMEOUT_5SEC
 
 
 pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
 
 
 @pytest.mark.parametrize(
-    "chaos_engine_from_yaml, chaos_online_snapshots",
+    "pod_deleting_process, chaos_online_snapshots",
     [
         pytest.param(
             {
-                "experiment_name": ExperimentNames.POD_DELETE,
-                "app_info": {
-                    "namespace": "openshift-apiserver",
-                    "label": "apiserver=true",
-                    "kind": "deployment",
-                },
-                "components": [
-                    {"name": "FORCE", "value": "true"},
-                    {"name": "TOTAL_CHAOS_DURATION", "value": str(TIMEOUT_3MIN)},
-                    {"name": "CHAOS_NAMESPACE", "value": LITMUS_NAMESPACE},
-                    {"name": "CHAOSENGINE", "value": CHAOS_ENGINE_NAME},
-                    {"name": "CHAOS_INTERVAL", "value": "1"},
-                    {"name": "PODS_AFFECTED_PERC", "value": "67"},
-                ],
+                "pod_prefix": "apiserver",
+                "kind": "deployment",
+                "namespace_name": "openshift-apiserver",
+                "ratio": 0.5,
+                "interval": TIMEOUT_5SEC,
+                "max_duration": TIMEOUT_5MIN,
             },
             {"number_of_snapshots": 3},
             marks=pytest.mark.polarion("CNV-8260"),
@@ -34,19 +27,12 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
         ),
         pytest.param(
             {
-                "experiment_name": ExperimentNames.POD_DELETE,
-                "app_info": {
-                    "namespace": "openshift-cluster-storage-operator",
-                    "label": "app=csi-snapshot-controller",
-                    "kind": "deployment",
-                },
-                "components": [
-                    {"name": "FORCE", "value": "true"},
-                    {"name": "TOTAL_CHAOS_DURATION", "value": str(TIMEOUT_2MIN)},
-                    {"name": "CHAOS_NAMESPACE", "value": LITMUS_NAMESPACE},
-                    {"name": "CHAOSENGINE", "value": CHAOS_ENGINE_NAME},
-                    {"name": "CHAOS_INTERVAL", "value": "30"},
-                ],
+                "pod_prefix": "csi-snapshot-controller",
+                "kind": "deployment",
+                "namespace_name": "openshift-cluster-storage-operator",
+                "ratio": 0.5,
+                "interval": TIMEOUT_5SEC,
+                "max_duration": TIMEOUT_5MIN,
             },
             {"number_of_snapshots": 3},
             marks=pytest.mark.polarion("CNV-8382"),
@@ -54,19 +40,12 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
         ),
         pytest.param(
             {
-                "experiment_name": ExperimentNames.POD_DELETE,
-                "app_info": {
-                    "namespace": "openshift-cnv",
-                    "label": "kubevirt.io=virt-api",
-                    "kind": "deployment",
-                },
-                "components": [
-                    {"name": "FORCE", "value": "true"},
-                    {"name": "TOTAL_CHAOS_DURATION", "value": str(TIMEOUT_2MIN)},
-                    {"name": "CHAOS_NAMESPACE", "value": LITMUS_NAMESPACE},
-                    {"name": "CHAOSENGINE", "value": CHAOS_ENGINE_NAME},
-                    {"name": "CHAOS_INTERVAL", "value": "30"},
-                ],
+                "pod_prefix": "virt-api",
+                "kind": "deployment",
+                "namespace_name": py_config["hco_namespace"],
+                "ratio": 0.5,
+                "interval": TIMEOUT_5SEC,
+                "max_duration": TIMEOUT_5MIN,
             },
             {"number_of_snapshots": 3},
             marks=pytest.mark.polarion("CNV-8534"),
@@ -74,19 +53,12 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
         ),
         pytest.param(
             {
-                "experiment_name": ExperimentNames.POD_DELETE,
-                "app_info": {
-                    "namespace": "openshift-storage",
-                    "label": "app=rook-ceph-osd",
-                    "kind": "deployment",
-                },
-                "components": [
-                    {"name": "FORCE", "value": "true"},
-                    {"name": "TOTAL_CHAOS_DURATION", "value": str(TIMEOUT_2MIN)},
-                    {"name": "CHAOS_NAMESPACE", "value": LITMUS_NAMESPACE},
-                    {"name": "CHAOSENGINE", "value": CHAOS_ENGINE_NAME},
-                    {"name": "CHAOS_INTERVAL", "value": "30"},
-                ],
+                "pod_prefix": "rook-ceph-osd",
+                "kind": "deployment",
+                "namespace_name": "openshift-storage",
+                "ratio": 0.5,
+                "interval": TIMEOUT_5SEC,
+                "max_duration": TIMEOUT_5MIN,
             },
             {"number_of_snapshots": 3},
             marks=pytest.mark.polarion("CNV-8930"),
@@ -94,19 +66,12 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
         ),
         pytest.param(
             {
-                "experiment_name": ExperimentNames.POD_DELETE,
-                "app_info": {
-                    "namespace": "openshift-storage",
-                    "label": "app=csi-rbdplugin",
-                    "kind": "daemonset",
-                },
-                "components": [
-                    {"name": "FORCE", "value": "true"},
-                    {"name": "TOTAL_CHAOS_DURATION", "value": str(TIMEOUT_2MIN)},
-                    {"name": "CHAOS_NAMESPACE", "value": LITMUS_NAMESPACE},
-                    {"name": "CHAOSENGINE", "value": CHAOS_ENGINE_NAME},
-                    {"name": "CHAOS_INTERVAL", "value": "30"},
-                ],
+                "pod_prefix": "csi-rbdplugin",
+                "kind": "daemonset",
+                "namespace_name": "openshift-storage",
+                "ratio": 0.5,
+                "interval": TIMEOUT_5SEC,
+                "max_duration": TIMEOUT_5MIN,
             },
             {"number_of_snapshots": 3},
             marks=pytest.mark.polarion("CNV-8750"),
@@ -117,10 +82,8 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
 )
 @pytest.mark.chaos
 def test_pod_delete_snapshot(
-    admin_client,
     chaos_snapshot_vm,
-    running_chaos_engine,
-    krkn_process,
+    pod_deleting_process,
     chaos_online_snapshots,
 ):
     """
@@ -130,7 +93,7 @@ def test_pod_delete_snapshot(
     """
     chaos_snapshot_vm.stop(wait=True)
     for idx, snapshot in enumerate(chaos_online_snapshots):
-        with VirtualMachineRestore(
+        with cluster_resource(VirtualMachineRestore)(
             name=f"restore-snapshot-{idx}",
             namespace=chaos_snapshot_vm.namespace,
             vm_name=chaos_snapshot_vm.name,
@@ -138,4 +101,3 @@ def test_pod_delete_snapshot(
         ) as vm_restore:
             vm_restore.wait_restore_done()
         snapshot.clean_up()
-    assert krkn_process.wait(), "Krkn process finished with errors."

@@ -9,7 +9,8 @@ from utilities.constants import TIMEOUT_5MIN, TIMEOUT_5SEC
     [
         pytest.param(
             {
-                "deployment_name": "apiserver",
+                "pod_prefix": "apiserver",
+                "kind": "deployment",
                 "namespace_name": "openshift-apiserver",
                 "ratio": 0.5,
                 "interval": TIMEOUT_5SEC,

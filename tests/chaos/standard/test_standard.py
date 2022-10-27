@@ -1,8 +1,8 @@
 import pytest
 from ocp_resources.resource import Resource
+from ocp_utilities.infra import cluster_resource
 
 from utilities.constants import TIMEOUT_5MIN, TIMEOUT_5SEC, Images
-from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, running_vm
 
 
@@ -14,8 +14,8 @@ from utilities.virt import VirtualMachineForTests, running_vm
                 "number_of_vms": 3,
             },
             {
-                "kind": "deployment",
                 "pod_prefix": "apiserver",
+                "kind": "deployment",
                 "namespace_name": "openshift-apiserver",
                 "ratio": 0.5,
                 "interval": TIMEOUT_5SEC,
@@ -88,8 +88,6 @@ def test_master_node_restart(admin_client, chaos_namespace, rebooting_master_nod
 )
 @pytest.mark.polarion("CNV-5438")
 def test_ceph_storage_outage(
-    admin_client,
-    chaos_namespace,
     chaos_dv_cirros,
     chaos_vm_with_dv,
     downscaled_storage_provisioner_deployment,
