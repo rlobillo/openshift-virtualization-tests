@@ -18,7 +18,7 @@
     In order to run the test manually without the jenkins job:
     - make the required changes in the yaml param file, you can optionally enter the path to the chosen file using --scale-params-file,
     the default file in case you need an example is found at cnv-tests/tests/scale/scale_params.yaml
-    - run the test using pytest (pipenv run pytest -m scale -o log_cli=true -s)
+    - run the test using pytest (poetry run pytest -m scale -o log_cli=true -s)
 
 ### Test parameter
     "vms" - defines the amount of VMs to run, and the configruation.

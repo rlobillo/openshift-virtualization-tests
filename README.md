@@ -202,7 +202,7 @@ YAML Example:
     collect_data_function: "utilities.data_collector.collect_data"
 ```
 ```bash
-pipenv run pytest .... --data-collector=data-collector.yaml
+poetry run pytest .... --data-collector=data-collector.yaml
 ```
 Logs will be available under tests-collected-info/ folder.
 
