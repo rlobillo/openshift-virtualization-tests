@@ -237,10 +237,11 @@ def latency_cluster_role():
 
 @pytest.fixture()
 def default_latency_configmap(
-    checkup_nad, framework_service_account, latency_cluster_role
+    checkup_nad, framework_service_account, cnv_current_version, latency_cluster_role
 ):
     with create_latency_configmap(
         framework_service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
         cluster_role=latency_cluster_role,
         network_attachment_definition_namespace=checkup_nad.namespace,
         network_attachment_definition_name=checkup_nad.name,
@@ -262,6 +263,7 @@ def latency_concurrent_job(
 @pytest.fixture()
 def latency_sriov_configmap(
     skip_insufficient_sriov_workers,
+    cnv_current_version,
     sriov_workers_node1,
     sriov_workers_node2,
     checkup_sriov_network,
@@ -270,6 +272,7 @@ def latency_sriov_configmap(
 ):
     with create_latency_configmap(
         framework_service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
         cluster_role=latency_cluster_role,
         network_attachment_definition_namespace=checkup_sriov_network.network_namespace,
         network_attachment_definition_name=checkup_sriov_network.name,
@@ -281,6 +284,7 @@ def latency_sriov_configmap(
 
 @pytest.fixture()
 def latency_disconnected_configmap(
+    cnv_current_version,
     worker_node1,
     worker_node2,
     disconnected_checkup_nad,
@@ -289,6 +293,7 @@ def latency_disconnected_configmap(
 ):
     with create_latency_configmap(
         framework_service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
         cluster_role=latency_cluster_role,
         network_attachment_definition_namespace=disconnected_checkup_nad.namespace,
         network_attachment_definition_name=disconnected_checkup_nad.name,
@@ -300,10 +305,11 @@ def latency_disconnected_configmap(
 
 @pytest.fixture()
 def latency_nonexistent_configmap(
-    checkup_nad, framework_service_account, latency_cluster_role
+    cnv_current_version, checkup_nad, framework_service_account, latency_cluster_role
 ):
     data = compose_configmap_data(
         framework_service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
         cluster_role=latency_cluster_role,
         network_attachment_definition_namespace=checkup_nad.namespace,
         network_attachment_definition_name=checkup_nad.name,
@@ -314,9 +320,12 @@ def latency_nonexistent_configmap(
 
 
 @pytest.fixture()
-def latency_nonexistent_roles_configmap(checkup_nad, framework_service_account):
+def latency_nonexistent_roles_configmap(
+    checkup_nad, cnv_current_version, framework_service_account
+):
     with create_latency_configmap(
         framework_service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
         cluster_role="false-cluster-role",
         network_attachment_definition_namespace=checkup_nad.namespace,
         network_attachment_definition_name=checkup_nad.name,
@@ -325,9 +334,12 @@ def latency_nonexistent_roles_configmap(checkup_nad, framework_service_account):
 
 
 @pytest.fixture()
-def latency_no_roles_configmap(checkup_nad, framework_service_account):
+def latency_no_roles_configmap(
+    checkup_nad, cnv_current_version, framework_service_account
+):
     with create_latency_configmap(
         framework_service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
         network_attachment_definition_namespace=checkup_nad.namespace,
         network_attachment_definition_name=checkup_nad.name,
     ) as configmap:
@@ -336,12 +348,14 @@ def latency_no_roles_configmap(checkup_nad, framework_service_account):
 
 @pytest.fixture()
 def latency_nonexistent_image_configmap(
+    cnv_current_version,
     checkup_nad,
     framework_service_account,
     latency_cluster_role,
 ):
     with create_latency_configmap(
         framework_service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
         image="registry:500/false-image",
         cluster_role=latency_cluster_role,
         network_attachment_definition_namespace=checkup_nad.namespace,
@@ -352,12 +366,14 @@ def latency_nonexistent_image_configmap(
 
 @pytest.fixture()
 def latency_timeout_configmap(
+    cnv_current_version,
     checkup_nad,
     framework_service_account,
     latency_cluster_role,
 ):
     with create_latency_configmap(
         framework_service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
         timeout=f"{TIMEOUT_10SEC}s",
         cluster_role=latency_cluster_role,
         network_attachment_definition_namespace=checkup_nad.namespace,
@@ -368,10 +384,15 @@ def latency_timeout_configmap(
 
 @pytest.fixture()
 def latency_same_node_configmap(
-    worker_node1, checkup_nad, framework_service_account, latency_cluster_role
+    cnv_current_version,
+    worker_node1,
+    checkup_nad,
+    framework_service_account,
+    latency_cluster_role,
 ):
     with create_latency_configmap(
         framework_service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
         cluster_role=latency_cluster_role,
         network_attachment_definition_namespace=checkup_nad.namespace,
         network_attachment_definition_name=checkup_nad.name,
@@ -382,6 +403,9 @@ def latency_same_node_configmap(
 
 
 @pytest.fixture()
-def latency_job(framework_service_account):
-    with create_latency_job(service_account=framework_service_account) as job:
+def latency_job(framework_service_account, cnv_current_version):
+    with create_latency_job(
+        service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
+    ) as job:
         yield job

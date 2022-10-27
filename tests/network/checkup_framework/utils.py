@@ -1,6 +1,7 @@
 import contextlib
 import logging
 
+import packaging.version
 import pytest
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.job import Job
@@ -16,7 +17,8 @@ LATENCY_CONFIGMAP = "latency-configmap"
 
 
 @contextlib.contextmanager
-def create_latency_job(service_account, name=None):
+def create_latency_job(service_account, cnv_current_version, name=None):
+    current_version = packaging.version.parse(version=cnv_current_version).base_version
     with Job(
         name=name or "latency-job",
         namespace=service_account.namespace,
@@ -28,7 +30,7 @@ def create_latency_job(service_account, name=None):
                 "name": "framework",
                 "image": (
                     f"{py_config['cnv_registry_sources']['osbs']['source_map']}/"
-                    "container-native-virtualization-checkup-framework"
+                    f"container-native-virtualization-checkup-framework:v{current_version}"
                 ),
                 "imagePullPolicy": "Always",
                 "env": [
@@ -45,9 +47,11 @@ def create_latency_job(service_account, name=None):
 
 
 @contextlib.contextmanager
-def create_latency_configmap(framework_service_account, **kwargs):
+def create_latency_configmap(framework_service_account, cnv_current_version, **kwargs):
     data = compose_configmap_data(
-        framework_service_account=framework_service_account, **kwargs
+        framework_service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
+        **kwargs,
     )
     with cluster_resource(ConfigMap)(
         namespace=framework_service_account.namespace, name=LATENCY_CONFIGMAP, data=data
@@ -56,9 +60,11 @@ def create_latency_configmap(framework_service_account, **kwargs):
 
 
 @contextlib.contextmanager
-def create_checkup_resources(framework_service_account, **kwargs):
+def create_checkup_resources(framework_service_account, cnv_current_version, **kwargs):
     data = compose_configmap_data(
-        framework_service_account=framework_service_account, **kwargs
+        framework_service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
+        *kwargs,
     )
     with cluster_resource(ConfigMap)(
         namespace=framework_service_account.namespace, name=LATENCY_CONFIGMAP, data=data
@@ -71,13 +77,15 @@ def create_checkup_resources(framework_service_account, **kwargs):
 
 def compose_configmap_data(
     framework_service_account,
+    cnv_current_version,
     image="container-native-virtualization-vm-network-latency-checkup",
     timeout=f"{TIMEOUT_5MIN}m",
     cluster_role=None,
     **kwargs,
 ):
+    current_version = packaging.version.parse(version=cnv_current_version).base_version
     data_dict = {
-        "spec.image": f"{py_config['cnv_registry_sources']['osbs']['source_map']}/{image}",
+        "spec.image": f"{py_config['cnv_registry_sources']['osbs']['source_map']}/{image+':v'+current_version}",
         "spec.timeout": timeout,
         "spec.serviceAccountName": framework_service_account.name,
     }
