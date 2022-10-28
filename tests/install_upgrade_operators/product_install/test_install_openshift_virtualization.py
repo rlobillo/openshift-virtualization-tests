@@ -4,7 +4,12 @@ import pytest
 from ocp_resources.hyperconverged import HyperConverged
 from pytest_testconfig import py_config
 
-from utilities.constants import BREW_REGISTERY_SOURCE, HCO_SUBSCRIPTION, ICSP_FILE
+from utilities.constants import (
+    BREW_REGISTERY_SOURCE,
+    HCO_CATALOG_SOURCE,
+    HCO_SUBSCRIPTION,
+    ICSP_FILE,
+)
 from utilities.hco import wait_for_hco_conditions
 from utilities.infra import (
     create_ns,
@@ -27,7 +32,6 @@ from utilities.operator import (
 )
 
 
-OPENSHIFT_VIRTUALIZATION_CATALOG_SOURCE = "custom-catalog-source"
 OPENSHIFT_VIRTUALIZATION = "openshift-virtualization"
 LOGGER = logging.getLogger(__name__)
 
@@ -68,14 +72,14 @@ def updated_icsp_hyperconverged(
 
 @pytest.fixture()
 def hyperconverged_catalog_source(admin_client, cnv_image_url):
-    LOGGER.info(f"Creating catalog source {OPENSHIFT_VIRTUALIZATION_CATALOG_SOURCE}")
+    LOGGER.info(f"Creating catalog source {HCO_CATALOG_SOURCE}")
     catalog_source = create_catalog_source(
-        catalog_name=OPENSHIFT_VIRTUALIZATION_CATALOG_SOURCE,
+        catalog_name=HCO_CATALOG_SOURCE,
         image=cnv_image_url,
     )
     wait_for_catalogsource_ready(
         admin_client=admin_client,
-        catalog_name=OPENSHIFT_VIRTUALIZATION_CATALOG_SOURCE,
+        catalog_name=HCO_CATALOG_SOURCE,
     )
     return catalog_source
 
