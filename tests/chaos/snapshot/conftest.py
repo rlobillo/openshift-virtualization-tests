@@ -1,7 +1,6 @@
 import pytest
 from ocp_utilities.infra import cluster_resource
 
-from tests.chaos.constants import VM_LABEL
 from tests.chaos.snapshot.utils import VirtualMachineSnapshotWithDeadline
 from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_8MIN, Images
 from utilities.storage import create_cirros_dv_for_snapshot
@@ -32,7 +31,6 @@ def chaos_snapshot_vm(admin_client, chaos_namespace, chaos_snapshot_dv):
         os_flavor=OS_FLAVOR_CIRROS,
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
         data_volume_template={"metadata": dv_dict["metadata"], "spec": dv_dict["spec"]},
-        additional_labels=VM_LABEL,
     ) as vm:
         running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
         yield vm

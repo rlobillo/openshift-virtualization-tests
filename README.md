@@ -169,11 +169,9 @@ make tests UPSTREAM=1
 
 ## Running chaos tests
 
-The chaos tests for cnv are run using the combination of [krkn](https://github.com/redhat-chaos/krkn) and [Litmus](https://litmuschaos.io/).
+CNV chaos tests disrupt the cluster in different ways in order to build confidence in the robustness of CNV.
 
-In each scenario we [run krkn standalone](https://github.com/redhat-chaos/krkn/blob/main/docs/installation.md) using python (version >= 3.9). In general, all Litmus scenarios need a ChaosEngine resource that contains all the information necessary to run a chaos experiment. The yaml for this resource is created dynamically for each scenario and passed to the krkn process when launching it, along with the kubeconfig and the krkn config file. Krkn in turn installs Litmus into the cluster, runs the experiment by applying the ChaosEngine yaml and verifies the result of the execution.
-
-To run the chaos tests the following command needs to be run
+To run the chaos tests the following command needs to be run:
 
 ```bash
 make tests PYTEST_ARGS="-k chaos"

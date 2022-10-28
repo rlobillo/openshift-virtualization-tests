@@ -12,8 +12,7 @@ from ocp_resources.virtual_machine_instance_migration import (
 from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
-from tests.chaos.constants import CHAOS_NAMESPACE
-from tests.chaos.utils.utils import create_pod_deleting_process
+from tests.chaos.utils import create_pod_deleting_process
 from utilities.constants import (
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     TIMEOUT_1MIN,
@@ -42,10 +41,12 @@ from utilities.virt import (
 
 LOGGER = logging.getLogger(__name__)
 
+CHAOS_NAMESPACE_NAME = "chaos"
+
 
 @pytest.fixture()
 def chaos_namespace():
-    yield from create_ns(name=CHAOS_NAMESPACE)
+    yield from create_ns(name=CHAOS_NAMESPACE_NAME)
 
 
 @pytest.fixture()
