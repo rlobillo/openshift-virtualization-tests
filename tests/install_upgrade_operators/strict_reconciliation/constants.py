@@ -379,6 +379,7 @@ EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES = [
     "SRIOVLiveMigration",
     "LiveMigration",
     "PSA",
+    "VMExport",
 ]
 
 EXPECTED_CDI_HARDCODED_FEATUREGATES = [
