@@ -12,7 +12,6 @@ from tests.install_upgrade_operators.constants import (
     HCO_CR_CERT_CONFIG_KEY,
     HCO_CR_CERT_CONFIG_RENEW_BEFORE_KEY,
     HCO_CR_CERT_CONFIG_SERVER_KEY,
-    SRIOV_LIVEMIGRATION,
 )
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
     CERTC_CUSTOM_18H,
@@ -29,7 +28,6 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
     EXPCT_LM_CUSTOM_PO,
     EXPCT_LM_CUSTOM_PT,
     EXPCT_LM_DEFAULTS,
-    FG_DISABLED,
     FG_ENABLED,
     LIVE_MIGRATION_CONFIG_KEY,
     LM_COMPLETIONTIMEOUTPERGIB_CUSTOM,
@@ -306,14 +304,6 @@ class TestCRDefaultsOnStanzaDeletion:
             ),
             pytest.param(
                 {
-                    "rpatch": {"spec": {"featureGates": {SRIOV_LIVEMIGRATION: None}}},
-                },
-                {f"featureGates.{SRIOV_LIVEMIGRATION}": None},
-                id="defaults_fg_slm_none",
-                marks=(pytest.mark.polarion("CNV-6395")),
-            ),
-            pytest.param(
-                {
                     "rpatch": {"spec": {"featureGates": None}},
                 },
                 {"featureGates": None},
@@ -340,17 +330,6 @@ class TestCRDefaultsOnStanzaDeletion:
                 {f"featureGates.{WITH_HOST_PASSTHROUGH_CPU}": FG_ENABLED},
                 id="defaults_fg_custom_whp",
                 marks=(pytest.mark.polarion("CNV-6401")),
-            ),
-            pytest.param(
-                {
-                    "rpatch": {
-                        "spec": {"featureGates": {SRIOV_LIVEMIGRATION: FG_DISABLED}}
-                    },
-                    "list_resource_reconcile": [KubeVirt],
-                },
-                {f"featureGates.{SRIOV_LIVEMIGRATION}": FG_DISABLED},
-                id="defaults_fg_custom_slm",
-                marks=(pytest.mark.polarion("CNV-6402")),
             ),
         ],
         indirect=["deleted_stanza_on_hco_cr"],

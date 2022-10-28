@@ -19,7 +19,6 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
     EXPECTED_CDI_HARDCODED_FEATUREGATES,
     EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES,
     FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
-    FG_SRIOVLIVEMIGRATION_DEFAULT,
     FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
     KUBEVIRT_CR_CERT_CONFIG_SELF_SIGNED_KEY,
     LIVE_MIGRATION_CONFIG_BANDWIDTH_PER_MIGRATION_KEY,
@@ -85,7 +84,6 @@ class TestOperatorsDefaults:
             pytest.param(
                 {
                     "featureGates": {
-                        "sriovLiveMigration": FG_SRIOVLIVEMIGRATION_DEFAULT,
                         "withHostPassthroughCPU": FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
                         ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE: FG_ENABLE_COMMON_BOOT_IMAGE_IMPORT_DEFAULT_VALUE,
                     }

@@ -25,7 +25,6 @@ from tests.install_upgrade_operators.strict_reconciliation.constants import (
     EXPCT_CERTC_DEFAULTS,
     EXPCT_LM_DEFAULTS,
     FEATURE_GATES,
-    FG_SRIOVLIVEMIGRATION_DEFAULT,
     FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
     HCO_MOD_DEFAULT_CA_DUR,
     HCO_MOD_DEFAULT_CA_RB,
@@ -383,7 +382,6 @@ class TestOperatorsModify:
                     "patch": {
                         "spec": {
                             "featureGates": {
-                                "sriovLiveMigration": FG_SRIOVLIVEMIGRATION_DEFAULT,
                                 "withHostPassthroughCPU": FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
                             }
                         }
@@ -392,7 +390,6 @@ class TestOperatorsModify:
                 {
                     "hco_spec": {
                         "featureGates": {
-                            "sriovLiveMigration": FG_SRIOVLIVEMIGRATION_DEFAULT,
                             "withHostPassthroughCPU": FG_WITHHOSTPASSTHROUGHCPU_DEFAULT,
                         },
                     },
@@ -400,27 +397,6 @@ class TestOperatorsModify:
                 },
                 marks=pytest.mark.polarion("CNV-6709"),
                 id="Test_Modify_HCO_CR_featureGates",
-            ),
-            pytest.param(
-                {
-                    "patch": {
-                        "spec": {
-                            "featureGates": {
-                                "sriovLiveMigration": FG_SRIOVLIVEMIGRATION_DEFAULT,
-                            }
-                        }
-                    }
-                },
-                {
-                    "hco_spec": {
-                        "featureGates": {
-                            "sriovLiveMigration": FG_SRIOVLIVEMIGRATION_DEFAULT,
-                        },
-                    },
-                    "kubevirt_spec": "SRIOVLiveMigration",
-                },
-                marks=pytest.mark.polarion("CNV-6710"),
-                id="Test_Modify_HCO_CR_featureGates_sriovLiveMigration",
             ),
             pytest.param(
                 {

@@ -4,9 +4,7 @@ import pytest
 
 from tests.install_upgrade_operators.strict_reconciliation.constants import (
     FEATURE_GATES,
-    KV_SRIOV_LIVE_MIGRATION_FG,
     KV_WITH_HOST_PASSTHROUGH_CPU_FG,
-    SRIOV_LIVEMIGRATION,
     WITH_HOST_PASSTHROUGH_CPU,
 )
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
@@ -94,7 +92,6 @@ class TestNegativeFeatureGates:
         [
             pytest.param(
                 [
-                    KV_SRIOV_LIVE_MIGRATION_FG,
                     WITH_HOST_PASSTHROUGH_CPU,
                 ],
                 marks=(pytest.mark.polarion("CNV-6269")),
@@ -104,11 +101,6 @@ class TestNegativeFeatureGates:
                 [WITH_HOST_PASSTHROUGH_CPU],
                 marks=(pytest.mark.polarion("CNV-6270")),
                 id="kubevirt_cr_reconciles_on_modifcation_with_host_passthrough_cpu",
-            ),
-            pytest.param(
-                [KV_SRIOV_LIVE_MIGRATION_FG],
-                marks=(pytest.mark.polarion("CNV-6271")),
-                id="kubevirt_cr_reconciles_on_modifcation_with_host_passthrough_cpu_sriovlivemigration",
             ),
             pytest.param(
                 ["fakeGate", "Sidecar"],
@@ -144,16 +136,6 @@ class TestNegativeFeatureGates:
 
 
 class TestHCOOptionalFeatureGatesSuite:
-    @pytest.mark.polarion("CNV-6267")
-    def test_sriov_migration_featuregates_exist_in_kubevirt_cr(
-        self, kubevirt_feature_gates
-    ):
-        assert KV_SRIOV_LIVE_MIGRATION_FG in kubevirt_feature_gates, (
-            f"{KV_SRIOV_LIVE_MIGRATION_FG} is not present in"
-            " KubeVirt's feature gate list:"
-            f" {kubevirt_feature_gates}"
-        )
-
     @pytest.mark.polarion("CNV-6268")
     def test_with_host_passthrough_cpu_not_exist_in_kubevirt_cr(
         self, kubevirt_feature_gates
@@ -174,12 +156,11 @@ class TestHCOOptionalFeatureGatesSuite:
             pytest.param(
                 {
                     "fgs": [
-                        SRIOV_LIVEMIGRATION,
                         WITH_HOST_PASSTHROUGH_CPU,
                     ],
                 },
-                [WITH_HOST_PASSTHROUGH_CPU, SRIOV_LIVEMIGRATION],
-                [KV_WITH_HOST_PASSTHROUGH_CPU_FG, KV_SRIOV_LIVE_MIGRATION_FG],
+                [WITH_HOST_PASSTHROUGH_CPU],
+                [KV_WITH_HOST_PASSTHROUGH_CPU_FG],
                 marks=(pytest.mark.polarion("CNV-6280")),
                 id="modify_hco_cr_feature_gates",
             ),
@@ -191,15 +172,6 @@ class TestHCOOptionalFeatureGatesSuite:
                 [KV_WITH_HOST_PASSTHROUGH_CPU_FG],
                 marks=(pytest.mark.polarion("CNV-6281")),
                 id="modify_hco_cr_feature_gates_with_host_passthrough_cpu",
-            ),
-            pytest.param(
-                {
-                    "fgs": [SRIOV_LIVEMIGRATION],
-                },
-                [SRIOV_LIVEMIGRATION],
-                [KV_SRIOV_LIVE_MIGRATION_FG],
-                marks=(pytest.mark.polarion("CNV-6282")),
-                id="modify_hco_cr_feature_gates_sriov_live_migration",
             ),
         ],
         indirect=["hco_with_non_default_feature_gates"],
