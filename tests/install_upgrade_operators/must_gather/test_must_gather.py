@@ -31,14 +31,15 @@ from tests.install_upgrade_operators.must_gather.utils import (
     get_must_gather_output_file,
 )
 from utilities.constants import (
+    ALL_CNV_CRDS,
     BRIDGE_MARKER,
     CLUSTER_NETWORK_ADDONS_OPERATOR,
     KUBE_CNI_LINUX_BRIDGE_PLUGIN,
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     KUBEMACPOOL_MAC_RANGE_CONFIG,
     OPENSHIFT_NAMESPACE,
+    VM_CRD,
 )
-from utilities.infra import ALL_CNV_CRDS, VM_CRD
 
 
 pytestmark = pytest.mark.sno

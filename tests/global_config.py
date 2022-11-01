@@ -10,6 +10,7 @@ from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
 
 from utilities.constants import (
+    ALL_CNV_CRDS,
     ALL_CNV_DAEMONSETS,
     ALL_CNV_DEPLOYMENTS,
     ALL_CNV_PODS,
@@ -19,7 +20,7 @@ from utilities.constants import (
     OVS_BRIDGE,
     Images,
 )
-from utilities.infra import ALL_CNV_CRDS, get_latest_os_dict_list
+from utilities.infra import get_latest_os_dict_list
 from utilities.storage import HppCsiStorageClass
 
 

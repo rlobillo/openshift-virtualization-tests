@@ -37,7 +37,7 @@ from ocp_resources.namespace import Namespace
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
 from ocp_resources.project import Project, ProjectRequest
-from ocp_resources.resource import Resource, ResourceEditor
+from ocp_resources.resource import ResourceEditor
 from ocp_resources.secret import Secret
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -70,40 +70,6 @@ JIRA_STATUS_CLOSED = ("closed", "done", "obsolete", "resolved")
 NON_EXIST_URL = "https://noneexist.test"  # Use 'test' domain rfc6761
 EXCLUDED_FROM_URL_VALIDATION = ("", NON_EXIST_URL)
 INTERNAL_HTTP_SERVER_ADDRESS = "internal-http.cnv-tests-utilities"
-
-VM_CRD = f"virtualmachines.{Resource.ApiGroup.KUBEVIRT_IO}"
-ALL_CNV_CRDS = [
-    f"cdiconfigs.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
-    f"cdis.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
-    f"dataimportcrons.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
-    f"datasources.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
-    f"datavolumes.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
-    f"hostpathprovisioners.{Resource.ApiGroup.HOSTPATHPROVISIONER_KUBEVIRT_IO}",
-    f"hyperconvergeds.{Resource.ApiGroup.HCO_KUBEVIRT_IO}",
-    f"kubevirts.{Resource.ApiGroup.KUBEVIRT_IO}",
-    f"migrationpolicies.{Resource.ApiGroup.MIGRATIONS_KUBEVIRT_IO}",
-    f"networkaddonsconfigs.{Resource.ApiGroup.NETWORKADDONSOPERATOR_NETWORK_KUBEVIRT_IO}",
-    f"objecttransfers.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
-    f"ssps.{Resource.ApiGroup.SSP_KUBEVIRT_IO}",
-    f"storageprofiles.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
-    f"tektontasks.{Resource.ApiGroup.TEKTONTASKS_KUBEVIRT_IO}",
-    f"virtualmachineclusterinstancetypes.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
-    f"virtualmachineinstancetypes.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
-    f"virtualmachineinstancemigrations.{Resource.ApiGroup.KUBEVIRT_IO}",
-    f"virtualmachineinstancepresets.{Resource.ApiGroup.KUBEVIRT_IO}",
-    f"virtualmachineinstancereplicasets.{Resource.ApiGroup.KUBEVIRT_IO}",
-    f"virtualmachineinstances.{Resource.ApiGroup.KUBEVIRT_IO}",
-    f"virtualmachinepools.{Resource.ApiGroup.POOL_KUBEVIRT_IO}",
-    f"virtualmachinerestores.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
-    VM_CRD,
-    f"virtualmachinesnapshotcontents.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
-    f"virtualmachinesnapshots.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
-    f"virtualmachineclones.clone.{Resource.ApiGroup.KUBEVIRT_IO}",
-    f"virtualmachineclusterpreferences.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
-    f"virtualmachineexports.export.{Resource.ApiGroup.KUBEVIRT_IO}",
-    f"virtualmachinepreferences.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
-]
-
 
 LOGGER = logging.getLogger(__name__)
 

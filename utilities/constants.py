@@ -429,3 +429,37 @@ BASE_EXCEPTIONS_DICT = {
 OC_ADM_LOGS_COMMAND = "oc adm node-logs"
 AUDIT_LOGS_PATH = "--path=kube-apiserver"
 CNV_TEST_SERVICE_ACCOUNT = "cnv-tests-sa"
+VM_CRD = f"virtualmachines.{Resource.ApiGroup.KUBEVIRT_IO}"
+VM_CLONE_CRD = f"virtualmachineclones.clone.{Resource.ApiGroup.KUBEVIRT_IO}"
+VM_EXPORT_CRD = f"virtualmachineexports.export.{Resource.ApiGroup.KUBEVIRT_IO}"
+ALL_CNV_CRDS = [
+    f"cdiconfigs.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"cdis.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"dataimportcrons.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"datasources.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"datavolumes.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"hostpathprovisioners.{Resource.ApiGroup.HOSTPATHPROVISIONER_KUBEVIRT_IO}",
+    f"hyperconvergeds.{Resource.ApiGroup.HCO_KUBEVIRT_IO}",
+    f"kubevirts.{Resource.ApiGroup.KUBEVIRT_IO}",
+    f"migrationpolicies.{Resource.ApiGroup.MIGRATIONS_KUBEVIRT_IO}",
+    f"networkaddonsconfigs.{Resource.ApiGroup.NETWORKADDONSOPERATOR_NETWORK_KUBEVIRT_IO}",
+    f"objecttransfers.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"ssps.{Resource.ApiGroup.SSP_KUBEVIRT_IO}",
+    f"storageprofiles.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
+    f"tektontasks.{Resource.ApiGroup.TEKTONTASKS_KUBEVIRT_IO}",
+    f"virtualmachineclusterinstancetypes.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
+    f"virtualmachineinstancetypes.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
+    f"virtualmachineinstancemigrations.{Resource.ApiGroup.KUBEVIRT_IO}",
+    f"virtualmachineinstancepresets.{Resource.ApiGroup.KUBEVIRT_IO}",
+    f"virtualmachineinstancereplicasets.{Resource.ApiGroup.KUBEVIRT_IO}",
+    f"virtualmachineinstances.{Resource.ApiGroup.KUBEVIRT_IO}",
+    f"virtualmachinepools.{Resource.ApiGroup.POOL_KUBEVIRT_IO}",
+    f"virtualmachinerestores.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
+    VM_CRD,
+    f"virtualmachinesnapshotcontents.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
+    f"virtualmachinesnapshots.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
+    VM_CLONE_CRD,
+    f"virtualmachineclusterpreferences.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
+    VM_EXPORT_CRD,
+    f"virtualmachinepreferences.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
+]
