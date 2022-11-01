@@ -371,7 +371,6 @@ EXPECTED_KUBEVIRT_HARDCODED_FEATUREGATES = [
     "NonRoot",
     "WithHostModelCPU",
     "HypervStrictCheck",
-    "LiveMigration",
     "PSA",
     "VMExport",
 ]
