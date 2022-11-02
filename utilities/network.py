@@ -1,6 +1,5 @@
 import contextlib
 import ipaddress
-import json
 import logging
 import os
 import random
@@ -10,7 +9,10 @@ import shlex
 import netaddr
 from ocp_resources.network import Network
 from ocp_resources.network_addons_config import NetworkAddonsConfig
-from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
+from ocp_resources.network_attachment_definition import (
+    LinuxBridgeNetworkAttachmentDefinition,
+    OvsBridgeNetworkAttachmentDefinition,
+)
 from ocp_resources.node import Node
 from ocp_resources.node_network_configuration_policy import (
     NNCPConfigurationFailed,
@@ -18,7 +20,6 @@ from ocp_resources.node_network_configuration_policy import (
 )
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.pod import Pod
-from ocp_resources.resource import sub_resource_level
 from ocp_resources.sriov_network import SriovNetwork
 from ocp_resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -393,153 +394,6 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
         res = super().to_dict()
 
         return res
-
-
-class BridgeNetworkAttachmentDefinition(NetworkAttachmentDefinition):
-    def __init__(
-        self,
-        name,
-        namespace,
-        bridge_name,
-        cni_type,
-        vlan=None,
-        client=None,
-        mtu=None,
-        macspoofchk=None,
-        teardown=True,
-        old_nad_format=False,
-        add_resource_name=True,
-        dry_run=None,
-    ):
-        super().__init__(
-            name=name,
-            namespace=namespace,
-            client=client,
-            teardown=teardown,
-            dry_run=dry_run,
-        )
-        self.old_nad_format = old_nad_format
-
-        # An object must not be created as type BridgeNetworkAttachmentDefinition, but only as one of its successors.
-        sub_lvl = sub_resource_level(
-            current_class=self.__class__,
-            owner_class=BridgeNetworkAttachmentDefinition,
-            parent_class=NetworkAttachmentDefinition,
-        )
-        if sub_lvl is None:
-            raise TypeError(
-                f"Cannot create an object of type {self.__class__}.\n"
-                "Only its sub-types LinuxBridgeNetworkAttachmentDefinition and "
-                "OvsBridgeNetworkAttachmentDefinition are allowed."
-            )
-
-        self.bridge_name = bridge_name
-        self.cni_type = cni_type
-        self.vlan = vlan
-        self.mtu = mtu
-        self.macspoofchk = macspoofchk
-        self.add_resource_name = add_resource_name
-
-    def to_dict(self):
-        res = super().to_dict()
-        spec_config = {"cniVersion": "0.3.1", "name": self.bridge_name}
-        bridge_dict = {"type": self.cni_type, "bridge": self.bridge_name}
-        if self.mtu:
-            bridge_dict["mtu"] = self.mtu
-        if self.vlan:
-            bridge_dict["vlan"] = self.vlan
-        if self.old_nad_format:
-            spec_config["plugins"] = [bridge_dict]
-        else:
-            spec_config.update(bridge_dict)
-        if self.macspoofchk:
-            spec_config["macspoofchk"] = self.macspoofchk
-
-        res["spec"]["config"] = spec_config
-        return res
-
-
-class LinuxBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
-    def __init__(
-        self,
-        name,
-        namespace,
-        bridge_name,
-        cni_type="cnv-bridge",
-        vlan=None,
-        client=None,
-        mtu=None,
-        tuning_type=None,
-        teardown=True,
-        macspoofchk=None,
-        add_resource_name=True,
-        dry_run=None,
-    ):
-        super().__init__(
-            name=name,
-            namespace=namespace,
-            bridge_name=bridge_name,
-            cni_type=cni_type,
-            vlan=vlan,
-            client=client,
-            mtu=mtu,
-            teardown=teardown,
-            macspoofchk=macspoofchk,
-            add_resource_name=add_resource_name,
-            dry_run=dry_run,
-        )
-        self.tuning_type = tuning_type
-
-    def to_dict(self):
-        res = super().to_dict()
-        if self.tuning_type:
-            self.old_nad_format = True
-            res["spec"]["config"].setdefault("plugins", []).append(
-                {"type": self.tuning_type}
-            )
-
-        res["spec"]["config"] = json.dumps(res["spec"]["config"])
-        return res
-
-    @property
-    def resource_name(self):
-        if self.add_resource_name:
-            return f"bridge.network.kubevirt.io/{self.bridge_name}"
-
-
-class OvsBridgeNetworkAttachmentDefinition(BridgeNetworkAttachmentDefinition):
-    def __init__(
-        self,
-        name,
-        namespace,
-        bridge_name,
-        cni_type="ovs",
-        vlan=None,
-        client=None,
-        mtu=None,
-        teardown=True,
-        dry_run=None,
-    ):
-        super().__init__(
-            name=name,
-            namespace=namespace,
-            bridge_name=bridge_name,
-            cni_type=cni_type,
-            vlan=vlan,
-            client=client,
-            mtu=mtu,
-            teardown=teardown,
-            dry_run=dry_run,
-        )
-
-    def to_dict(self):
-        res = super().to_dict()
-        res["spec"]["config"] = json.dumps(res["spec"]["config"])
-        return res
-
-    @property
-    def resource_name(self):
-        return f"ovs-cni.network.kubevirt.io/{self.bridge_name}"
 
 
 class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
