@@ -15,18 +15,8 @@ from utilities.virt import get_hyperconverged_kubevirt
 
 
 @pytest.fixture(scope="session")
-def cnv_source(pytestconfig):
-    return pytestconfig.option.cnv_source
-
-
-@pytest.fixture(scope="session")
 def cnv_registry_source(cnv_source):
     return py_config["cnv_registry_sources"][cnv_source]
-
-
-@pytest.fixture(scope="session")
-def is_upgrade_from_production_source(cnv_source):
-    return cnv_source == "production"
 
 
 @pytest.fixture(scope="session")
@@ -111,9 +101,9 @@ def hco_version_scope_class(admin_client, hco_namespace):
 
 @pytest.fixture()
 def disabled_default_sources_in_operatorhub(
-    admin_client, is_upgrade_from_production_source
+    admin_client, is_production_source, installing_cnv
 ):
-    if is_upgrade_from_production_source:
+    if installing_cnv and is_production_source:
         yield
     else:
         with disable_default_sources_in_operatorhub(admin_client=admin_client):

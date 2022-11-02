@@ -141,8 +141,12 @@ def pytest_addoption(parser):
         "--cnv-version", help="CNV version to install or upgrade to"
     )
     install_upgrade_group.addoption("--cnv-image", help="Path to CNV index-image")
-    # TODO: add choices - production, stage, osbs and nightly
-    install_upgrade_group.addoption("--cnv-source", help="CNV source lane")
+    install_upgrade_group.addoption(
+        "--cnv-source",
+        help="CNV source lane",
+        default="osbs",
+        choices=["production", "stage", "osbs"],
+    )
 
     # OCP upgrade options
     install_upgrade_group.addoption(
@@ -272,11 +276,14 @@ def pytest_cmdline_main(config):
 
     deprecation_tests_dir_path = "tests/deprecated_api"
     if (
-        not config.getoption("--skip-deprecated-api-test")
+        not (
+            config.getoption("--skip-deprecated-api-test")
+            or config.getoption("--install")
+        )
         and getattr(config, "args", None)
         and not any([deprecation_tests_dir_path in arg for arg in config.args])
     ):
-        # test_deprecation_audit_logs should always run regardless the path that passed to pytest
+        # test_deprecation_audit_logs should always run regardless the path that passed to pytest.
         config.args.append(
             os.path.join(deprecation_tests_dir_path, "test_deprecation_audit_logs.py")
         )
@@ -315,11 +322,12 @@ def pytest_cmdline_main(config):
     ):
         raise ValueError("os matrix and latest os options are mutually exclusive.")
 
-    if config.getoption("cnv_source") and not config.getoption("cnv_version"):
+    if (
+        config.getoption("upgrade") == "cnv"
+        and config.getoption("cnv_source")
+        and not config.getoption("cnv_version")
+    ):
         raise ValueError("Running with --cnv-source: Missing --cnv-version")
-
-    if config.getoption("cnv_source") == "osbs" and not config.getoption("cnv_image"):
-        raise ValueError("Running with --cnv-source osbs: Missing --cnv-image")
 
 
 def pytest_collection_modifyitems(session, config, items):

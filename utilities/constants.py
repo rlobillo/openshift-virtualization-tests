@@ -463,3 +463,4 @@ ALL_CNV_CRDS = [
     VM_EXPORT_CRD,
     f"virtualmachinepreferences.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
 ]
+PRODUCTION_CATALOG_SOURCE = "redhat-operators"

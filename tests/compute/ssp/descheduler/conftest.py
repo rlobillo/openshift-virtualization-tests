@@ -37,7 +37,7 @@ from tests.compute.ssp.descheduler.utils import (
     wait_vmi_failover,
 )
 from tests.compute.utils import check_pod_disruption_budget_for_completed_migrations
-from utilities.constants import TIMEOUT_5SEC
+from utilities.constants import PRODUCTION_CATALOG_SOURCE, TIMEOUT_5SEC
 from utilities.infra import (
     create_ns,
     get_raw_package_manifest,
@@ -91,17 +91,16 @@ def installed_descheduler_og(descheduler_ns):
 @pytest.fixture(scope="module")
 def installed_descheduler_sub(admin_client, descheduler_ns, installed_descheduler_og):
     descheduler_sub_name = "cluster-kube-descheduler-operator"
-    catalog_source = "redhat-operators"
     raw_package_manifest = get_raw_package_manifest(
         admin_client=admin_client,
         name=descheduler_sub_name,
-        catalog_source=catalog_source,
+        catalog_source=PRODUCTION_CATALOG_SOURCE,
     )
 
     with cluster_resource(Subscription)(
         name=descheduler_sub_name,
         namespace=descheduler_ns.name,
-        source=catalog_source,
+        source=PRODUCTION_CATALOG_SOURCE,
         source_namespace=raw_package_manifest.metadata.namespace,
         channel=raw_package_manifest.status.defaultChannel,
     ):

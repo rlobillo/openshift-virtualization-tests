@@ -73,11 +73,11 @@ def updated_image_content_source(
     cnv_registry_source,
     pull_secret_directory,
     generated_pulled_secret,
-    is_upgrade_from_production_source,
+    is_production_source,
     is_upgrade_from_stage_source,
     tmpdir,
 ):
-    if is_upgrade_from_production_source:
+    if is_production_source:
         LOGGER.info("ICSP updates skipped as upgrading using production source")
         return
     source_url = cnv_registry_source["source_map"]
@@ -119,10 +119,10 @@ def updated_image_content_source(
 @pytest.fixture()
 def updated_catalog_source_image(
     admin_client,
-    is_upgrade_from_production_source,
+    is_production_source,
     cnv_image_url,
 ):
-    if not is_upgrade_from_production_source:
+    if not is_production_source:
         LOGGER.info("Deployment is not from production; update catalog source image.")
         update_image_in_catalog_source(
             dyn_client=admin_client,

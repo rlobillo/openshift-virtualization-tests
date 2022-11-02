@@ -9,6 +9,7 @@ from utilities.constants import (
     HCO_CATALOG_SOURCE,
     HCO_SUBSCRIPTION,
     ICSP_FILE,
+    PRODUCTION_CATALOG_SOURCE,
 )
 from utilities.hco import wait_for_hco_conditions
 from utilities.infra import (
@@ -37,14 +38,26 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def hyperconverged_directory(tmpdir_factory):
-    yield tmpdir_factory.mktemp(f"{OPENSHIFT_VIRTUALIZATION}-folder")
+def hyperconverged_directory(tmpdir_factory, is_production_source):
+    if hyperconverged_directory:
+        yield
+    else:
+        yield tmpdir_factory.mktemp(f"{OPENSHIFT_VIRTUALIZATION}-folder")
 
 
 @pytest.fixture()
 def generated_hyperconverged_icsp(
-    admin_client, hyperconverged_directory, generated_pulled_secret, cnv_image_url
+    admin_client,
+    is_production_source,
+    hyperconverged_directory,
+    generated_pulled_secret,
+    cnv_image_url,
 ):
+    if is_production_source:
+        LOGGER.info(
+            "This is installation from production source, icsp update is not needed."
+        )
+        return
     folder_name = f"{hyperconverged_directory}/{OPENSHIFT_VIRTUALIZATION}-manifest"
     LOGGER.info(f"Create CNV ICSP file {ICSP_FILE} in {hyperconverged_directory}")
     mirror_cmd = (
@@ -57,8 +70,16 @@ def generated_hyperconverged_icsp(
 
 @pytest.fixture()
 def updated_icsp_hyperconverged(
-    admin_client, generated_hyperconverged_icsp, machine_config_pools
+    admin_client,
+    is_production_source,
+    generated_hyperconverged_icsp,
+    machine_config_pools,
 ):
+    if is_production_source:
+        LOGGER.info(
+            "This is installation from production source, icsp update is not needed."
+        )
+        return
     delete_existing_icsp(admin_client=admin_client, name="iib-0")
     create_icsp_from_file(icsp_file_path=generated_hyperconverged_icsp)
     LOGGER.info("Wait for MCP update after ICSP modification.")
@@ -71,7 +92,12 @@ def updated_icsp_hyperconverged(
 
 
 @pytest.fixture()
-def hyperconverged_catalog_source(admin_client, cnv_image_url):
+def hyperconverged_catalog_source(admin_client, is_production_source, cnv_image_url):
+    if is_production_source:
+        LOGGER.info(
+            "No creation or update to catalogsource is needed for installation from production source."
+        )
+        return
     LOGGER.info(f"Creating catalog source {HCO_CATALOG_SOURCE}")
     catalog_source = create_catalog_source(
         catalog_name=HCO_CATALOG_SOURCE,
@@ -108,13 +134,21 @@ def created_cnv_operator_group(admin_client, created_cnv_namespace):
 
 @pytest.fixture()
 def installed_cnv_subscription(
-    admin_client, hyperconverged_catalog_source, created_cnv_namespace
+    admin_client,
+    is_production_source,
+    hyperconverged_catalog_source,
+    created_cnv_namespace,
 ):
+    catalogsource_name = (
+        PRODUCTION_CATALOG_SOURCE
+        if is_production_source
+        else hyperconverged_catalog_source.name
+    )
     return create_subscription(
         subscription_name=HCO_SUBSCRIPTION,
         package_name=py_config["hco_cr_name"],
         namespace_name=created_cnv_namespace.name,
-        catalogsource_name=hyperconverged_catalog_source.name,
+        catalogsource_name=catalogsource_name,
     )
 
 

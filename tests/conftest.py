@@ -546,9 +546,13 @@ def pull_secret_directory(tmpdir_factory):
 @pytest.fixture(scope="session")
 def generated_pulled_secret(
     is_downstream_distribution,
+    is_production_source,
+    installing_cnv,
     admin_client,
 ):
     if is_downstream_distribution:
+        if is_production_source and installing_cnv:
+            return
         return generate_openshift_pull_secret_file()
 
 
@@ -2360,8 +2364,10 @@ def virtctl_binary(
 
 
 @pytest.fixture(scope="session")
-def oc_binary(is_upstream_distribution, os_path_environment, bin_directory):
-    if is_upstream_distribution:
+def oc_binary(
+    is_upstream_distribution, installing_cnv, os_path_environment, bin_directory
+):
+    if installing_cnv or is_upstream_distribution:
         return
 
     download_file_from_cluster(
@@ -2493,3 +2499,13 @@ def disabled_cdi_garbage_collector(
 @pytest.fixture(scope="session")
 def installing_cnv(pytestconfig):
     return pytestconfig.option.install
+
+
+@pytest.fixture(scope="session")
+def is_production_source(cnv_source):
+    return cnv_source == "production"
+
+
+@pytest.fixture(scope="session")
+def cnv_source(pytestconfig):
+    return pytestconfig.option.cnv_source or "osbs"
