@@ -2248,13 +2248,20 @@ def get_oc_image_info(image, pull_secret=None):
     base_command = f"oc image -o json info {image}"
     if pull_secret:
         base_command = f"{base_command} --registry-config={pull_secret}"
-    out = utilities.infra.run_command(command=shlex.split(base_command))[1]
+
     try:
-        image_info = json.loads(out)
-    except (json.decoder.JSONDecodeError, TypeError):
-        LOGGER.error(f"Failed to parse {base_command} output. {out}")
+        for sample in TimeoutSampler(
+            wait_timeout=10,
+            sleep=1,
+            exceptions_dict={JSONDecodeError: [], TypeError: []},
+            func=utilities.infra.run_command,
+            command=shlex.split(base_command),
+        ):
+            commnd_out = sample[1]
+            return json.loads(commnd_out)
+    except TimeoutExpiredError:
+        LOGGER.error(f"Failed to parse {base_command} output. {commnd_out}")
         raise
-    return image_info
 
 
 def taint_node_no_schedule(node):
