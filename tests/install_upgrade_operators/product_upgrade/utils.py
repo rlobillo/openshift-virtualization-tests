@@ -548,18 +548,21 @@ def verify_upgrade_ocp(admin_client, target_ocp_version, machine_config_pools_li
     )
 
 
-def get_all_alerts(prometheus, file_name):
+def get_all_alerts(prometheus, file_name, base_directory):
     alerts_fired = prometheus.alerts["data"].get("alerts")
     write_to_file(
+        base_directory=base_directory,
         file_name=file_name,
         content=json.dumps(alerts_fired),
     )
     return alerts_fired
 
 
-def get_alerts_fired_during_upgrade(prometheus, before_upgrade_alerts):
+def get_alerts_fired_during_upgrade(prometheus, before_upgrade_alerts, base_directory):
     after_upgrade_alerts = get_all_alerts(
-        prometheus=prometheus, file_name="after_upgrade_alerts.json"
+        prometheus=prometheus,
+        file_name="after_upgrade_alerts.json",
+        base_directory=base_directory,
     )
     before_upgrade_alert_names = [
         alert["labels"]["alertname"] for alert in before_upgrade_alerts

@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 
 import pytest
@@ -271,30 +272,50 @@ def extracted_ocp_version_from_image_url(ocp_image_url):
 
 
 @pytest.fixture(scope="session")
-def fired_alerts_before_cnv_upgrade(prometheus):
-    return get_all_alerts(
-        prometheus=prometheus, file_name="before_cnv_upgrade_alerts.json"
-    )
-
-
-@pytest.fixture()
-def fired_alerts_during_cnv_upgrade(fired_alerts_before_cnv_upgrade, prometheus):
-    return get_alerts_fired_during_upgrade(
-        prometheus=prometheus, before_upgrade_alerts=fired_alerts_before_cnv_upgrade
+def alert_dir():
+    return os.path.join(
+        py_config["data_collector"]["collector_directory"],
+        "alert_information",
     )
 
 
 @pytest.fixture(scope="session")
-def fired_alerts_before_ocp_upgrade(prometheus):
+def fired_alerts_before_cnv_upgrade(prometheus, alert_dir):
     return get_all_alerts(
-        prometheus=prometheus, file_name="before_ocp_upgrade_alerts.json"
+        prometheus=prometheus,
+        file_name="before_cnv_upgrade_alerts.json",
+        base_directory=alert_dir,
     )
 
 
 @pytest.fixture()
-def fired_alerts_during_ocp_upgrade(fired_alerts_before_ocp_upgrade, prometheus):
+def fired_alerts_during_cnv_upgrade(
+    fired_alerts_before_cnv_upgrade, prometheus, alert_dir
+):
     return get_alerts_fired_during_upgrade(
-        prometheus=prometheus, before_upgrade_alerts=fired_alerts_before_ocp_upgrade
+        prometheus=prometheus,
+        before_upgrade_alerts=fired_alerts_before_cnv_upgrade,
+        base_directory=alert_dir,
+    )
+
+
+@pytest.fixture(scope="session")
+def fired_alerts_before_ocp_upgrade(prometheus, alert_dir):
+    return get_all_alerts(
+        prometheus=prometheus,
+        file_name="before_ocp_upgrade_alerts.json",
+        base_directory=alert_dir,
+    )
+
+
+@pytest.fixture()
+def fired_alerts_during_ocp_upgrade(
+    fired_alerts_before_ocp_upgrade, prometheus, alert_dir
+):
+    return get_alerts_fired_during_upgrade(
+        prometheus=prometheus,
+        before_upgrade_alerts=fired_alerts_before_ocp_upgrade,
+        base_directory=alert_dir,
     )
 
 
