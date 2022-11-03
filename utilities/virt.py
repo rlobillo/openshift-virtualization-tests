@@ -2260,6 +2260,7 @@ def wait_for_kv_stabilize(admin_client, hco_namespace):
 
 
 def get_oc_image_info(image, pull_secret=None):
+    command_out = None
     base_command = f"oc image -o json info {image}"
     if pull_secret:
         base_command = f"{base_command} --registry-config={pull_secret}"
@@ -2272,10 +2273,10 @@ def get_oc_image_info(image, pull_secret=None):
             func=utilities.infra.run_command,
             command=shlex.split(base_command),
         ):
-            commnd_out = sample[1]
-            return json.loads(commnd_out)
+            command_out = sample[1]
+            return json.loads(command_out)
     except TimeoutExpiredError:
-        LOGGER.error(f"Failed to parse {base_command} output. {commnd_out}")
+        LOGGER.error(f"Failed to parse {base_command} output. {command_out}")
         raise
 
 
