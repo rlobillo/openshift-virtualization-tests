@@ -100,6 +100,15 @@ RESOURCES_TO_COLLECT_INFO = [
 ]
 
 
+def data_collector_enabled(session):
+    data_collector = session.config.getoption("--data-collector")
+    data_collector_failed_tests = session.config.getoption(
+        "--data-collector-failed-tests"
+    )
+    if data_collector or data_collector_failed_tests:
+        return data_collector
+
+
 def pytest_addoption(parser):
     matrix_group = parser.getgroup(name="Matrix")
     os_group = parser.getgroup(name="OS")
@@ -215,6 +224,10 @@ def pytest_addoption(parser):
     # Log collector group
     data_collector_group.addoption(
         "--data-collector",
+        help="pass YAML file path to enable data collector to capture additional logs and resources",
+    )
+    data_collector_group.addoption(
+        "--data-collector-failed-tests",
         help="pass YAML file path to enable data collector to capture additional logs and resources",
     )
     data_collector_group.addoption(
@@ -453,7 +466,7 @@ def pytest_runtest_setup(item):
         if previousfailed is not None:
             pytest.xfail("previous test failed (%s)" % previousfailed.name)
 
-    if item.session.config.getoption("--data-collector"):
+    if data_collector_enabled(session=item.session):
         base_directory = py_config["data_collector"]["data_collector_base_directory"]
         py_config["data_collector"][
             "collector_directory"
@@ -464,7 +477,7 @@ def pytest_runtest_setup(item):
 
 def pytest_runtest_call(item):
     BASIC_LOGGER.info(f"{separator(symbol_='-', val='CALL')}")
-    if item.session.config.getoption("--data-collector"):
+    if data_collector_enabled(session=item.session):
         base_directory = py_config["data_collector"]["data_collector_base_directory"]
         py_config["data_collector"][
             "collector_directory"
@@ -475,7 +488,7 @@ def pytest_runtest_call(item):
 
 def pytest_runtest_teardown(item):
     BASIC_LOGGER.info(f"{separator(symbol_='-', val='TEARDOWN')}")
-    if item.session.config.getoption("--data-collector"):
+    if data_collector_enabled(session=item.session):
         base_directory = py_config["data_collector"]["data_collector_base_directory"]
         py_config["data_collector"][
             "collector_directory"
@@ -553,7 +566,7 @@ def pytest_sessionstart(session):
                 )
             ]
 
-    data_collector = session.config.getoption("--data-collector")
+    data_collector = data_collector_enabled(session=session)
     if data_collector:
         with open(data_collector, "r") as fd:
             py_config["data_collector"] = yaml.safe_load(fd.read())
@@ -659,7 +672,7 @@ def pytest_sessionfinish(session, exitstatus):
     BASIC_LOGGER.info(f"{separator(symbol_='-', val=summary)}")
 
     # Remove empty directories from data collector directory
-    if session.config.getoption("--data-collector"):
+    if data_collector_enabled(session=session):
         collector_directory = py_config["data_collector"][
             "data_collector_base_directory"
         ]
@@ -672,7 +685,7 @@ def pytest_sessionfinish(session, exitstatus):
 
 def pytest_exception_interact(node, call, report):
     BASIC_LOGGER.error(report.longreprtext)
-    if node.session.config.getoption("--data-collector"):
+    if node.session.config.getoption("--data-collector-failed-tests"):
         try:
             base_directory = os.path.join(
                 py_config["data_collector"]["collector_directory"],
