@@ -82,7 +82,7 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
 )
 @pytest.mark.chaos
 def test_pod_delete_snapshot(
-    chaos_snapshot_vm,
+    chaos_vm_rhel9_for_snapshot,
     pod_deleting_process,
     chaos_online_snapshots,
 ):
@@ -91,12 +91,12 @@ def test_pod_delete_snapshot(
     by killing random function supported pods in their corresponding namespace
     and asserting that VM snapshots can be taken, restored and deleted during the process.
     """
-    chaos_snapshot_vm.stop(wait=True)
+    chaos_vm_rhel9_for_snapshot.stop(wait=True)
     for idx, snapshot in enumerate(chaos_online_snapshots):
         with cluster_resource(VirtualMachineRestore)(
             name=f"restore-snapshot-{idx}",
-            namespace=chaos_snapshot_vm.namespace,
-            vm_name=chaos_snapshot_vm.name,
+            namespace=chaos_vm_rhel9_for_snapshot.namespace,
+            vm_name=chaos_vm_rhel9_for_snapshot.name,
             snapshot_name=snapshot.name,
         ) as vm_restore:
             vm_restore.wait_restore_done()

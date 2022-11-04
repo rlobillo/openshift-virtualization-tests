@@ -66,7 +66,7 @@ def test_master_node_restart(admin_client, chaos_namespace, rebooting_master_nod
 
 
 @pytest.mark.parametrize(
-    "chaos_dv_cirros, downscaled_storage_provisioner_deployment",
+    "chaos_dv_rhel9, downscaled_storage_provisioner_deployment",
     [
         pytest.param(
             {"storage_class": "ocs-storagecluster-ceph-rbd"},
@@ -83,8 +83,8 @@ def test_master_node_restart(admin_client, chaos_namespace, rebooting_master_nod
 )
 @pytest.mark.polarion("CNV-5438")
 def test_ceph_storage_outage(
-    chaos_dv_cirros,
-    chaos_vm_with_dv,
+    chaos_dv_rhel9,
+    chaos_vm_rhel9_with_dv,
     downscaled_storage_provisioner_deployment,
 ):
     """
@@ -94,12 +94,12 @@ def test_ceph_storage_outage(
     """
 
     # Create a vm with a dv while storage is unavailable.
-    chaos_vm_with_dv.deploy()
+    chaos_vm_rhel9_with_dv.deploy()
 
     # Verify that dv and vm are not ready while chaos is being injected.
-    chaos_dv_cirros.wait_for_status(status=Resource.Status.PENDING)
-    chaos_vm_with_dv.wait_for_specific_status(
-        status=chaos_vm_with_dv.Status.WAITING_FOR_VOLUME_BINDING
+    chaos_dv_rhel9.wait_for_status(status=Resource.Status.PENDING)
+    chaos_vm_rhel9_with_dv.wait_for_specific_status(
+        status=chaos_vm_rhel9_with_dv.Status.WAITING_FOR_VOLUME_BINDING
     )
 
     # Verify that vm creation is resumed and vm reaches running state after deployment is restored.
@@ -108,5 +108,7 @@ def test_ceph_storage_outage(
     )
     downscaled_storage_provisioner_deployment["deployment"].wait_for_replicas()
     running_vm(
-        vm=chaos_vm_with_dv, wait_for_interfaces=False, check_ssh_connectivity=False
+        vm=chaos_vm_rhel9_with_dv,
+        wait_for_interfaces=False,
+        check_ssh_connectivity=False,
     )

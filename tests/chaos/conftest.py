@@ -15,6 +15,7 @@ from pytest_testconfig import py_config
 from tests.chaos.utils import create_pod_deleting_process
 from utilities.constants import (
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
+    OS_FLAVOR_RHEL,
     TIMEOUT_1MIN,
     TIMEOUT_3MIN,
     TIMEOUT_5SEC,
@@ -24,13 +25,11 @@ from utilities.constants import (
 from utilities.infra import (
     ExecCommandOnPod,
     create_ns,
-    get_http_image_url,
     get_pod_by_name_prefix,
     scale_deployment_replicas,
     wait_for_node_status,
 )
 from utilities.virt import (
-    CIRROS_IMAGE,
     VirtualMachineForTests,
     running_vm,
     taint_node_no_schedule,
@@ -80,6 +79,34 @@ def chaos_vm_rhel9(admin_client, chaos_namespace):
         yield vm
 
 
+@pytest.fixture()
+def chaos_vm_rhel9_with_dv(admin_client, chaos_namespace, chaos_dv_rhel9):
+    dv_dict = chaos_dv_rhel9.to_dict()
+    yield cluster_resource(VirtualMachineForTests)(
+        client=admin_client,
+        name="vm-chaos",
+        namespace=chaos_namespace.name,
+        os_flavor=OS_FLAVOR_RHEL,
+        memory_requests=Images.Rhel.DEFAULT_MEMORY_SIZE,
+        data_volume_template={"metadata": dv_dict["metadata"], "spec": dv_dict["spec"]},
+        running=True,
+    )
+
+
+@pytest.fixture()
+def chaos_dv_rhel9(request, admin_client, chaos_namespace, rhel9_http_image_url):
+    yield cluster_resource(DataVolume)(
+        source="http",
+        name="chaos-dv",
+        api_name="storage",
+        namespace=chaos_namespace.name,
+        url=rhel9_http_image_url,
+        size=Images.Rhel.DEFAULT_DV_SIZE,
+        storage_class=request.param["storage_class"],
+        client=admin_client,
+    )
+
+
 def wait_for_vmi_migration_and_verify(
     dyn_client, vm, initial_node, initial_vmi_source_pod
 ):
@@ -121,36 +148,6 @@ def tainted_node_for_vm_migration(admin_client, chaos_vm_rhel9):
     )
     yield initial_node
     node_editor.restore()
-
-
-@pytest.fixture()
-def chaos_vm_with_dv(admin_client, chaos_namespace, chaos_dv_cirros):
-    dv_dict = chaos_dv_cirros.to_dict()
-    yield cluster_resource(VirtualMachineForTests)(
-        client=admin_client,
-        name="vm-chaos",
-        namespace=chaos_namespace.name,
-        image=CIRROS_IMAGE,
-        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-        data_volume_template={"metadata": dv_dict["metadata"], "spec": dv_dict["spec"]},
-        running=True,
-    )
-
-
-@pytest.fixture()
-def chaos_dv_cirros(request, chaos_namespace):
-    yield cluster_resource(DataVolume)(
-        api_name="storage",
-        name="dv-chaos",
-        namespace=chaos_namespace.name,
-        source="http",
-        url=get_http_image_url(
-            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
-        ),
-        storage_class=request.param["storage_class"],
-        size=Images.Cirros.DEFAULT_DV_SIZE,
-        access_modes=DataVolume.AccessMode.RWO,
-    )
 
 
 @pytest.fixture()

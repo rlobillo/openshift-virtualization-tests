@@ -1,35 +1,45 @@
 import pytest
+from ocp_resources.datavolume import DataVolume
 from ocp_utilities.infra import cluster_resource
 
 from tests.chaos.snapshot.utils import VirtualMachineSnapshotWithDeadline
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_8MIN, Images
-from utilities.storage import create_cirros_dv_for_snapshot
+from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_8MIN, TIMEOUT_30MIN, Images
 from utilities.virt import VirtualMachineForTests, running_vm
 
 
 @pytest.fixture()
-def chaos_snapshot_dv(
-    chaos_namespace, storage_class_matrix_snapshot_matrix__function__
+def chaos_dv_rhel9_for_snapshot(
+    admin_client,
+    chaos_namespace,
+    storage_class_matrix_snapshot_matrix__function__,
+    rhel9_http_image_url,
 ):
-    """
-    Define a DV that resides on OCS for use by a VM
-    """
-    yield create_cirros_dv_for_snapshot(
-        name="chaos",
+    dv = cluster_resource(DataVolume)(
+        source="http",
+        name="chaos-dv",
+        api_name="storage",
         namespace=chaos_namespace.name,
+        url=rhel9_http_image_url,
+        size=Images.Rhel.DEFAULT_DV_SIZE,
         storage_class=[*storage_class_matrix_snapshot_matrix__function__][0],
+        client=admin_client,
     )
+    dv.deploy()
+    dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_30MIN)
+    return dv
 
 
 @pytest.fixture()
-def chaos_snapshot_vm(admin_client, chaos_namespace, chaos_snapshot_dv):
-    dv_dict = chaos_snapshot_dv.to_dict()
+def chaos_vm_rhel9_for_snapshot(
+    admin_client, chaos_namespace, chaos_dv_rhel9_for_snapshot
+):
+    dv_dict = chaos_dv_rhel9_for_snapshot.to_dict()
     with cluster_resource(VirtualMachineForTests)(
         client=admin_client,
         name="vm-chaos-snapshot",
         namespace=chaos_namespace.name,
-        os_flavor=OS_FLAVOR_CIRROS,
-        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
+        os_flavor=OS_FLAVOR_RHEL,
+        memory_requests=Images.Rhel.DEFAULT_MEMORY_SIZE,
         data_volume_template={"metadata": dv_dict["metadata"], "spec": dv_dict["spec"]},
     ) as vm:
         running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
@@ -40,14 +50,14 @@ def chaos_snapshot_vm(admin_client, chaos_namespace, chaos_snapshot_dv):
 def chaos_online_snapshots(
     request,
     admin_client,
-    chaos_snapshot_vm,
+    chaos_vm_rhel9_for_snapshot,
 ):
     vm_snapshots = []
     for idx in range(request.param["number_of_snapshots"]):
         with cluster_resource(VirtualMachineSnapshotWithDeadline)(
-            name=f"snapshot-{chaos_snapshot_vm.name}-{idx}",
-            namespace=chaos_snapshot_vm.namespace,
-            vm_name=chaos_snapshot_vm.name,
+            name=f"snapshot-{chaos_vm_rhel9_for_snapshot.name}-{idx}",
+            namespace=chaos_vm_rhel9_for_snapshot.namespace,
+            vm_name=chaos_vm_rhel9_for_snapshot.name,
             client=admin_client,
             teardown=False,
             failure_deadline=TIMEOUT_8MIN,
