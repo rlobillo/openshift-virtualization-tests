@@ -14,6 +14,7 @@ from utilities.constants import (
     ALL_CNV_DAEMONSETS,
     ALL_CNV_DEPLOYMENTS,
     ALL_CNV_PODS,
+    BREW_REGISTERY_SOURCE,
     HCO_CATALOG_SOURCE,
     INTEL,
     LINUX_BRIDGE,
@@ -72,7 +73,7 @@ servers = {
 cnv_registry_sources = {
     "osbs": {
         "cnv_subscription_source": HCO_CATALOG_SOURCE,
-        "source_map": "registry-proxy.engineering.redhat.com/rh-osbs",
+        "source_map": f"{BREW_REGISTERY_SOURCE}/rh-osbs",
     },
     "stage": {
         "cnv_subscription_source": HCO_CATALOG_SOURCE,
