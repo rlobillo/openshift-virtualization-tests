@@ -7,8 +7,8 @@ from tests.compute.virt.longevity_tests.constants import (
 )
 from tests.compute.virt.longevity_tests.utils import run_migration_loop
 from tests.os_params import (
-    RHEL_8_5,
-    RHEL_8_5_TEMPLATE_LABELS,
+    RHEL_LATEST,
+    RHEL_LATEST_LABELS,
     WINDOWS_10,
     WINDOWS_10_TEMPLATE_LABELS,
 )
@@ -26,17 +26,17 @@ pytestmark = [
         pytest.param(
             {
                 "vm_name_prefix": f"{LINUX_OS_PREFIX}-multi-mig-vm",
-                "os_labels": RHEL_8_5_TEMPLATE_LABELS,
+                "os_labels": RHEL_LATEST_LABELS,
             },
             {
                 "dv_name": f"dv-ocs-{LINUX_OS_PREFIX}",
-                "image": RHEL_8_5["image_path"],
-                "dv_size": RHEL_8_5["dv_size"],
+                "image": RHEL_LATEST["image_path"],
+                "dv_size": RHEL_LATEST["dv_size"],
             },
             {
                 "dv_name": f"dv-nfs-{LINUX_OS_PREFIX}",
-                "image": RHEL_8_5["image_path"],
-                "dv_size": RHEL_8_5["dv_size"],
+                "image": RHEL_LATEST["image_path"],
+                "dv_size": RHEL_LATEST["dv_size"],
             },
             marks=pytest.mark.polarion("CNV-8310"),
         )
