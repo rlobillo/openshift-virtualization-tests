@@ -8,7 +8,7 @@ import click
 @click.option("--branch", "-b", help="Github branch to fetch", required=True)
 def install_mr(branch):
     """
-    Install ocp-python-wrapper (resources) merge-requests from github into pipenv cnv-tests.
+    Install ocp-python-wrapper (resources) merge-requests from github into poetry cnv-tests.
     """
     tmp_dir = "/tmp"
     ocp_python_wrapper_name = "openshift-python-wrapper"

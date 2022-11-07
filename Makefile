@@ -1,5 +1,3 @@
-#TODO: Remove all pipenv code once our infra support poetry
-
 # Pytest args handling
 PYTEST_ARGS ?= tests
 
@@ -47,8 +45,8 @@ OPERATOR_IMAGE_NAME="cnv-tests"
 IMAGE_TAG ?= "4.12"
 
 FULL_OPERATOR_IMAGE ?= "$(IMAGE_REGISTRY)/$(REGISTRY_NAMESPACE)/$(OPERATOR_IMAGE_NAME):$(IMAGE_TAG)"
-POETRY_CMD = $(shell which poetry 2>/dev/null || which pipenv)
-POETRY_PYTEST_CMD = $(POETRY_CMD) run pytest
+POETRY_BIN = poetry
+POETRY_PYTEST_CMD = $(POETRY_BIN) run pytest
 
 # Building qe-cnv-tests-internal-http container
 INTERNAL_HTTP_SERVER_IMAGE_NAME = "qe-cnv-tests-internal-http"
@@ -60,11 +58,7 @@ check:
 	tox
 
 venv-install:
-	if [ "$(POETRY_CMD) == poetry" ]; then \
-        $(POETRY_CMD) install; \
-    else \
-        $(POETRY_CMD) install --skip-lock; \
-    fi
+	$(POETRY_BIN) install
 
 tests: virtctl venv-install
 	$(POETRY_PYTEST_CMD)  $(PYTEST_ARGS)

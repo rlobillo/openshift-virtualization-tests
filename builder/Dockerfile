@@ -1,8 +1,6 @@
 FROM quay.io/centos/centos:stream9
-#TODO: remove pipenv commands and exports once our infra move to poetry
 
-ENV PIPENV_VENV_IN_PROJECT=1 \
-    CNV_TESTS_CONTAINER=Yes \
+ENV CNV_TESTS_CONTAINER=Yes \
     PATH="$PATH:/mnt/host"
 
 ARG OPENSHIFT_PYTHON_WRAPPER_COMMIT
@@ -29,13 +27,10 @@ COPY / cnv-tests/
 WORKDIR cnv-tests
 
 RUN python3 -m pip install pip --upgrade \
-    && python3 -m pip install poetry pipenv \
-    && pipenv install --skip-lock \
+    && python3 -m pip install poetry \
     && poetry install \
     && poetry export --without-hashes -n \
     && if [[ -n "${OPENSHIFT_PYTHON_WRAPPER_COMMIT}" ]]; then poetry run pip install git+https://github.com/RedHatQE/openshift-python-wrapper.git@$OPENSHIFT_PYTHON_WRAPPER_COMMIT -U; fi \
-    && if [[ -n "${OPENSHIFT_PYTHON_UTILITIES_COMMIT}" ]]; then poetry run pip install git+https://github.com/RedHatQE/openshift-python-utilities.git@$OPENSHIFT_PYTHON_UTILITIES_COMMIT -U; fi \
-    && if [[ -n "${OPENSHIFT_PYTHON_WRAPPER_COMMIT}" ]]; then pipenv run pip install git+https://github.com/RedHatQE/openshift-python-wrapper.git@$OPENSHIFT_PYTHON_WRAPPER_COMMIT -U; fi \
-    && if [[ -n "${OPENSHIFT_PYTHON_UTILITIES_COMMIT}" ]]; then pipenv run pip install git+https://github.com/RedHatQE/openshift-python-utilities.git@$OPENSHIFT_PYTHON_UTILITIES_COMMIT -U; fi
+    && if [[ -n "${OPENSHIFT_PYTHON_UTILITIES_COMMIT}" ]]; then poetry run pip install git+https://github.com/RedHatQE/openshift-python-utilities.git@$OPENSHIFT_PYTHON_UTILITIES_COMMIT -U; fi
 
 CMD poetry run pytest --tc=server_url:"$HTTP_IMAGE_SERVER" --collect-only
