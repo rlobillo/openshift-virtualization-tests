@@ -12,8 +12,8 @@ from tests.compute.ssp.constants import MachineTypesNames
 from tests.compute.utils import update_hco_annotations
 from tests.os_params import (
     RHEL_6_10_TEMPLATE_LABELS,
-    RHEL_7_6,
-    RHEL_7_6_TEMPLATE_LABELS,
+    RHEL_7_8,
+    RHEL_7_8_TEMPLATE_LABELS,
 )
 from utilities.infra import cluster_resource
 from utilities.virt import (
@@ -260,9 +260,9 @@ def test_major_release_machine_type(machine_type_from_kubevirt_config):
     [
         pytest.param(
             {
-                "dv_name": RHEL_7_6_TEMPLATE_LABELS["os"],
-                "image": RHEL_7_6["image_path"],
-                "dv_size": RHEL_7_6["dv_size"],
+                "dv_name": RHEL_7_8_TEMPLATE_LABELS["os"],
+                "image": RHEL_7_8["image_path"],
+                "dv_size": RHEL_7_8["dv_size"],
                 "storage_class": py_config["default_storage_class"],
             },
             {

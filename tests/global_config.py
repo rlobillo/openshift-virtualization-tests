@@ -173,30 +173,6 @@ rhel_os_matrix = [
         }
     },
     {
-        "rhel-7-6": {
-            "image_name": Images.Rhel.RHEL7_6_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_6_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "rhel7.6",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
-            },
-        }
-    },
-    {
-        "rhel-7-7": {
-            "image_name": Images.Rhel.RHEL7_7_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_7_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "rhel7.7",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
-            },
-        }
-    },
-    {
         "rhel-7-8": {
             "image_name": Images.Rhel.RHEL7_8_IMG,
             "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_8_IMG),
