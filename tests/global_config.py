@@ -248,7 +248,6 @@ rhel_os_matrix = [
             "image_name": Images.Rhel.RHEL8_6_IMG,
             "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_6_IMG),
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "latest_released": True,
             "template_labels": {
                 "os": "rhel8.6",
                 "workload": Template.Workload.SERVER,
@@ -261,9 +260,9 @@ rhel_os_matrix = [
             "image_name": Images.Rhel.RHEL8_7_IMG,
             "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_7_IMG),
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            # TODO: Modify to 8.7 once it is added to templates
+            "latest_released": True,
             "template_labels": {
-                "os": "rhel8.6",
+                "os": "rhel8.7",
                 "workload": Template.Workload.SERVER,
                 "flavor": Template.Flavor.TINY,
             },
