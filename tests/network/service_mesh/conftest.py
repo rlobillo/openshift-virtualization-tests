@@ -24,7 +24,6 @@ from tests.network.service_mesh.constants import (
     HTTP_PROTOCOL,
     INGRESS_SERVICE,
     PEER_AUTHENTICATION_TYPE,
-    PORT_80,
     SERVER_DEMO_HOST,
     SERVER_DEMO_NAME,
     SERVER_DEPLOYMENT_STRATEGY,
@@ -42,7 +41,7 @@ from tests.network.utils import (
     authentication_request,
 )
 from utilities import console
-from utilities.constants import TIMEOUT_2MIN
+from utilities.constants import PORT_80, TIMEOUT_2MIN
 from utilities.infra import cluster_resource, create_ns, unique_name
 from utilities.virt import running_vm, vm_console_run_commands, wait_for_console
 

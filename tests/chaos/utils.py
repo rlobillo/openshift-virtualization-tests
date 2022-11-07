@@ -1,11 +1,13 @@
+import http
 import logging
 import multiprocessing
 import random
+import time
 
-from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler, TimeoutWatch
 
 from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC
-from utilities.infra import get_pod_by_name_prefix
+from utilities.infra import ExecCommandOnPod, get_pod_by_name_prefix
 
 
 LOGGER = logging.getLogger(__name__)
@@ -111,3 +113,51 @@ def create_pod_deleting_process(
             max_duration,
         ),
     )
+
+
+def create_nginx_monitoring_process(
+    url,
+    curl_timeout,
+    sampling_duration,
+    sampling_interval,
+    utility_pods,
+    master_host_node,
+):
+    def _monitor_nginx_server(
+        _url,
+        _curl_timeout,
+        _sampling_duration,
+        _sampling_interval,
+        _utility_pods,
+        _master_host_node,
+    ):
+        timeout_watch = TimeoutWatch(timeout=_sampling_duration)
+        while timeout_watch.remaining_time() > 0:
+            http_result = ExecCommandOnPod(
+                utility_pods=_utility_pods, node=_master_host_node
+            ).exec(
+                command=f"curl -s --connect-timeout {_curl_timeout} -w '%{{http_code}}'  {_url}  -o /dev/null"
+            )
+            if http.HTTPStatus.OK != int(http_result):
+                raise Exception(f"Wrong status code ({http_result}) from server.")
+            time.sleep(_sampling_interval)
+        LOGGER.info("HTTP querying finished successfully ")
+
+    return multiprocessing.Process(
+        target=_monitor_nginx_server,
+        args=(
+            url,
+            curl_timeout,
+            sampling_duration,
+            sampling_interval,
+            utility_pods,
+            master_host_node,
+        ),
+    )
+
+
+def terminate_process(process):
+    if process.is_alive():
+        process.terminate()
+        process.join()
+        process.close()

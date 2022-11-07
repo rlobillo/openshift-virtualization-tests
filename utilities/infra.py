@@ -556,10 +556,12 @@ class ExecCommandOnPod:
         if not self.pod:
             raise UtilityPodNotFoundError(node=node.name)
 
-    def exec(self, command, chroot_host=True, ignore_rc=False):
+    def exec(self, command, chroot_host=True, ignore_rc=False, timeout=TIMEOUT_1MIN):
         chroot_command = "chroot /host" if chroot_host else ""
         _command = shlex.split(f"{chroot_command} bash -c {shlex.quote(command)}")
-        return self.pod.execute(command=_command, ignore_rc=ignore_rc).strip()
+        return self.pod.execute(
+            command=_command, ignore_rc=ignore_rc, timeout=timeout
+        ).strip()
 
     def get_interface_ip(self, interface):
         out = self.exec(command=f"ip addr show {interface}")

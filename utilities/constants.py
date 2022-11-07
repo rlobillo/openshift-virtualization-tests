@@ -109,6 +109,7 @@ KUBEMACPOOL_MAC_RANGE_CONFIG = "kubemacpool-mac-range-config"
 NMSTATE_HANDLER = "nmstate-handler"
 ISTIO_SYSTEM_DEFAULT_NS = "istio-system"
 SSH_PORT_22 = 22
+PORT_80 = 80
 ACTIVE_BACKUP = "active-backup"
 
 #  Time constants

@@ -8,11 +8,11 @@ from ocp_resources.network_policy import NetworkPolicy
 from ocp_utilities.exceptions import CommandExecFailed
 from ocp_utilities.utils import run_ssh_commands
 
+from utilities.constants import PORT_80
 from utilities.infra import cluster_resource, create_ns
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
-PORT_80 = 80
 PORT_81 = 81
 CURL_TIMEOUT = 5
 

@@ -12,7 +12,7 @@ from ocp_resources.virtual_machine_instance_migration import (
 from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
-from tests.chaos.utils import create_pod_deleting_process
+from tests.chaos.utils import create_pod_deleting_process, terminate_process
 from utilities.constants import (
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     OS_FLAVOR_RHEL,
@@ -229,11 +229,7 @@ def pod_deleting_process(request, admin_client):
     )
     pod_deleting_process.start()
     yield pod_deleting_process
-    if pod_deleting_process.is_alive():
-        LOGGER.info("Terminating pod deleting process...")
-        pod_deleting_process.terminate()
-        pod_deleting_process.join()
-        pod_deleting_process.close()
+    terminate_process(process=pod_deleting_process)
     # Make sure that the replicas from the affected deployment/daemonset recover after the test.
     if kind == "deployment":
         deployments = [

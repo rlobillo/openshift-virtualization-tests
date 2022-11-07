@@ -13,7 +13,6 @@ SERVER_IMAGE = "quay.io/openshift-cnv/qe-cnv-service-mesh-server-demo"
 SERVER_V1_IMAGE = f"{SERVER_IMAGE}:{Resource.ApiVersion.V1}.0"
 SERVER_V2_IMAGE = f"{SERVER_IMAGE}:{VERSION_2_DEPLOYMENT}.0"
 GATEWAY_SELECTOR = {"istio": "ingressgateway"}
-PORT_80 = 80
 HTTP_PROTOCOL = "HTTP"
 SERVICE_TYPE = "service"
 GATEWAY_TYPE = "gw"

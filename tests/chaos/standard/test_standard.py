@@ -2,7 +2,13 @@ import pytest
 from ocp_resources.resource import Resource
 from ocp_utilities.infra import cluster_resource
 
-from utilities.constants import TIMEOUT_5MIN, TIMEOUT_5SEC, Images
+from utilities.constants import (
+    TIMEOUT_2MIN,
+    TIMEOUT_5MIN,
+    TIMEOUT_5SEC,
+    TIMEOUT_10SEC,
+    Images,
+)
 from utilities.virt import VirtualMachineForTests, running_vm
 
 
@@ -112,3 +118,48 @@ def test_ceph_storage_outage(
         wait_for_interfaces=False,
         check_ssh_connectivity=False,
     )
+
+
+@pytest.mark.parametrize(
+    "nginx_monitoring_process, chaos_worker_background_process",
+    [
+        pytest.param(
+            {
+                "curl_timeout": TIMEOUT_10SEC,
+                "sampling_duration": TIMEOUT_2MIN,
+                "sampling_interval": TIMEOUT_5SEC,
+            },
+            {
+                "max_duration": TIMEOUT_2MIN,
+                "background_command": "stress-ng  --io 5 -t 120s",
+            },
+        ),
+    ],
+    indirect=True,
+)
+@pytest.mark.chaos
+@pytest.mark.polarion("CNV-6994")
+def test_host_io_stress(
+    masters_utility_pods,
+    vm_with_nginx_service,
+    vm_node_with_chaos_label,
+    nginx_monitoring_process,
+    chaos_worker_background_process,
+):
+    """
+    This experiment tests the resilience of the worker node and CNV by running an NGINX server within a VM,
+    stressing the worker IO and testing to make sure the server
+    and its VMI remain responsive throughout chaos duration.
+    """
+    chaos_worker_background_process.start()
+    nginx_monitoring_process.start()
+    chaos_worker_background_process.join()
+    nginx_monitoring_process.join()
+    assert nginx_monitoring_process.exitcode == 0, (
+        f"The NGINX server running inside VM {vm_with_nginx_service.vmi.name} failed to remain responsive "
+        f"during the sampling duration"
+    )
+
+    assert (
+        chaos_worker_background_process.exitcode == 0
+    ), "Background process execution failed"
