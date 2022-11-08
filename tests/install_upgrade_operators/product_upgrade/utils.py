@@ -41,6 +41,7 @@ from utilities.operator import approve_install_plan, wait_for_mcp_update_complet
 LOGGER = logging.getLogger(__name__)
 TIER_2_PODS_TYPE = "tier-2"
 FIRING_STATE = "firing"
+IGNORE_ALERTS = ["APIRemovedInNextEUSReleaseInUse", "APIRemovedInNextReleaseInUse"]
 
 
 def wait_for_new_operator_pod(
@@ -574,11 +575,13 @@ def get_alerts_fired_during_upgrade(prometheus, before_upgrade_alerts, base_dire
     ]
     fired_during_upgrade = []
     for alert in after_upgrade_alerts:
-        if alert["labels"]["alertname"] not in before_upgrade_alert_names:
-            LOGGER.info(
-                f"Alert {alert['labels']['alertname']}, state: {alert['state']} fired during upgrade."
-            )
-            fired_during_upgrade.append(alert)
+        alert_name = alert["labels"]["alertname"]
+        if alert_name in before_upgrade_alert_names or alert_name in IGNORE_ALERTS:
+            continue
+        LOGGER.info(
+            f"Alert {alert_name}, state: {alert['state']} fired during upgrade."
+        )
+        fired_during_upgrade.append(alert)
     return fired_during_upgrade
 
 
