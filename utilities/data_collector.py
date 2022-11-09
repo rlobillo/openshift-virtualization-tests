@@ -29,6 +29,7 @@ def collect_mcp_information():
                 dyn_client=utilities.infra.get_admin_client(),
                 pod_prefix=pod_prefix,
                 namespace="openshift-machine-config-operator",
+                get_all=True,
             )
         )
     collect_pods_data(pods_list=pods_to_collect, base_directory=base_directory)
