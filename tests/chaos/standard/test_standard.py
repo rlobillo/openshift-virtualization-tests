@@ -45,11 +45,6 @@ def test_pod_delete_openshift_apiserver(pod_deleting_process, chaos_vms_list_rhe
             id="nodes_without_kmp_manager",
             marks=pytest.mark.polarion("CNV-9293"),
         ),
-        pytest.param(
-            {"master_node_to_reboot": "node_with_kmp_manager"},
-            id="node_with_kmp_manager",
-            marks=(pytest.mark.polarion("CNV-5430"), pytest.mark.bugzilla("2130604")),
-        ),
     ],
     indirect=True,
 )
