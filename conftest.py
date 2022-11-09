@@ -130,11 +130,6 @@ def pytest_addoption(parser):
         action="store_true",
         help="If provided, run upgrade with disruptions",
     )
-    install_upgrade_group.addoption(
-        "--cnv-upgrade-skip-version-check",
-        help="Skip version check in cnv_upgrade_path fixture",
-        action="store_true",
-    )
 
     # CNV upgrade options
     install_upgrade_group.addoption(

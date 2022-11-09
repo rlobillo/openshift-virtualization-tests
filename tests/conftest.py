@@ -2110,16 +2110,10 @@ def vm_bridge_networks(upgrade_bridge_on_all_nodes):
 
 @pytest.fixture(scope="session")
 def cnv_upgrade_path(request, admin_client, pytestconfig, cnv_current_version):
-    # TODO: Refactor, add exception if target is nightly but source is not nightly
     cnv_target_version = pytestconfig.option.cnv_version
     current_version = packaging.version.parse(version=cnv_current_version)
     target_version = packaging.version.parse(version=cnv_target_version)
-    # skip version check if --cnv-upgrade-skip-version-check is used.
-    # This allows upgrading to a newer build on the same Z stream (for dev purposes)
-    if (
-        not request.session.config.getoption("--cnv-upgrade-skip-version-check")
-        and target_version <= current_version
-    ):
+    if target_version <= current_version:
         # Upgrade only if a newer CNV version is requested
         raise ValueError(
             f"Cannot upgrade to older/identical versions,"
