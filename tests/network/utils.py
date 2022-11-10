@@ -57,18 +57,17 @@ class ServiceMeshDeploymentService(Service):
         self.port_name = port_name
 
     def to_dict(self):
-        res = super().to_dict()
-        res.setdefault("spec", {})
-        res["spec"]["selector"] = {"app": self.app_name}
-        res["spec"]["ports"] = [
+        super().to_dict()
+        self.res.setdefault("spec", {})
+        self.res["spec"]["selector"] = {"app": self.app_name}
+        self.res["spec"]["ports"] = [
             {
                 "port": self.port,
                 "protocol": "TCP",
             },
         ]
         if self.port_name:
-            res["spec"]["ports"][0]["name"] = self.port_name
-        return res
+            self.res["spec"]["ports"][0]["name"] = self.port_name
 
 
 class ServiceMeshMemberRollForTests(ServiceMeshMemberRoll):
@@ -88,9 +87,8 @@ class ServiceMeshMemberRollForTests(ServiceMeshMemberRoll):
         self.members = members
 
     def to_dict(self):
-        res = super().to_dict()
-        res["spec"] = {"members": self.members}
-        return res
+        super().to_dict()
+        self.res["spec"] = {"members": self.members}
 
 
 class CirrosVirtualMachineForServiceMesh(VirtualMachineForTests):
@@ -114,13 +112,11 @@ class CirrosVirtualMachineForServiceMesh(VirtualMachineForTests):
         )
 
     def to_dict(self):
-        res = super().to_dict()
-        res["spec"]["template"]["metadata"].setdefault("annotations", {})
-        res["spec"]["template"]["metadata"]["annotations"] = {
+        super().to_dict()
+        self.res["spec"]["template"]["metadata"].setdefault("annotations", {})
+        self.res["spec"]["template"]["metadata"]["annotations"] = {
             SERVICE_MESH_INJECT_ANNOTATION: "true",
         }
-
-        return res
 
 
 class ServiceMeshDeployments(Deployment):
@@ -156,48 +152,50 @@ class ServiceMeshDeployments(Deployment):
         self.http_readiness_probe = http_readiness_probe
 
     def to_dict(self):
-        res = super().to_dict()
-        res.setdefault("spec", {})
-        res["spec"]["replicas"] = self.replicas
-        res["spec"]["selector"] = {
+        super().to_dict()
+        self.res.setdefault("spec", {})
+        self.res["spec"]["replicas"] = self.replicas
+        self.res["spec"]["selector"] = {
             "matchLabels": {
                 "app": self.app_name,
                 "version": self.version,
             },
         }
-        res["spec"].setdefault("template", {})
-        res["spec"]["template"].setdefault("metadata", {})
-        res["spec"]["template"]["metadata"]["annotations"] = {
+        self.res["spec"].setdefault("template", {})
+        self.res["spec"]["template"].setdefault("metadata", {})
+        self.res["spec"]["template"]["metadata"]["annotations"] = {
             SERVICE_MESH_INJECT_ANNOTATION: "true"
         }
-        res["spec"]["template"]["metadata"]["labels"] = {
+        self.res["spec"]["template"]["metadata"]["labels"] = {
             "app": self.app_name,
             "version": self.version,
         }
-        res["spec"]["template"].setdefault("spec", {})
-        res["spec"]["template"]["spec"]["containers"] = [
+        self.res["spec"]["template"].setdefault("spec", {})
+        self.res["spec"]["template"]["spec"]["containers"] = [
             {
                 "image": self.image,
                 "imagePullPolicy": self.policy,
                 "name": self.name,
             }
         ]
-        res["spec"]["template"]["spec"]["restartPolicy"] = "Always"
+        self.res["spec"]["template"]["spec"]["restartPolicy"] = "Always"
         if self.strategy:
-            res["spec"]["strategy"] = self.strategy
+            self.res["spec"]["strategy"] = self.strategy
         if self.service_account:
-            res["spec"]["template"]["spec"]["serviceAccountName"] = self.app_name
+            self.res["spec"]["template"]["spec"]["serviceAccountName"] = self.app_name
         if self.command:
-            res["spec"]["template"]["spec"]["containers"][0]["command"] = self.command
+            self.res["spec"]["template"]["spec"]["containers"][0][
+                "command"
+            ] = self.command
         if self.port:
-            res["spec"]["template"]["spec"]["containers"][0]["ports"] = [
+            self.res["spec"]["template"]["spec"]["containers"][0]["ports"] = [
                 {"containerPort": self.port}
             ]
         if self.http_readiness_probe:
-            res["spec"]["template"]["spec"]["containers"][0].setdefault(
+            self.res["spec"]["template"]["spec"]["containers"][0].setdefault(
                 "readinessProbe", {}
             )
-            res["spec"]["template"]["spec"]["containers"][0]["readinessProbe"] = {
+            self.res["spec"]["template"]["spec"]["containers"][0]["readinessProbe"] = {
                 "httpGet": {
                     "port": self.service_port,
                     "initialDelaySeconds": TIMEOUT_10SEC,
@@ -205,7 +203,6 @@ class ServiceMeshDeployments(Deployment):
                     "timeout seconds": TIMEOUT_1MIN,
                 },
             }
-        return res
 
 
 def assert_no_ping(src_vm, dst_ip, packet_size=None, count=None):

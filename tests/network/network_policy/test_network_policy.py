@@ -25,16 +25,15 @@ class ApplyNetworkPolicy(NetworkPolicy):
         self.ports = ports
 
     def to_dict(self):
-        res = super().to_dict()
+        super().to_dict()
         _ports = []
         if self.ports:
             for port in self.ports:
                 _ports.append({"protocol": "TCP", "port": port})
 
-        res["spec"] = {"podSelector": {}}
+        self.res["spec"] = {"podSelector": {}}
         if _ports:
-            res["spec"]["ingress"] = [{"ports": _ports}]
-        return res
+            self.res["spec"]["ingress"] = [{"ports": _ports}]
 
 
 @pytest.fixture(scope="module")

@@ -185,8 +185,7 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                 }
                 self.set_interface(interface=_port)
 
-        res = super().to_dict()
-        return res
+        super().to_dict()
 
 
 class LinuxBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPolicy):
@@ -280,9 +279,9 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
             return list(Node.get(dyn_client=self.client))[0]
 
     def to_dict(self):
-        res = super().to_dict()
+        super().to_dict()
         if self.set_dummy_ovs_iface or self.mtu:
-            desired_state_interface = res["spec"]["desiredState"]["interfaces"]
+            desired_state_interface = self.res["spec"]["desiredState"]["interfaces"]
             for idx, iface in enumerate(desired_state_interface):
                 if iface["type"] == self.ovs_bridge_type:
                     ovs_dummy_interface_name = f"ovs-dummy{idx}"
@@ -334,8 +333,7 @@ class OvsBridgeNodeNetworkConfigurationPolicy(BridgeNodeNetworkConfigurationPoli
 
                         desired_state_interface.append(ovs_iface)
 
-            res["spec"]["desiredState"]["interfaces"] = desired_state_interface
-        return res
+            self.res["spec"]["desiredState"]["interfaces"] = desired_state_interface
 
     def deploy(self):
         try:
@@ -391,9 +389,7 @@ class VLANInterfaceNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy
         }
         vlan_spec = {"vlan": {"base-iface": self.base_iface, "id": self.tag}}
         self.iface.update(vlan_spec)
-        res = super().to_dict()
-
-        return res
+        super().to_dict()
 
 
 class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
@@ -469,7 +465,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             self.set_interface(interface=_port)
 
     def to_dict(self):
-        res = super().to_dict()
+        super().to_dict()
         if not self.iface:
             self.create_interface()
             self.add_interface(
@@ -481,8 +477,6 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
 
             if self.mtu:
                 self.configure_mtu_on_ports()
-
-        return res
 
 
 NETWORK_DEVICE_TYPE = {
@@ -645,7 +639,7 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         self.ipv4_auto_dns = ipv4_auto_dns
 
     def to_dict(self):
-        res = super().to_dict()
+        super().to_dict()
         if self.interfaces_name:
             for nic in self.interfaces_name:
                 self.iface = {
@@ -657,8 +651,7 @@ class EthernetNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
                     },
                 }
                 self.set_interface(interface=self.iface)
-                res = super().to_dict()
-        return res
+                super().to_dict()
 
 
 def sriov_network_dict(namespace, network):

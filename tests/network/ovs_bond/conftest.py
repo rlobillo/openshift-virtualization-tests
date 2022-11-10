@@ -76,9 +76,9 @@ def bond_and_privileged_pod(workers_utility_pods):
             if bond:
                 return bond, pod
 
-            pytest.skip(msg=skip_msg)
+            pytest.skip(skip_msg)
         except CommandExecFailed:
-            pytest.skip(msg=skip_msg)
+            pytest.skip(skip_msg)
             break
 
 
@@ -118,7 +118,7 @@ def bond_port(workers_utility_pods, privileged_pod, bond, node_with_bond):
 @pytest.fixture(scope="module")
 def skip_when_no_bond(bond):
     if not bond:
-        pytest.skip(msg="The test requires at least one node with an OVS bond")
+        pytest.skip("The test requires at least one node with an OVS bond")
 
 
 @pytest.fixture(scope="module")

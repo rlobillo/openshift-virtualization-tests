@@ -27,7 +27,5 @@ class VirtualMachineSnapshotWithDeadline(VirtualMachineSnapshot):
         self.failure_deadline = f"{failure_deadline}s"
 
     def to_dict(self):
-        res = super().to_dict()
-        res["spec"]["failureDeadline"] = self.failure_deadline
-
-        return res
+        super().to_dict()
+        self.res["spec"]["failureDeadline"] = self.failure_deadline

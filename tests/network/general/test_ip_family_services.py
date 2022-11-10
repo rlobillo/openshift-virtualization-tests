@@ -110,7 +110,7 @@ def virtctl_expose_service(
         and not dual_stack_cluster
     ):
         pytest.skip(
-            msg=f"{SERVICE_IP_FAMILY_POLICY_REQUIRE_DUAL_STACK} service cannot be created in a non-dual-stack cluster."
+            f"{SERVICE_IP_FAMILY_POLICY_REQUIRE_DUAL_STACK} service cannot be created in a non-dual-stack cluster."
         )
 
     svc_name = f"ssh-{ip_family_policy.lower()}-svc"

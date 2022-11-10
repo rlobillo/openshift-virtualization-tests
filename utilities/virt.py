@@ -394,15 +394,15 @@ class VirtualMachineForTests(VirtualMachine):
             self.custom_service.delete(wait=True)
 
     def to_dict(self):
-        res = super().to_dict()
-        res = self.set_labels(res=res)
-        res = self.set_rng_device(res=res)
-        res = self.generate_body(res=res)
-        res = self.set_run_strategy(res=res)
+        super().to_dict()
+        self.set_labels()
+        self.set_rng_device()
+        self.generate_body()
+        self.set_run_strategy()
 
-        self.is_vm_from_template = self._is_vm_from_template(res=res)
+        self.is_vm_from_template = self._is_vm_from_template()
 
-        template_spec = res["spec"]["template"]["spec"]
+        template_spec = self.res["spec"]["template"]["spec"]
         template_spec = self.update_vm_network_configuration(
             template_spec=template_spec
         )
@@ -421,8 +421,8 @@ class VirtualMachineForTests(VirtualMachine):
         if self.diskless_vm:
             template_spec = self.set_diskless_vm(template_spec=template_spec)
         else:
-            res, template_spec = self.update_vm_storage_configuration(
-                res=res, template_spec=template_spec
+            template_spec = self.update_vm_storage_configuration(
+                template_spec=template_spec
             )
             # cloud-init disks must be set after DV disks in order to boot from DV.
             template_spec = self.update_vm_cloud_init_data(template_spec=template_spec)
@@ -446,8 +446,6 @@ class VirtualMachineForTests(VirtualMachine):
                     template_spec = self.update_vm_ssh_secret_configuration(
                         template_spec=template_spec
                     )
-
-        return res
 
     def set_disk_io_configuration(self, template_spec):
         if self.disk_io_options or self.dedicated_iothread:
@@ -540,15 +538,12 @@ class VirtualMachineForTests(VirtualMachine):
 
         return template_spec
 
-    @staticmethod
-    def set_rng_device(res):
-        # Create rng device so the vm will able to use /dev/rnd without
+    def set_rng_device(self):
+        # Create rng device so the vm will be able to use /dev/rnd without
         # waiting for entropy collecting.
-        res.setdefault("spec", {}).setdefault("template", {}).setdefault(
+        self.res.setdefault("spec", {}).setdefault("template", {}).setdefault(
             "spec", {}
         ).setdefault("domain", {}).setdefault("devices", {}).setdefault("rng", {})
-
-        return res
 
     def set_service_accounts(self, template_spec):
         for sa in self.service_accounts:
@@ -573,9 +568,11 @@ class VirtualMachineForTests(VirtualMachine):
 
         return template_spec
 
-    def set_labels(self, res):
+    def set_labels(self):
         vm_labels = (
-            res["spec"]["template"].setdefault("metadata", {}).setdefault("labels", {})
+            self.res["spec"]["template"]
+            .setdefault("metadata", {})
+            .setdefault("labels", {})
         )
         vm_labels.update(
             {
@@ -590,9 +587,7 @@ class VirtualMachineForTests(VirtualMachine):
         if self.vm_debug_logs:
             vm_labels["debugLogs"] = "true"
 
-        return res
-
-    def set_run_strategy(self, res):
+    def set_run_strategy(self):
         # runStrategy and running are mutually exclusive
         #
         # From RunStrategy() in
@@ -603,29 +598,25 @@ class VirtualMachineForTests(VirtualMachine):
         #
         # To create a VM resource, but not begin VM cloning, use VirtualMachine.RunStrategy.MANUAL
         if self.run_strategy:
-            res["spec"].pop("running", None)
-            res["spec"]["runStrategy"] = self.run_strategy
+            self.res["spec"].pop("running", None)
+            self.res["spec"]["runStrategy"] = self.run_strategy
         else:
-            res["spec"]["running"] = self.running
+            self.res["spec"]["running"] = self.running
 
-        return res
-
-    def _is_vm_from_template(self, res):
+    def _is_vm_from_template(self):
         return (
             f"{self.ApiGroup.VM_KUBEVIRT_IO}/template"
-            in res["metadata"].setdefault("labels", {}).keys()
+            in self.res["metadata"].setdefault("labels", {}).keys()
         )
 
-    def generate_body(self, res):
+    def generate_body(self):
         if self.body:
             if self.body.get("metadata"):
                 # We must set name in Template, since we use a unique name here we override it.
-                res["metadata"] = self.body["metadata"]
-                res["metadata"]["name"] = self.name
+                self.res["metadata"] = self.body["metadata"]
+                self.res["metadata"]["name"] = self.name
 
-            res["spec"] = self.body["spec"]
-
-        return res
+            self.res["spec"] = self.body["spec"]
 
     def update_vm_memory_configuration(self, template_spec):
         # Faster VMI start time
@@ -840,7 +831,7 @@ class VirtualMachineForTests(VirtualMachine):
 
         return template_spec
 
-    def update_vm_storage_configuration(self, res, template_spec):
+    def update_vm_storage_configuration(self, template_spec):
         # image must be set before DV in order to boot from it.
         if self.image:
             template_spec.setdefault("domain", {}).setdefault("devices", {}).setdefault(
@@ -898,11 +889,11 @@ class VirtualMachineForTests(VirtualMachine):
                 )
 
             if self.data_volume_template:
-                res["spec"].setdefault("dataVolumeTemplates", []).append(
+                self.res["spec"].setdefault("dataVolumeTemplates", []).append(
                     self.data_volume_template
                 )
 
-        return res, template_spec
+        return template_spec
 
     def update_vm_secret_configuration(self, template_spec):
         if self.attached_secret:
@@ -1175,12 +1166,12 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
     def to_dict(self):
         self.os_flavor = self._extract_os_from_template()
         self.body = self.process_template()
-        res = super().to_dict()
+        super().to_dict()
 
         if self.vm_dict:
-            res = merge_dicts(source_dict=self.vm_dict, target_dict=res)
+            merge_dicts(source_dict=self.vm_dict, target_dict=self.res)
 
-        spec = res["spec"]["template"]["spec"]
+        spec = self.res["spec"]["template"]["spec"]
 
         # terminationGracePeriodSeconds for Windows is set to 1hr; this may affect VMI deletion
         # If termination_grace_period is not provided, terminationGracePeriodSeconds will be set to 180
@@ -1194,22 +1185,22 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             LOGGER.info(
                 "VM spec includes DataVolume, which will be used for storing the VM image."
             )
-            self.access_modes = res["spec"]["dataVolumeTemplates"][0]["spec"][
+            self.access_modes = self.res["spec"]["dataVolumeTemplates"][0]["spec"][
                 "storage"
             ].get("accessModes", [])
         # For diskless_vm, volumes are removed so dataVolumeTemplates (referencing volumes) should be removed as well
         elif self.diskless_vm:
-            del res["spec"]["dataVolumeTemplates"]
+            del self.res["spec"]["dataVolumeTemplates"]
         # Existing DV will be used as the VM's DV; dataVolumeTemplates is not needed
         elif self.existing_data_volume:
-            del res["spec"]["dataVolumeTemplates"]
+            del self.res["spec"]["dataVolumeTemplates"]
             spec = self._update_vm_storage_config(
                 spec=spec, name=self.existing_data_volume.name
             )
             self.access_modes = self.existing_data_volume.pvc.instance.spec.accessModes
         # Template's dataVolumeTemplates will be replaced with self.data_volume_template
         elif self.data_volume_template:
-            res["spec"]["dataVolumeTemplates"] = [self.data_volume_template]
+            self.res["spec"]["dataVolumeTemplates"] = [self.data_volume_template]
             spec = self._update_vm_storage_config(
                 spec=spec, name=self.data_volume_template["metadata"]["name"]
             )
@@ -1226,7 +1217,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
                 namespace=pvc_from_data_source.namespace,
             )
             source_dv_pvc_spec = golden_image_dv.pvc.instance.spec
-            dv_storage_pvc_spec = res["spec"]["dataVolumeTemplates"][0]["spec"][
+            dv_storage_pvc_spec = self.res["spec"]["dataVolumeTemplates"][0]["spec"][
                 "storage"
             ]
             self.access_modes = source_dv_pvc_spec.accessModes
@@ -1263,8 +1254,6 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
                 f"Removing hyperv/reenlightenment flag for Windows VM on PSI cluster, Jira: {jira_id}"
             )
             del spec["domain"]["features"]["hyperv"]["reenlightenment"]
-
-        return res
 
     def _update_vm_storage_config(self, spec, name):
         # volume name should be updated
@@ -1416,19 +1405,17 @@ class ServiceForVirtualMachineForTests(Service):
         self.ip_families = ip_families
 
     def to_dict(self):
-        res = super().to_dict()
-        res["spec"] = {
+        super().to_dict()
+        self.res["spec"] = {
             "ports": [{"port": self.port, "protocol": "TCP"}],
             "selector": {"kubevirt.io/domain": self.vm.name},
             "sessionAffinity": "None",
             "type": self.service_type,
         }
 
-        res["spec"]["ipFamilyPolicy"] = self.ip_family_policy
+        self.res["spec"]["ipFamilyPolicy"] = self.ip_family_policy
         if self.ip_families:
-            res["spec"]["ipFamilies"] = self.ip_families
-
-        return res
+            self.res["spec"]["ipFamilies"] = self.ip_families
 
     def service_ip(self, ip_family=None):
         if self.service_type == Service.Type.CLUSTER_IP:

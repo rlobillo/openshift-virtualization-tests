@@ -28,13 +28,13 @@ def gpu_nodes(workers_utility_pods, schedulable_nodes):
 @pytest.fixture(scope="session")
 def skip_if_no_gpu_node(gpu_nodes):
     if not gpu_nodes:
-        pytest.skip(msg="Only run on a Cluster with at-least one GPU Worker node")
+        pytest.skip("Only run on a Cluster with at-least one GPU Worker node")
 
 
 @pytest.fixture(scope="session")
 def skip_if_only_one_gpu_node(skip_if_no_gpu_node, gpu_nodes):
     if len(gpu_nodes) < 2:
-        pytest.skip(msg="Only run on a Cluster with at-least two GPU Worker nodes")
+        pytest.skip("Only run on a Cluster with at-least two GPU Worker nodes")
 
 
 @pytest.fixture(scope="class")

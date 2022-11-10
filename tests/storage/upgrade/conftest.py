@@ -25,7 +25,7 @@ LOGGER = logging.getLogger(__name__)
 @pytest.fixture(scope="session")
 def skip_if_less_than_two_storage_classes(cluster_storage_classes):
     if len(cluster_storage_classes) < 2:
-        pytest.skip(msg="Need two Storage Classes at least.")
+        pytest.skip("Need two Storage Classes at least.")
 
 
 @pytest.fixture(scope="session")
@@ -66,7 +66,7 @@ def override_cdiconfig_scratch_spec(
 @pytest.fixture(scope="session")
 def skip_if_not_override_cdiconfig_scratch_space(override_cdiconfig_scratch_spec):
     if not override_cdiconfig_scratch_spec:
-        pytest.skip(msg="Skip test because the scratch space was not changed.")
+        pytest.skip("Skip test because the scratch space was not changed.")
 
 
 @pytest.fixture(scope="session")

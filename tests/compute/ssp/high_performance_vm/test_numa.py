@@ -34,7 +34,7 @@ def skip_if_numa_not_configured_or_enabled(schedulable_nodes, workers_utility_po
             schedulable_nodes=schedulable_nodes,
             utility_pods=workers_utility_pods,
         ):
-            pytest.skip(msg=f"Test should run on nodes with {cmd.split()[-1]}")
+            pytest.skip(f"Test should run on nodes with {cmd.split()[-1]}")
 
 
 def check_numa_config_on_node(cmd, schedulable_nodes, utility_pods):

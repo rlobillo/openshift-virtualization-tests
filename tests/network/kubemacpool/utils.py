@@ -130,14 +130,13 @@ class VirtualMachineWithMultipleAttachments(VirtualMachineForTests):
 
     def to_dict(self):
         self.body = fedora_vm_body(name=self.name)
-        res = super().to_dict()
+        super().to_dict()
         for mac, iface in zip(
             self.iface_config.values(),
-            res["spec"]["template"]["spec"]["domain"]["devices"]["interfaces"][1:],
+            self.res["spec"]["template"]["spec"]["domain"]["devices"]["interfaces"][1:],
         ):
             if mac.mac_address != "auto":
                 iface["macAddress"] = mac.mac_address
-        return res
 
 
 def assert_macs_preseved(vm):

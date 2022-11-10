@@ -62,13 +62,11 @@ class VirtualMachineForDeschedulerTest(VirtualMachineForTests):
 
     def to_dict(self):
         self.body = fedora_vm_body(name=self.name)
-        res = super().to_dict()
-        metadata = res["spec"]["template"]["metadata"]
+        super().to_dict()
+        metadata = self.res["spec"]["template"]["metadata"]
         metadata.setdefault("annotations", {})
         if self.descheduler_eviction:
             metadata["annotations"]["descheduler.alpha.kubernetes.io/evict"] = "true"
-
-        return res
 
 
 class DeploymentForDeschedulerTests(Deployment):
@@ -90,8 +88,8 @@ class DeploymentForDeschedulerTests(Deployment):
         self.template_labels = template_labels
 
     def to_dict(self):
-        res = super().to_dict()
-        res.update(
+        super().to_dict()
+        self.res.update(
             {
                 "metadata": {
                     "name": self.name,
@@ -119,7 +117,6 @@ class DeploymentForDeschedulerTests(Deployment):
                 },
             }
         )
-        return res
 
 
 def get_allocatable_memory_per_node(schedulable_nodes):

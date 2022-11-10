@@ -87,9 +87,9 @@ class SAPHANAVirtaulMachine(VirtualMachineForTestsFromTemplate):
         self.attached_rhsm_secret = attached_rhsm_secret
 
     def to_dict(self):
-        res = super().to_dict()
+        super().to_dict()
         if self.attached_rhsm_secret:
-            spec_template = res["spec"]["template"]["spec"]
+            spec_template = self.res["spec"]["template"]["spec"]
             disks = spec_template["domain"]["devices"]["disks"]
             secret_disk = [
                 disk
@@ -97,8 +97,6 @@ class SAPHANAVirtaulMachine(VirtualMachineForTestsFromTemplate):
                 if disk["name"] == SAPHANAVirtaulMachine.volume_name
             ][0]
             secret_disk["disk"]["bus"] = VIRTIO
-
-        return res
 
 
 def get_node_labels_by_name_subset(node, label_name_subset):

@@ -81,14 +81,17 @@ def chaos_vm_rhel9(admin_client, chaos_namespace):
 
 @pytest.fixture()
 def chaos_vm_rhel9_with_dv(admin_client, chaos_namespace, chaos_dv_rhel9):
-    dv_dict = chaos_dv_rhel9.to_dict()
+    chaos_dv_rhel9.to_dict()
     yield cluster_resource(VirtualMachineForTests)(
         client=admin_client,
         name="vm-chaos",
         namespace=chaos_namespace.name,
         os_flavor=OS_FLAVOR_RHEL,
         memory_requests=Images.Rhel.DEFAULT_MEMORY_SIZE,
-        data_volume_template={"metadata": dv_dict["metadata"], "spec": dv_dict["spec"]},
+        data_volume_template={
+            "metadata": chaos_dv_rhel9.res["metadata"],
+            "spec": chaos_dv_rhel9.res["spec"],
+        },
         running=True,
     )
 

@@ -496,8 +496,8 @@ def check_upload_virtctl_result(
 
 class HttpDeployment(Deployment):
     def to_dict(self):
-        res = super()._base_body()
-        res.update(
+        super().to_dict()
+        self.res.update(
             {
                 "spec": {
                     "replicas": 1,
@@ -537,7 +537,6 @@ class HttpDeployment(Deployment):
                 }
             }
         )
-        return res
 
 
 class ErrorMsg:
@@ -575,7 +574,7 @@ class PodWithPVC(Pod):
         self._volume_mode = volume_mode
 
     def to_dict(self):
-        res = super().to_dict()
+        super().to_dict()
 
         if self._volume_mode == DataVolume.VolumeMode.BLOCK:
             volume_path = {
@@ -588,7 +587,7 @@ class PodWithPVC(Pod):
                 "volumeMounts": [{"mountPath": "/pvc", "name": self._pvc_name}]
             }
 
-        res.update(
+        self.res.update(
             {
                 "spec": {
                     SECURITY_CONTEXT: {
@@ -621,7 +620,6 @@ class PodWithPVC(Pod):
                 }
             }
         )
-        return res
 
     def delete(self, wait=False, timeout=TIMEOUT_3MIN, body=None):
         super().delete(
@@ -856,8 +854,8 @@ class HppCsiStorageClass(StorageClass):
         self._storage_pool = storage_pool
 
     def to_dict(self):
-        res = super().to_dict()
-        res.update(
+        super().to_dict()
+        self.res.update(
             {
                 "provisioner": StorageClass.Provisioner.HOSTPATH_CSI,
                 "reclaimPolicy": "Delete",
@@ -865,12 +863,11 @@ class HppCsiStorageClass(StorageClass):
             }
         )
         if self._storage_pool:
-            res.update(
+            self.res.update(
                 {
                     "parameters": {"storagePool": self._storage_pool},
                 }
             )
-        return res
 
 
 def default_storage_class(client):

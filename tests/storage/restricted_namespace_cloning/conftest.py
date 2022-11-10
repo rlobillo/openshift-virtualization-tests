@@ -33,7 +33,7 @@ def dst_ns():
 @pytest.fixture(scope="module")
 def skip_when_no_unprivileged_client_available(unprivileged_client):
     if not unprivileged_client:
-        pytest.skip(msg="No unprivileged client available, skipping test")
+        pytest.skip("No unprivileged client available, skipping test")
 
 
 @pytest.fixture()

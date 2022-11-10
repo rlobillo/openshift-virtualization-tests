@@ -32,7 +32,7 @@ def priority_class(request):
 
 @pytest.fixture()
 def dv_dict(namespace, priority_class):
-    dv_dict = DataVolume(
+    dv = DataVolume(
         source="http",
         name="priority-dv",
         namespace=namespace.name,
@@ -41,11 +41,12 @@ def dv_dict(namespace, priority_class):
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],
         access_modes=py_config["default_access_mode"],
-    ).to_dict()
+    )
+    dv.to_dict()
     dv_priority_class = priority_class["dv_priority_class"]
     if dv_priority_class:
-        dv_dict["spec"]["priorityClassName"] = dv_priority_class.name
-    return dv_dict
+        dv.res["spec"]["priorityClassName"] = dv_priority_class.name
+    return dv.res
 
 
 @pytest.fixture()

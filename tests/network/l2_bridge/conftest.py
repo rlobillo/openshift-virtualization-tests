@@ -222,8 +222,7 @@ class VirtualMachineAttachedToBridge(VirtualMachineForTests):
 
     def to_dict(self):
         self.body = fedora_vm_body(name=self.name)
-        res = super().to_dict()
-        return res
+        super().to_dict()
 
 
 def bridge_attached_vm(

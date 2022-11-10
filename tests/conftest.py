@@ -449,7 +449,7 @@ def schedulable_node_ips(schedulable_nodes):
 @pytest.fixture(scope="session")
 def skip_when_one_node(schedulable_nodes):
     if len(schedulable_nodes) < 2:
-        pytest.skip(msg="Test requires at least 2 nodes")
+        pytest.skip("Test requires at least 2 nodes")
 
 
 @pytest.fixture(scope="session")
@@ -793,7 +793,7 @@ def workers_type(workers_utility_pods):
 @pytest.fixture(scope="module")
 def skip_if_workers_vms(workers_type):
     if workers_type == ClusterHosts.Type.VIRTUAL:
-        pytest.skip(msg="Test should run only BM cluster")
+        pytest.skip("Test should run only BM cluster")
 
 
 @pytest.fixture()

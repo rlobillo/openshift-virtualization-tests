@@ -53,8 +53,8 @@ class CustomWindowsVM(VirtualMachineForTestsFromTemplate):
         self.drive_d_pvc = drive_d_pvc
 
     def to_dict(self):
-        res = super().to_dict()
-        spec = res["spec"]["template"]["spec"]
+        super().to_dict()
+        spec = self.res["spec"]["template"]["spec"]
         domain = spec["domain"]
 
         disks = domain["devices"]["disks"]
@@ -90,8 +90,6 @@ class CustomWindowsVM(VirtualMachineForTestsFromTemplate):
                 "name": self.drive_d_pvc.name,
             }
         )
-
-        return res
 
 
 def assert_firmware_uuid_in_domxml(vm, uuid):

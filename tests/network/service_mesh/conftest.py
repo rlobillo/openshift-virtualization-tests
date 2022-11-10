@@ -60,10 +60,10 @@ class GatewayForTests(Gateway):
         self.hosts = hosts
 
     def to_dict(self):
-        res = super().to_dict()
-        res.setdefault("spec", {})
-        res["spec"]["selector"] = GATEWAY_SELECTOR
-        res["spec"]["servers"] = [
+        super().to_dict()
+        self.res.setdefault("spec", {})
+        self.res["spec"]["selector"] = GATEWAY_SELECTOR
+        self.res["spec"]["servers"] = [
             {
                 "port": {
                     "number": PORT_80,
@@ -73,7 +73,6 @@ class GatewayForTests(Gateway):
                 "hosts": self.hosts,
             }
         ]
-        return res
 
 
 class DestinationRuleForTests(DestinationRule):
@@ -87,12 +86,12 @@ class DestinationRuleForTests(DestinationRule):
         self.versions = versions
 
     def to_dict(self):
-        res = super().to_dict()
-        res.setdefault("spec", {})
-        res["spec"]["host"] = self.app_name
-        res["spec"].setdefault("subsets", [])
+        super().to_dict()
+        self.res.setdefault("spec", {})
+        self.res["spec"]["host"] = self.app_name
+        self.res["spec"].setdefault("subsets", [])
         for version in self.versions:
-            res["spec"]["subsets"].append(
+            self.res["spec"]["subsets"].append(
                 {
                     "name": version,  # Same as inner name.
                     "labels": {
@@ -100,7 +99,6 @@ class DestinationRuleForTests(DestinationRule):
                     },
                 }
             )
-        return res
 
 
 class VirtualServiceForTests(VirtualService):
@@ -125,11 +123,11 @@ class VirtualServiceForTests(VirtualService):
         self.app_name = app_name
 
     def to_dict(self):
-        res = super().to_dict()
-        res.setdefault("spec", {})
-        res["spec"]["hosts"] = self.hosts
-        res["spec"]["gateways"] = self.gateways
-        res["spec"]["http"] = [
+        super().to_dict()
+        self.res.setdefault("spec", {})
+        self.res["spec"]["hosts"] = self.hosts
+        self.res["spec"]["gateways"] = self.gateways
+        self.res["spec"]["http"] = [
             {
                 "match": [
                     {
@@ -149,7 +147,6 @@ class VirtualServiceForTests(VirtualService):
                 ],
             },
         ]
-        return res
 
 
 class PeerAuthenticationForTests(PeerAuthentication):
@@ -161,9 +158,8 @@ class PeerAuthenticationForTests(PeerAuthentication):
         )
 
     def to_dict(self):
-        res = super().to_dict()
-        res["spec"] = {"mtls": {"mode": PeerAuthentication.MtlsMode.STRICT}}
-        return res
+        super().to_dict()
+        self.res["spec"] = {"mtls": {"mode": PeerAuthentication.MtlsMode.STRICT}}
 
 
 def wait_service_mesh_components_convergence(func, vm, **kwargs):

@@ -17,14 +17,13 @@ class InstanceTypeCommonFunctionClass:
     def to_dict(self):
         # Will call Resource/NamespacedResource function depending on the inherited class:
         # VirtualMachineInstanceTypeForTest/VirtualMachineClusterInstanceTypeForTest
-        res = super().to_dict()
+        super().to_dict()
         instance_type_spec = {
             "cpu": {"guest": self.cpu_cores},
             "memory": {"guest": self.memory_requests},
         }
         self.add_optional_spec(instance_type_spec=instance_type_spec)
-        res["spec"] = instance_type_spec
-        return res
+        self.res["spec"] = instance_type_spec
 
     def add_optional_spec(self, instance_type_spec):
         if self.dedicated_cpu_placement is not None:

@@ -33,14 +33,17 @@ def chaos_dv_rhel9_for_snapshot(
 def chaos_vm_rhel9_for_snapshot(
     admin_client, chaos_namespace, chaos_dv_rhel9_for_snapshot
 ):
-    dv_dict = chaos_dv_rhel9_for_snapshot.to_dict()
+    chaos_dv_rhel9_for_snapshot.to_dict()
     with cluster_resource(VirtualMachineForTests)(
         client=admin_client,
         name="vm-chaos-snapshot",
         namespace=chaos_namespace.name,
         os_flavor=OS_FLAVOR_RHEL,
         memory_requests=Images.Rhel.DEFAULT_MEMORY_SIZE,
-        data_volume_template={"metadata": dv_dict["metadata"], "spec": dv_dict["spec"]},
+        data_volume_template={
+            "metadata": chaos_dv_rhel9_for_snapshot.res["metadata"],
+            "spec": chaos_dv_rhel9_for_snapshot.res["spec"],
+        },
     ) as vm:
         running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
         yield vm

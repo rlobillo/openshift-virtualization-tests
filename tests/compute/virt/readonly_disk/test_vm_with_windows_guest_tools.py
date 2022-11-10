@@ -32,8 +32,8 @@ class WindowsVMWithGuestTools(VirtualMachineForTestsFromTemplate):
         )
 
     def to_dict(self):
-        res = super().to_dict()
-        spec = res["spec"]["template"]["spec"]
+        super().to_dict()
+        spec = self.res["spec"]["template"]["spec"]
         spec["volumes"].append(
             {
                 "containerDisk": {
@@ -49,8 +49,6 @@ class WindowsVMWithGuestTools(VirtualMachineForTestsFromTemplate):
                 "name": "windows-guest-tools",
             }
         )
-
-        return res
 
 
 @pytest.fixture(scope="class")

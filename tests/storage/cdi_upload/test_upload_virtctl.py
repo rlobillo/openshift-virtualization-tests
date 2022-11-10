@@ -39,7 +39,7 @@ LOCAL_PATH = f"/tmp/{Images.Cdi.QCOW2_IMG}"
 @pytest.fixture(scope="function")
 def skip_no_reencrypt_route(upload_proxy_route):
     if not upload_proxy_route.termination == "reencrypt":
-        pytest.skip(msg="Skip testing. The upload proxy route is not re-encrypt.")
+        pytest.skip("Skip testing. The upload proxy route is not re-encrypt.")
 
 
 @pytest.mark.sno

@@ -34,7 +34,7 @@ class MACVLANNetworkAttachmentDefinition(NetworkAttachmentDefinition):
         self.master = master
 
     def to_dict(self):
-        res = super().to_dict()
+        super().to_dict()
         spec_config = {
             "cniVersion": "0.3.1",
             "type": "macvlan",
@@ -46,8 +46,7 @@ class MACVLANNetworkAttachmentDefinition(NetworkAttachmentDefinition):
             },
         }
 
-        res["spec"]["config"] = json.dumps(spec_config)
-        return res
+        self.res["spec"]["config"] = json.dumps(spec_config)
 
 
 def get_virt_handler_pods(client, namespace):

@@ -226,8 +226,8 @@ def upload_image(token, data, asynchronous=False):
 
 class HttpService(Service):
     def to_dict(self):
-        res = super()._base_body()
-        res.update(
+        super().to_dict()
+        self.res.update(
             {
                 "spec": {
                     "selector": {"name": "internal-http"},
@@ -240,7 +240,6 @@ class HttpService(Service):
                 }
             }
         )
-        return res
 
 
 def get_file_url_https_server(images_https_server, file_name):

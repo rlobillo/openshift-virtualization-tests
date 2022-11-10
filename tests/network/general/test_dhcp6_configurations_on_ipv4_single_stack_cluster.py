@@ -36,7 +36,7 @@ def skip_if_not_ipv4_single_stack_cluster(
     ipv4_supported_cluster, ipv6_supported_cluster
 ):
     if not ipv4_supported_cluster or ipv6_supported_cluster:
-        pytest.skip(msg="Test should only run on an IPv4 single-stack cluster")
+        pytest.skip("Test should only run on an IPv4 single-stack cluster")
 
 
 @pytest.fixture()

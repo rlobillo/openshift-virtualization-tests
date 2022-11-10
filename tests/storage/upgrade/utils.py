@@ -25,13 +25,14 @@ def create_vm_for_snapshot_upgrade_tests(
         volume_mode=DataVolume.VolumeMode.BLOCK,
         access_modes=DataVolume.AccessMode.RWX,
         size=Images.Cirros.DEFAULT_DV_SIZE,
-    ).to_dict()
+    )
+    dv.to_dict()
     with cluster_resource(VirtualMachineForTests)(
         client=client,
         name=f"vm-{vm_name}",
-        namespace=dv["metadata"]["namespace"],
+        namespace=dv.res["metadata"]["namespace"],
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-        data_volume_template={"metadata": dv["metadata"], "spec": dv["spec"]},
+        data_volume_template={"metadata": dv.res["metadata"], "spec": dv.res["spec"]},
     ) as vm:
         write_file(
             vm=vm,

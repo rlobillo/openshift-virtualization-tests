@@ -22,10 +22,10 @@ class FedoraVirtualMachineWithSideCar(VirtualMachineForTests):
 
     def to_dict(self):
         self.body = fedora_vm_body(name=self.name)
-        res = super().to_dict()
+        super().to_dict()
 
-        res["spec"]["template"]["metadata"].setdefault("annotations", {})
-        res["spec"]["template"]["metadata"]["annotations"].update(
+        self.res["spec"]["template"]["metadata"].setdefault("annotations", {})
+        self.res["spec"]["template"]["metadata"]["annotations"].update(
             {
                 "hooks.kubevirt.io/hookSidecars": '[{"args": ["--version", "v1alpha2"], '
                 '"image": "kubevirt/example-hook-sidecar:latest"}]',
@@ -33,10 +33,10 @@ class FedoraVirtualMachineWithSideCar(VirtualMachineForTests):
             }
         )
 
-        res["spec"]["template"]["metadata"].setdefault("labels", {})
-        res["spec"]["template"]["metadata"]["labels"].update({"special": self.name})
-
-        return res
+        self.res["spec"]["template"]["metadata"].setdefault("labels", {})
+        self.res["spec"]["template"]["metadata"]["labels"].update(
+            {"special": self.name}
+        )
 
 
 @pytest.fixture()

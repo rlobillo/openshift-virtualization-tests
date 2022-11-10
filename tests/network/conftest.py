@@ -35,13 +35,13 @@ def bond_supported(hosts_common_available_ports):
 @pytest.fixture(scope="class")
 def skip_no_bond_support(bond_supported):
     if not bond_supported:
-        pytest.skip(msg="No BOND support")
+        pytest.skip("No BOND support")
 
 
 @pytest.fixture(scope="module")
 def skip_if_workers_bms(workers_type):
     if workers_type == ClusterHosts.Type.PHYSICAL:
-        pytest.skip(msg="This test(s) cannot run on BM cluster.")
+        pytest.skip("This test(s) cannot run on BM cluster.")
 
 
 def get_index_number():
@@ -81,7 +81,7 @@ def skip_ipv6_if_not_dual_stack_cluster(
         ip_version_data_from_matrix(request=request) == IPV6_STR
         and not dual_stack_cluster
     ):
-        pytest.skip(msg="IPv6 is not supported in this cluster")
+        pytest.skip("IPv6 is not supported in this cluster")
 
 
 @pytest.fixture()
@@ -119,7 +119,7 @@ def istio_system_namespace(admin_client):
 def skip_if_service_mesh_not_installed(istio_system_namespace):
     # Service mesh not installed if the cluster doesn't have ISTIO-SYSTEM ns
     if not istio_system_namespace:
-        pytest.skip(msg="Cannot run the test. Service Mesh not installed")
+        pytest.skip("Cannot run the test. Service Mesh not installed")
 
 
 @pytest.fixture(scope="module")

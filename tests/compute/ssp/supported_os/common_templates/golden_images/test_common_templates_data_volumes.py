@@ -49,10 +49,10 @@ class DataVolumeTemplatesVirtualMachine(VirtualMachineForTestsFromTemplate):
         self.updated_source_pvc_name = updated_source_pvc_name
 
     def to_dict(self):
-        res = super().to_dict()
-        vm_datavolumetemplates_storage_spec = res["spec"]["dataVolumeTemplates"][0][
-            "spec"
-        ]["storage"]
+        super().to_dict()
+        vm_datavolumetemplates_storage_spec = self.res["spec"]["dataVolumeTemplates"][
+            0
+        ]["spec"]["storage"]
         if self.updated_storage_class_params:
             # Update SC params
             vm_datavolumetemplates_storage_spec[
@@ -75,8 +75,6 @@ class DataVolumeTemplatesVirtualMachine(VirtualMachineForTestsFromTemplate):
                     }
                 }
             ).update()
-
-        return res
 
 
 @pytest.fixture()
