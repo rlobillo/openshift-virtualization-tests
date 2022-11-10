@@ -147,8 +147,8 @@ nameserver 192.168.8.1
 
 ### Using custom cluster management binaries
 
-If you need to use custom or system `kubectl` or `virtctl` instead of wrappers from `local-cluster`,
-define `KUBECTL` and `VIRTCTL` environment variables to point to the binaries.
+If you need to use custom or system `kubectl`, `virtctl` or `oc` instead of wrappers from `local-cluster`,
+define `KUBECTL`, `CNV_TESTS_VIRTCTL_BIN` and `CNV_TESTS_OC_BIN` environment variables to point to the binaries.
 
 
 ### Using emulated virtualization

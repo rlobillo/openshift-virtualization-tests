@@ -1016,7 +1016,7 @@ def download_and_extract_file_from_cluster(tmpdir, url):
         list: list of extracted filenames
     """
     zip_file_extension = ".zip"
-    LOGGER.info(f"Downloading virtctl archive: url={url}")
+    LOGGER.info(f"Downloading archive: url={url}")
     urllib3.disable_warnings()  # TODO: remove this when we fix the SSL warning
     response = requests.get(url, verify=False)
     assert (
@@ -1048,7 +1048,7 @@ def get_and_extract_file_from_cluster(urls, system_os, dest_dir):
             ), f"Only a single file expected in archive: extracted_files={extracted_files}"
             return extracted_files[0]
 
-    raise UrlNotFoundError(f"virtctl url not found for system_os={system_os}")
+    raise UrlNotFoundError(f"Url not found for system_os={system_os}")
 
 
 def download_file_from_cluster(get_console_spec_links_name, dest_dir):
@@ -1056,15 +1056,15 @@ def download_file_from_cluster(get_console_spec_links_name, dest_dir):
         admin_client=get_admin_client(),
         name=get_console_spec_links_name,
     )
-    virtctl_urls = get_all_console_links(
+    download_urls = get_all_console_links(
         console_cli_downloads_spec_links=console_cli_links
     )
-    virtctl_binary_file = get_and_extract_file_from_cluster(
+    binary_file = get_and_extract_file_from_cluster(
         system_os=platform.system().lower(),
-        urls=virtctl_urls,
+        urls=download_urls,
         dest_dir=dest_dir,
     )
-    os.chmod(virtctl_binary_file, stat.S_IRUSR | stat.S_IXUSR)
+    os.chmod(binary_file, stat.S_IRUSR | stat.S_IXUSR)
 
 
 def get_nodes_with_label(nodes, label):

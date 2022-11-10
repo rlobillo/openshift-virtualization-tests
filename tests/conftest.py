@@ -2351,7 +2351,10 @@ def virtctl_binary(
 ):
     if installing_cnv or is_upstream_distribution:
         return
-
+    installed_virtctl = os.environ.get("CNV_TESTS_VIRTCTL_BIN")
+    if installed_virtctl:
+        LOGGER.warning(f"Using previously installed: {installed_virtctl}")
+        return
     download_file_from_cluster(
         get_console_spec_links_name=VIRTCTL_CLI_DOWNLOADS, dest_dir=bin_directory
     )
@@ -2363,7 +2366,10 @@ def oc_binary(
 ):
     if installing_cnv or is_upstream_distribution:
         return
-
+    installed_oc = os.environ.get("CNV_TESTS_OC_BIN")
+    if installed_oc:
+        LOGGER.warning(f"Using previously installed: {installed_oc}")
+        return
     download_file_from_cluster(
         get_console_spec_links_name="oc-cli-downloads", dest_dir=bin_directory
     )
