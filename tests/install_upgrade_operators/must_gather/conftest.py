@@ -60,7 +60,7 @@ def collected_vm_details_must_gather(
     yield collect_must_gather(
         must_gather_tmpdir=must_gather_tmpdir,
         must_gather_image_url=must_gather_image_url,
-        script_name="gather_vms_details",
+        flag_names=["vms_details"],
     )
 
 
@@ -331,7 +331,8 @@ def collected_vm_details_must_gather_with_params(
     yield collect_must_gather(
         must_gather_tmpdir=must_gather_tmpdir_scope_function,
         must_gather_image_url=must_gather_image_url,
-        script_name=f"{command} gather_vms_details",
+        script_name=f"{command} /usr/bin/gather",
+        flag_names=["vms_details"],
     )
 
 
@@ -405,5 +406,5 @@ def gathered_images(
     return collect_must_gather(
         must_gather_tmpdir=must_gather_tmpdir,
         must_gather_image_url=must_gather_image_url,
-        script_name="gather_images",
+        flag_names=["images"],
     )

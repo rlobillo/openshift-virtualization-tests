@@ -309,11 +309,29 @@ def get_must_gather_output_dir(must_gather_path):
     raise FileNotFoundError(f"No log directory was created in '{must_gather_path}'")
 
 
-def collect_must_gather(must_gather_tmpdir, must_gather_image_url, script_name=None):
+def collect_must_gather(
+    must_gather_tmpdir,
+    must_gather_image_url,
+    script_name="/usr/bin/gather",
+    flag_names=None,
+):
+    """
+    Run must gather command and puts the content in directory.
+
+    Args:
+        must_gather_tmpdir (str): tmp dir for must gather data
+        must_gather_image_url (str): image url for must gather command
+        script_name (str): must-gather script name or path
+        flag_names (list, optional): list of must-gather flags
+
+    Returns:
+        str: output directory with must gather content
+    """
     output = run_must_gather(
         image_url=must_gather_image_url,
         target_base_dir=must_gather_tmpdir,
         script_name=script_name,
+        flag_names=flag_names,
     )
 
     with open(os.path.join(must_gather_tmpdir, "output.log"), "w") as _file:
