@@ -6,6 +6,7 @@ Pytest conftest file for CNV tests
 import logging
 import os
 import os.path
+import pathlib
 import re
 import shutil
 
@@ -580,7 +581,7 @@ def pytest_sessionstart(session):
 
     tests_log_file = session.config.getoption("pytest_log_file")
     if os.path.exists(tests_log_file):
-        shutil.rmtree(tests_log_file, ignore_errors=True)
+        pathlib.Path(tests_log_file).unlink()
 
     setup_logging(
         log_file=tests_log_file,
