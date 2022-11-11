@@ -440,7 +440,7 @@ def pytest_report_teststatus(report, config):
     elif report.failed:
         if when != call_str:
             BASIC_LOGGER.info(
-                f"\nTEST: {test_name} STATUS: [{when}] \033[0;31mERROR\033[0m"
+                f"\nTEST: {test_name} [{when}] STATUS: \033[0;31mERROR\033[0m"
             )
         else:
             BASIC_LOGGER.info(f"\nTEST: {test_name} STATUS: \033[0;31mFAILED\033[0m")
