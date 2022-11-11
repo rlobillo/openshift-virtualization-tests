@@ -6,6 +6,7 @@ ENV PIPENV_VENV_IN_PROJECT=1 \
     PATH="$PATH:/mnt/host"
 
 ARG OPENSHIFT_PYTHON_WRAPPER_COMMIT
+ARG OPENSHIFT_PYTHON_UTILITIES_COMMIT
 
 RUN dnf -y install epel-release \
     && dnf -y install \
@@ -30,6 +31,9 @@ RUN python3 -m pip install pip --upgrade \
     && pipenv install --skip-lock \
     && poetry install \
     && poetry export --without-hashes -n \
-    && if [[ -n "${OPENSHIFT_PYTHON_WRAPPER_COMMIT}" ]]; then poetry run pip install git+https://github.com/RedHatQE/openshift-python-wrapper.git@$OPENSHIFT_PYTHON_WRAPPER_COMMIT -U; fi
+    && if [[ -n "${OPENSHIFT_PYTHON_WRAPPER_COMMIT}" ]]; then poetry run pip install git+https://github.com/RedHatQE/openshift-python-wrapper.git@$OPENSHIFT_PYTHON_WRAPPER_COMMIT -U; fi \
+    && if [[ -n "${OPENSHIFT_PYTHON_UTILITIES_COMMIT}" ]]; then poetry run pip install git+https://github.com/RedHatQE/openshift-python-utilities.git@$OPENSHIFT_PYTHON_UTILITIES_COMMIT -U; fi \
+    && if [[ -n "${OPENSHIFT_PYTHON_WRAPPER_COMMIT}" ]]; then pipenv run pip install git+https://github.com/RedHatQE/openshift-python-wrapper.git@$OPENSHIFT_PYTHON_WRAPPER_COMMIT -U; fi \
+    && if [[ -n "${OPENSHIFT_PYTHON_UTILITIES_COMMIT}" ]]; then pipenv run pip install git+https://github.com/RedHatQE/openshift-python-utilities.git@$OPENSHIFT_PYTHON_UTILITIES_COMMIT -U; fi
 
 CMD poetry run pytest --tc=server_url:"$HTTP_IMAGE_SERVER" --collect-only

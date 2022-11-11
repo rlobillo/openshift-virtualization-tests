@@ -82,11 +82,12 @@ virtctl:
 	VIRTCTL_DEST=$(BIN_DIR)/virtctl $(VIRTCTL)
 
 build-container:
-	$(IMAGE_BUILD_CMD) build --no-cache -f builder/Dockerfile -t $(FULL_OPERATOR_IMAGE) --build-arg OPENSHIFT_PYTHON_WRAPPER_COMMIT=$(OPENSHIFT_PYTHON_WRAPPER_COMMIT) .
+	$(IMAGE_BUILD_CMD) build --no-cache -f builder/Dockerfile -t $(FULL_OPERATOR_IMAGE) --build-arg OPENSHIFT_PYTHON_WRAPPER_COMMIT=$(OPENSHIFT_PYTHON_WRAPPER_COMMIT) --build-arg OPENSHIFT_PYTHON_UTILITIES_COMMIT=$(OPENSHIFT_PYTHON_UTILITIES_COMMIT) .
 
 push-container:
 	$(IMAGE_BUILD_CMD) push $(FULL_OPERATOR_IMAGE)
 
+build-and-push-container: build-container push-container
 
 .PHONY: \
 	check \
@@ -97,4 +98,5 @@ push-container:
 	ci-tests \
 	tests \
 	build-container \
-	push-container
+	push-container \
+	build-and-push-container
