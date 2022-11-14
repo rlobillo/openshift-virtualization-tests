@@ -326,13 +326,6 @@ class TestConnectivity:
             ),
         )
 
-    @pytest.mark.xfail(
-        reason=(
-            "Currently this test will fail on BM clusters, the ping works due to CNV 294428 W/A - we send an empty "
-            "VLAN dictionary which causes no separation between VLANs and allow different VLANs to reach each other."
-            "This Xfail marker should be removed after BZ 2026621 is fixed"
-        )
-    )
     @pytest.mark.polarion("CNV-2075")
     def test_negative_vlan(
         self,
