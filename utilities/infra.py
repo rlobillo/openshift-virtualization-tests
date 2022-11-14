@@ -42,7 +42,12 @@ from ocp_resources.secret import Secret
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.data_collector import write_to_file
-from ocp_utilities.infra import cluster_resource
+from ocp_utilities.exceptions import NodeNotReadyError, NodeUnschedulableError
+from ocp_utilities.infra import (
+    assert_nodes_ready,
+    assert_nodes_schedulable,
+    cluster_resource,
+)
 from ocp_utilities.utils import run_command
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
@@ -320,42 +325,6 @@ def get_pods(dyn_client, namespace, label=None):
 def wait_for_pods_deletion(pods):
     for pod in pods:
         pod.wait_deleted()
-
-
-def validate_nodes_ready(nodes):
-    """
-    Validates all nodes are in ready
-
-    Args:
-         nodes(list): List of Node objects
-
-    Raises:
-        AssertionError: Assert on node(s) in not ready state
-    """
-    not_ready_nodes = [node.name for node in nodes if not node.kubelet_ready]
-    if not_ready_nodes:
-        raise ClusterSanityError(
-            err_str=f"Following nodes are not in ready state: {not_ready_nodes}"
-        )
-
-
-def validate_nodes_schedulable(nodes):
-    """
-    Validates all nodes are in schedulable state
-
-    Args:
-         nodes(list): List of Node objects
-
-    Raises:
-        AssertionError: Asserts on node(s) not schedulable
-    """
-    unschedulable_nodes = [
-        node.name for node in nodes if node.instance.spec.unschedulable
-    ]
-    if unschedulable_nodes:
-        raise ClusterSanityError(
-            err_str=f"Following nodes are in not unschedulable state: {unschedulable_nodes}"
-        )
 
 
 def wait_for_pods_running(admin_client, namespace, number_of_consecutive_checks=1):
@@ -686,8 +655,8 @@ def cluster_sanity(
             LOGGER.info(
                 f"Check nodes sanity. (To skip nodes sanity check pass {skip_nodes_check} to pytest)"
             )
-            validate_nodes_ready(nodes=nodes)
-            validate_nodes_schedulable(nodes=nodes)
+            assert_nodes_ready(nodes=nodes)
+            assert_nodes_schedulable(nodes=nodes)
             wait_for_pods_running(admin_client=admin_client, namespace=hco_namespace)
 
         # Check hco.status.conditions only if --cluster-sanity-skip-hco-check not passed to pytest.
@@ -701,7 +670,7 @@ def cluster_sanity(
                 hco_status_conditions=hco_status_conditions,
                 expected_hco_status=expected_hco_status,
             )
-    except ClusterSanityError as ex:
+    except (ClusterSanityError, NodeUnschedulableError, NodeNotReadyError) as ex:
         exit_pytest_execution(
             filename=exceptions_filename,
             message=ex.err_str,
