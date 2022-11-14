@@ -30,7 +30,7 @@ def configmap_smbios_vm(unprivileged_client, namespace):
 def smbios_defaults(admin_client, cnv_current_version):
     smbios_defaults = {
         "family": "Red Hat",
-        "product": "Container-native virtualization",
+        "product": "OpenShift Virtualization",
         "manufacturer": "Red Hat",
         "sku": cnv_current_version,
         "version": cnv_current_version,
