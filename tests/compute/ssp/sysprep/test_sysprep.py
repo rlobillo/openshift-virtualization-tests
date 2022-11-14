@@ -14,7 +14,7 @@ from ocp_utilities.utils import run_ssh_commands
 from pytest_testconfig import py_config
 
 from tests.compute.utils import get_windows_timezone
-from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS, WINDOWS_LATEST_OS
+from tests.os_params import WINDOWS_2019, WINDOWS_2019_OS, WINDOWS_2019_TEMPLATE_LABELS
 from utilities.constants import TIMEOUT_5MIN
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
@@ -94,7 +94,7 @@ def generate_sysprep_data(xml_string, resource_kind):
 
 @pytest.fixture(scope="class")
 def sysprep_xml_string():
-    xml_file_path = f"{os.path.dirname(os.path.realpath(__file__))}/sysprep_xml_files/unattend_{WINDOWS_LATEST_OS}.xml"
+    xml_file_path = f"{os.path.dirname(os.path.realpath(__file__))}/sysprep_xml_files/unattend_{WINDOWS_2019_OS}.xml"
 
     with open(xml_file_path) as xml_file:
         return xml_file.read()
@@ -139,7 +139,7 @@ def sysprep_vm(
         namespace=namespace.name,
         client=unprivileged_client,
         data_source=golden_image_data_source_scope_class,
-        labels=Template.generate_template_labels(**WINDOWS_LATEST_LABELS),
+        labels=Template.generate_template_labels(**WINDOWS_2019_TEMPLATE_LABELS),
     ) as vm:
         running_vm(vm=vm)
         yield vm
@@ -260,9 +260,9 @@ def detached_sysprep_resource_and_restarted_vm(
     "golden_image_data_volume_scope_class",
     [
         {
-            "dv_name": WINDOWS_LATEST_OS,
-            "image": WINDOWS_LATEST["image_path"],
-            "dv_size": WINDOWS_LATEST["dv_size"],
+            "dv_name": WINDOWS_2019_OS,
+            "image": WINDOWS_2019["image_path"],
+            "dv_size": WINDOWS_2019["dv_size"],
             "storage_class": py_config["default_storage_class"],
         },
     ],

@@ -15,6 +15,9 @@ RHEL_7_8_TEMPLATE_LABELS = RHEL_7_8["template_labels"]
 
 WINDOWS_10 = get_windows_os_dict(windows_version="win-10")
 WINDOWS_10_TEMPLATE_LABELS = WINDOWS_10["template_labels"]
+WINDOWS_2019 = get_windows_os_dict(windows_version="win-2019")
+WINDOWS_2019_TEMPLATE_LABELS = WINDOWS_2019["template_labels"]
+WINDOWS_2019_OS = WINDOWS_2019_TEMPLATE_LABELS["os"]
 WINDOWS_LATEST = py_config["latest_windows_os_dict"]
 WINDOWS_LATEST_LABELS = WINDOWS_LATEST["template_labels"]
 WINDOWS_LATEST_OS = WINDOWS_LATEST_LABELS["os"]
