@@ -16,6 +16,7 @@ from tests.compute.ssp.supported_os.utils import check_qemu_guest_agent_installe
 from tests.compute.utils import (
     assert_linux_efi,
     assert_vm_xml_efi,
+    update_vm_efi_spec_and_restart,
     validate_libvirt_persistent_domain,
     validate_pause_optional_migrate_unpause_linux_vm,
 )
@@ -366,6 +367,24 @@ class TestCommonTemplatesRhel:
         assert common_templates_utils.validate_virtctl_guest_agent_data_over_time(
             vm=golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
         ), "Guest agent stopped responding"
+
+    @pytest.mark.polarion("CNV-6951")
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
+    def test_efi_secureboot_disabled(
+        self,
+        skip_upstream,
+        skip_if_os_version_below_rhel9,
+        namespace,
+        rhel_os_matrix__class__,
+        golden_image_data_volume_multi_rhel_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class,
+    ):
+        vm = (
+            golden_image_vm_object_from_template_multi_rhel_os_multi_storage_scope_class
+        )
+        update_vm_efi_spec_and_restart(vm=vm, spec={"secureBoot": False})
+        assert_vm_xml_efi(vm=vm, secure_boot_enabled=False)
+        assert_linux_efi(vm=vm)
 
     @pytest.mark.sno
     @pytest.mark.smoke

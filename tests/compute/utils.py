@@ -4,6 +4,7 @@ import shlex
 from contextlib import contextmanager
 
 from ocp_resources.pod_disruption_budget import PodDisruptionBudget
+from ocp_resources.resource import ResourceEditor
 from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.utils import run_ssh_commands
@@ -18,6 +19,7 @@ from utilities.infra import base64_encode_str, cluster_resource
 from utilities.virt import (
     migrate_vm_and_verify,
     prepare_cloud_init_user_data,
+    restart_vm_wait_for_running_vm,
     wait_for_ssh_connectivity,
 )
 
@@ -346,3 +348,20 @@ def assert_windows_efi(vm):
     assert (
         "\\EFI\\Microsoft\\Boot\\bootmgfw.efi" in out
     ), f"EFI boot not found in path. bcdedit output:\n{out}"
+
+
+def update_vm_efi_spec_and_restart(vm, spec=None, wait_for_interfaces=True):
+    ResourceEditor(
+        {
+            vm: {
+                "spec": {
+                    "template": {
+                        "spec": {
+                            "domain": {"firmware": {"bootloader": {"efi": spec or {}}}}
+                        }
+                    }
+                }
+            }
+        }
+    ).update()
+    restart_vm_wait_for_running_vm(vm=vm, wait_for_interfaces=wait_for_interfaces)
