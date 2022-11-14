@@ -609,7 +609,7 @@ six = "*"
 
 [[package]]
 name = "openshift-python-utilities"
-version = "4.12.5"
+version = "4.12.6"
 description = "Wrapper around https://github.com/openshift/openshift-python-utilities"
 category = "main"
 optional = false
@@ -624,7 +624,7 @@ PyYAML = "*"
 
 [[package]]
 name = "openshift-python-wrapper"
-version = "4.12.12"
+version = "4.12.14"
 description = "Wrapper around https://github.com/openshift/openshift-restclient-python"
 category = "main"
 optional = false
@@ -1663,10 +1663,10 @@ openshift = [
     {file = "openshift-0.13.1.tar.gz", hash = "sha256:a060afb7565dda18b2749857867d80ab22b2f4143264519f493a9cabccc3b8a8"},
 ]
 openshift-python-utilities = [
-    {file = "openshift-python-utilities-4.12.5.tar.gz", hash = "sha256:9463086cfba0497c83b92f2056f3802c04cf9d9d7de8a9e8622a9f59e8bca391"},
+    {file = "openshift-python-utilities-4.12.6.tar.gz", hash = "sha256:6e499679909b24419cdd23f450c900ea615311a2a17704e136c6cf18d35ae0fa"},
 ]
 openshift-python-wrapper = [
-    {file = "openshift-python-wrapper-4.12.12.tar.gz", hash = "sha256:c20c0beabba8d0dea0c475400bc6942e12ee6d45b4521f6c5c629ba43b286e63"},
+    {file = "openshift-python-wrapper-4.12.14.tar.gz", hash = "sha256:c424db9735c3b67707ff7d022afedcca7ea1894abd7792abe249db06e798b55d"},
 ]
 packaging = [
     {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},
