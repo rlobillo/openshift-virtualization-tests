@@ -13,6 +13,7 @@ from utilities.constants import (
     ALL_CNV_DAEMONSETS,
     ALL_CNV_DEPLOYMENTS,
     ALL_CNV_PODS,
+    ALL_HCO_RELATED_OBJECTS,
     BREW_REGISTERY_SOURCE,
     HCO_CATALOG_SOURCE,
     INTEL,
@@ -425,6 +426,9 @@ ip_stack_version_matrix = [
 cnv_pod_matrix = ALL_CNV_PODS
 cnv_crd_matrix = ALL_CNV_CRDS
 cnv_crypto_policy_matrix = [TLS_OLD_POLICY, TLS_CUSTOM_POLICY]
+
+cnv_related_object_matrix = ALL_HCO_RELATED_OBJECTS
+
 
 cnv_deployment_matrix = ALL_CNV_DEPLOYMENTS
 cnv_daemonset_matrix = ALL_CNV_DAEMONSETS

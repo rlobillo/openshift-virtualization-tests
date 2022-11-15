@@ -1,6 +1,4 @@
-import importlib
 import logging
-import pkgutil
 
 import pytest
 from ocp_resources.cdi import CDI
@@ -185,18 +183,6 @@ def updated_delete_resource(
         wait_for_reconcile_post_update=True,
     ):
         yield
-
-
-@pytest.fixture(scope="module")
-def ocp_resources_submodule_list():
-    """
-    Gets the list of submodules in ocp_resources. This list is needed to make get and patch call to the right resource
-
-    """
-    path = importlib.util.find_spec("ocp_resources").submodule_search_locations
-    list_submodules = [module.name for module in pkgutil.iter_modules(path)]
-    LOGGER.info(f"list of modules: {list_submodules}")
-    return list_submodules
 
 
 @pytest.fixture(scope="session")

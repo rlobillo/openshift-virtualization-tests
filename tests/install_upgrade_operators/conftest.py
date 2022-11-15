@@ -1,17 +1,68 @@
+import importlib
+import pkgutil
+
 import pytest
 from ocp_resources.cdi import CDI
+from ocp_resources.deployment import Deployment
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
+from ocp_resources.storage_class import StorageClass
 from pytest_testconfig import py_config
 
-from tests.install_upgrade_operators.utils import get_network_addon_config
+from tests.install_upgrade_operators.utils import (
+    get_deployment_by_name,
+    get_network_addon_config,
+)
+from utilities.constants import HPP_POOL
 from utilities.hco import ResourceEditorValidateHCOReconcile, get_hco_version
+from utilities.infra import cluster_resource
 from utilities.operator import (
     disable_default_sources_in_operatorhub,
     get_machine_config_pool_by_name,
 )
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
+
+
+@pytest.fixture()
+def skip_on_hpp_pool(cnv_deployment_matrix__function__):
+    if cnv_deployment_matrix__function__ == HPP_POOL:
+        pytest.skip(f"Priority class test is not valid for {HPP_POOL} deployment")
+
+
+@pytest.fixture()
+def cnv_deployment_by_name(
+    admin_client,
+    hco_namespace,
+    cnv_deployment_matrix__function__,
+):
+    if cnv_deployment_matrix__function__ == HPP_POOL:
+        hpp_pool_deployments = list(
+            cluster_resource(Deployment).get(
+                dyn_client=admin_client,
+                namespace=hco_namespace.name,
+                label_selector=f"{StorageClass.Provisioner.HOSTPATH_CSI}/storagePool=hpp-csi-pvc-block-hpp",
+            )
+        )
+        if not hpp_pool_deployments:
+            pytest.skip("HPP pool deployment not found on this cluster")
+        return hpp_pool_deployments[0]
+
+    return get_deployment_by_name(
+        admin_client=admin_client,
+        namespace_name=hco_namespace.name,
+        deployment_name=cnv_deployment_matrix__function__,
+    )
+
+
+@pytest.fixture(scope="module")
+def ocp_resources_submodule_list():
+    """
+    Gets the list of submodules in ocp_resources. This list is needed to make get and patch call to the right resource
+
+    """
+    path = importlib.util.find_spec("ocp_resources").submodule_search_locations
+    return [module.name for module in pkgutil.iter_modules(path)]
 
 
 @pytest.fixture(scope="session")
