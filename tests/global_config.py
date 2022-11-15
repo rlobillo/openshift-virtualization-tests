@@ -297,6 +297,7 @@ windows_os_matrix = [
             "image_name": Images.Windows.WIN19_IMG,
             "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
             "dv_size": Images.Windows.DEFAULT_DV_SIZE,
+            "latest_released": True,
             "template_labels": {
                 "os": "win2k19",
                 "workload": Template.Workload.SERVER,
@@ -311,7 +312,6 @@ windows_os_matrix = [
             "image_name": Images.Windows.WIN11_IMG,
             "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN11_IMG),
             "dv_size": Images.Windows.DEFAULT_DV_SIZE,
-            "latest_released": True,
             "template_labels": {
                 "os": "win11",
                 "workload": Template.Workload.DESKTOP,
