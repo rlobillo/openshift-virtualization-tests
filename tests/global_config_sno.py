@@ -10,9 +10,16 @@ global_config = pytest_testconfig.load_python(
     py_file="tests/global_config.py", encoding="utf-8"
 )
 
+
+ACCESS_MODE = "access_mode"
+VOLUME_MODE = "volume_mode"
+FILESYSTEM = DataVolume.VolumeMode.FILE
+RWO = DataVolume.AccessMode.RWO
+
+
 HPP_VOLUME_MODE_ACCESS_MODE = {
-    "volume_mode": DataVolume.VolumeMode.FILE,
-    "access_mode": DataVolume.AccessMode.RWO,
+    VOLUME_MODE: FILESYSTEM,
+    ACCESS_MODE: RWO,
 }
 
 new_hpp_storage_class_matrix = [
@@ -20,11 +27,21 @@ new_hpp_storage_class_matrix = [
     {HppCsiStorageClass.Name.HOSTPATH_CSI_PVC_BLOCK: HPP_VOLUME_MODE_ACCESS_MODE},
 ]
 
+topolvm_storage_class_matrix = [
+    {
+        StorageClassNames.TOPOLVM: {
+            VOLUME_MODE: DataVolume.VolumeMode.BLOCK,
+            ACCESS_MODE: RWO,
+            "default": True,
+        }
+    },
+]
+
 storage_class_matrix = [
     {
         StorageClassNames.NFS: {
-            "volume_mode": DataVolume.VolumeMode.FILE,
-            "access_mode": DataVolume.AccessMode.RWX,
+            VOLUME_MODE: FILESYSTEM,
+            ACCESS_MODE: DataVolume.AccessMode.RWX,
         }
     },
 ]

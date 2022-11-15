@@ -591,22 +591,24 @@ def pytest_sessionstart(session):
     py_config_scs = py_config.get("storage_class_matrix", {})
 
     # Set py_config["storage_class_matrix"]
-    # By default - new HPP (CSI) storage classes are added to the matrix
-    py_config["hpp_storage_class_matrix"] = py_config["new_hpp_storage_class_matrix"]
-
     if not skip_if_pytest_flags_exists(pytest_config=session.config):
-        # If Legacy storage 'hostpath-provisioner' is present in the cluster,
-        # add Legacy HPP storage classes instead of new HPP (CSI) storage classes
-        if StorageClassNames.HOSTPATH in [
+        cluster_storage_classes_names = [
             sc.name
             for sc in list(
                 cluster_resource(StorageClass).get(dyn_client=get_admin_client())
             )
-        ]:
-            py_config["hpp_storage_class_matrix"] = py_config[
-                "legacy_hpp_storage_class_matrix"
-            ]
-    py_config_scs.extend(py_config["hpp_storage_class_matrix"])
+        ]
+        # If TOPOLVM storage class is present in the cluster - add it to the matrix
+        # And do not add the HPP storage classes
+        if StorageClassNames.TOPOLVM in cluster_storage_classes_names:
+            py_config_scs.extend(py_config["topolvm_storage_class_matrix"])
+        # If Legacy storage 'hostpath-provisioner' is present in the cluster -
+        # add Legacy HPP storage classes
+        elif StorageClassNames.HOSTPATH in cluster_storage_classes_names:
+            py_config_scs.extend(py_config["legacy_hpp_storage_class_matrix"])
+        # If no TOPOLVM and no Legacy HPP - add new HPP (CSI) storage classes
+        else:
+            py_config_scs.extend(py_config["new_hpp_storage_class_matrix"])
 
     # Save the default storage_class_matrix before it is updated
     # with runtime storage_class_matrix value(s)
