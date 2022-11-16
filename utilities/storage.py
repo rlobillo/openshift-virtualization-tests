@@ -638,7 +638,7 @@ def data_volume_template_dict(
     storage_class=None,
 ):
     source_dv_pvc_spec = source_dv.pvc.instance.spec
-    return DataVolume(
+    dv = DataVolume(
         name=target_dv_name,
         namespace=target_dv_namespace,
         source="pvc",
@@ -649,7 +649,9 @@ def data_volume_template_dict(
         source_pvc=source_dv.name,
         source_namespace=source_dv.namespace,
         api_name=source_dv.api_name,
-    ).to_dict()
+    )
+    dv.to_dict()
+    return dv.res
 
 
 def get_images_server_url(schema):

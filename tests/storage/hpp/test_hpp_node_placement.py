@@ -123,15 +123,16 @@ def cirros_vm_on_hpp(
         storage_class=storage_class,
         size=Images.Cirros.DEFAULT_DV_SIZE,
         api_name="storage",
-    ).to_dict()
-    dv_metadata = dv["metadata"]
+    )
+    dv.to_dict()
+    dv_metadata = dv.res["metadata"]
     with cluster_resource(VirtualMachineForTests)(
         client=client,
         name=vm_name,
         namespace=dv_metadata["namespace"],
         os_flavor=OS_FLAVOR_CIRROS,
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-        data_volume_template={"metadata": dv_metadata, "spec": dv["spec"]},
+        data_volume_template={"metadata": dv_metadata, "spec": dv.res["spec"]},
         node_selector=node,
         running=True,
     ) as vm:

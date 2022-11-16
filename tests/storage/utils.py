@@ -459,7 +459,8 @@ def create_windows19_vm(dv_name, namespace, client, vm_name, cpu_model, storage_
         size=Images.Windows.DEFAULT_DV_SIZE,
         client=client,
         api_name="storage",
-    ).to_dict()
+    )
+    dv.to_dict()
     with cluster_resource(VirtualMachineForTestsFromTemplate)(
         name=vm_name,
         namespace=namespace,
@@ -468,7 +469,7 @@ def create_windows19_vm(dv_name, namespace, client, vm_name, cpu_model, storage_
             **py_config["latest_windows_os_dict"]["template_labels"]
         ),
         cpu_model=cpu_model,
-        data_volume_template={"metadata": dv["metadata"], "spec": dv["spec"]},
+        data_volume_template={"metadata": dv.res["metadata"], "spec": dv.res["spec"]},
     ) as vm:
         running_vm(vm=vm)
         yield vm

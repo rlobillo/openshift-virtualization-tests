@@ -75,7 +75,7 @@ def rhel_dv_dict(
     namespace_for_backup2,
     rhel9_http_image_url,
 ):
-    return cluster_resource(DataVolume)(
+    dv = cluster_resource(DataVolume)(
         name="dv-from-template",
         namespace=namespace_for_backup2.name,
         storage_class=[*storage_class_matrix_snapshot_matrix__function__][0],
@@ -84,7 +84,9 @@ def rhel_dv_dict(
         size=Images.Rhel.DEFAULT_DV_SIZE,
         client=admin_client,
         api_name="storage",
-    ).to_dict()
+    )
+    dv.to_dict()
+    return dv.res
 
 
 @pytest.fixture()

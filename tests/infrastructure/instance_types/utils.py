@@ -137,12 +137,11 @@ class VirtualMachinePreferenceCommonFunctionClass:
     def to_dict(self):
         # Will call Resource/NamespacedResource function depending on the inherited class:
         # VirtualMachinePreferenceForTest/VirtualMachineClusterPreferenceForTest
-        res = super().to_dict()
+        super().to_dict()
         if not self.yaml_file:
             vm_preference_spec = {}
             self.add_optional_spec(vm_preference_spec=vm_preference_spec)
-            res["spec"] = vm_preference_spec
-        return res
+            self.res["spec"] = vm_preference_spec
 
     def add_optional_spec(self, vm_preference_spec):
         if self.clock_timezone or self.clock_utc_seconds_offset:
