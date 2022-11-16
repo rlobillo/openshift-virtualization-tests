@@ -65,6 +65,9 @@ class VirtualMachineInstanceTypeForTest(
         namespace,
         cpu_cores,
         memory_requests,
+        client=None,
+        teardown=True,
+        yaml_file=None,
         dedicated_cpu_placement=None,
         cpu_model=None,
         cpu_isolate_emulator_thread=None,
@@ -75,6 +78,7 @@ class VirtualMachineInstanceTypeForTest(
         io_thread_policy=None,
         launch_security=None,
         memory_huge_pages=None,
+        **kwargs,
     ):
         self.cpu_cores = cpu_cores
         self.memory_requests = memory_requests
@@ -88,7 +92,14 @@ class VirtualMachineInstanceTypeForTest(
         self.io_thread_policy = io_thread_policy
         self.launch_security = launch_security
         self.memory_huge_pages = memory_huge_pages
-        super().__init__(name=name, namespace=namespace)
+        super(VirtualMachineInstancetype, self).__init__(
+            name=name,
+            namespace=namespace,
+            client=client,
+            teardown=teardown,
+            yaml_file=yaml_file,
+            **kwargs,
+        )
 
 
 class VirtualMachineClusterInstanceTypeForTest(
@@ -99,6 +110,9 @@ class VirtualMachineClusterInstanceTypeForTest(
         name,
         cpu_cores,
         memory_requests,
+        client=None,
+        teardown=True,
+        yaml_file=None,
         dedicated_cpu_placement=None,
         cpu_model=None,
         cpu_isolate_emulator_thread=None,
@@ -109,6 +123,7 @@ class VirtualMachineClusterInstanceTypeForTest(
         io_thread_policy=None,
         launch_security=None,
         memory_huge_pages=None,
+        **kwargs,
     ):
         self.cpu_cores = cpu_cores
         self.memory_requests = memory_requests
@@ -122,7 +137,13 @@ class VirtualMachineClusterInstanceTypeForTest(
         self.io_thread_policy = io_thread_policy
         self.launch_security = launch_security
         self.memory_huge_pages = memory_huge_pages
-        super().__init__(name=name)
+        super(VirtualMachineClusterInstancetype, self).__init__(
+            name=name,
+            client=client,
+            teardown=teardown,
+            yaml_file=yaml_file,
+            **kwargs,
+        )
 
 
 class VirtualMachinePreferenceCommonFunctionClass:

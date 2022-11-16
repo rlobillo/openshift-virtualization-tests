@@ -1,46 +1,6 @@
 import pytest
 from kubernetes.dynamic.exceptions import UnprocessibleEntityError
 
-from tests.infrastructure.instance_types.utils import (
-    VirtualMachineClusterInstanceTypeForTest,
-    VirtualMachineInstanceTypeForTest,
-)
-from utilities.infra import cluster_resource
-
-
-@pytest.fixture(scope="class")
-def instance_type_for_test(namespace, common_instance_type_param_dict):
-    instance_type_param_dict = common_instance_type_param_dict.copy()
-    instance_type_param_dict["namespace"] = namespace.name
-    return cluster_resource(VirtualMachineInstanceTypeForTest)(
-        **instance_type_param_dict
-    )
-
-
-@pytest.fixture(scope="class")
-def cluster_instance_type_for_test(common_instance_type_param_dict):
-    return cluster_resource(VirtualMachineClusterInstanceTypeForTest)(
-        **common_instance_type_param_dict
-    )
-
-
-@pytest.fixture(scope="class")
-def common_instance_type_param_dict(request):
-    return {
-        "name": request.param["name"],
-        "cpu_cores": request.param.get("cpu_cores"),
-        "memory_requests": request.param.get("memory_requests"),
-        "dedicated_cpu_placement": request.param.get("dedicated_cpu_placement"),
-        "cpu_model": request.param.get("cpu_model"),
-        "cpu_isolate_emulator_thread": request.param.get("cpu_isolate_emulator_thread"),
-        "cpu_numa": request.param.get("cpu_numa"),
-        "cpu_realtime": request.param.get("cpu_realtime"),
-        "gpus_list": request.param.get("gpus_list"),
-        "host_devices_list": request.param.get("host_devices_list"),
-        "io_thread_policy": request.param.get("io_thread_policy"),
-        "memory_huge_pages": request.param.get("memory_huge_pages"),
-    }
-
 
 class TestInstanceTypes:
     @pytest.mark.parametrize(
@@ -93,8 +53,8 @@ class TestInstanceTypes:
     )
     @pytest.mark.polarion("CNV-9082")
     def test_create_instance_type(self, instance_type_for_test):
-        instance_type_for_test.deploy()
-        instance_type_for_test.clean_up()
+        with instance_type_for_test as instance_type:
+            assert instance_type.exists
 
     @pytest.mark.parametrize(
         "common_instance_type_param_dict",
@@ -174,8 +134,8 @@ class TestClusterInstanceTypes:
     )
     @pytest.mark.polarion("CNV-9103")
     def test_create_cluster_instance_type(self, cluster_instance_type_for_test):
-        cluster_instance_type_for_test.deploy()
-        cluster_instance_type_for_test.clean_up()
+        with cluster_instance_type_for_test as cluster_instance_type:
+            assert cluster_instance_type.exists
 
     @pytest.mark.parametrize(
         "common_instance_type_param_dict",
