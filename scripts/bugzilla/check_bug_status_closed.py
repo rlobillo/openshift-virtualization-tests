@@ -15,6 +15,8 @@ KNOWN_BRANCHES = {
     EXPECTED_TARGET_BRANCH: "4.12",
     "cnv-4.11": "4.11",
     "cnv-4.10": "4.10",
+    "cnv-4.9": "4.9",
+    "cnv-4.8": "4.8",
 }
 
 
