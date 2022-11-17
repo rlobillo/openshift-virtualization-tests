@@ -11,7 +11,6 @@ import yaml
 from kubernetes.dynamic.exceptions import ForbiddenError
 from ocp_resources.data_source import DataSource
 from ocp_resources.datavolume import DataVolume
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine_instance_migration import (
@@ -34,6 +33,7 @@ from utilities.constants import (
     OS_FLAVOR_WINDOWS,
     TIMEOUT_1MIN,
     TIMEOUT_30MIN,
+    StorageClassNames,
 )
 from utilities.infra import cluster_resource, create_ns
 from utilities.storage import generate_data_source_dict, get_images_server_url
@@ -52,8 +52,8 @@ VMI_SOURCE_POD_STR = "vmi_source_pod"
 MIGRATION_INSTANCE_STR = "migration_instance"
 
 SCALE_STORAGE_TYPES = {
-    OCS: StorageClass.Types.CEPH_RBD,
-    NFS: StorageClass.Types.NFS,
+    OCS: StorageClassNames.CEPH_RBD,
+    NFS: StorageClassNames.NFS,
 }
 pytestmark = pytest.mark.scale
 

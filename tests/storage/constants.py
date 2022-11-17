@@ -1,6 +1,4 @@
-from ocp_resources.storage_class import StorageClass
-
-from utilities.constants import Images
+from utilities.constants import Images, StorageClassNames
 from utilities.storage import HppCsiStorageClass
 
 
@@ -13,7 +11,7 @@ DV_PARAMS = {
 NAMESPACE_PARAMS = {"use_unprivileged_client": False}
 
 HPP_STORAGE_CLASSES = [
-    StorageClass.Types.HOSTPATH,
+    StorageClassNames.HOSTPATH,
     HppCsiStorageClass.Name.HOSTPATH_CSI_LEGACY,
     HppCsiStorageClass.Name.HOSTPATH_CSI_BASIC,
     HppCsiStorageClass.Name.HOSTPATH_CSI_PVC_BLOCK,

@@ -5,7 +5,6 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.pod import Pod
 from ocp_resources.replicaset import ReplicaSet
 from ocp_resources.service import Service
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
 
@@ -20,6 +19,7 @@ from utilities.constants import (
     LINUX_BRIDGE,
     OVS_BRIDGE,
     Images,
+    StorageClassNames,
 )
 from utilities.infra import get_latest_os_dict_list
 from utilities.storage import HppCsiStorageClass
@@ -101,19 +101,19 @@ new_hpp_storage_class_matrix = [
 ]
 
 legacy_hpp_storage_class_matrix = [
-    {StorageClass.Types.HOSTPATH: HPP_VOLUME_MODE_ACCESS_MODE},
+    {StorageClassNames.HOSTPATH: HPP_VOLUME_MODE_ACCESS_MODE},
     {HppCsiStorageClass.Name.HOSTPATH_CSI_LEGACY: HPP_VOLUME_MODE_ACCESS_MODE},
 ]
 
 storage_class_matrix = [
     {
-        StorageClass.Types.NFS: {
+        StorageClassNames.NFS: {
             "volume_mode": DataVolume.VolumeMode.FILE,
             "access_mode": DataVolume.AccessMode.RWX,
         }
     },
     {
-        StorageClass.Types.CEPH_RBD: {
+        StorageClassNames.CEPH_RBD: {
             "volume_mode": DataVolume.VolumeMode.BLOCK,
             "access_mode": DataVolume.AccessMode.RWX,
             "default": True,

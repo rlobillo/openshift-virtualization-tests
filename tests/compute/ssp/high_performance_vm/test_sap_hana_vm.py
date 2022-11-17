@@ -8,7 +8,6 @@ import pytest
 import xmltodict
 from ocp_resources.node import Node
 from ocp_resources.sriov_network_node_policy import SriovNetworkNodePolicy
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_utilities.utils import run_ssh_commands
 
@@ -30,7 +29,7 @@ from tests.compute.utils import (
     register_vm_to_rhsm,
 )
 from utilities import console
-from utilities.constants import SRIOV, TSC_FREQUENCY
+from utilities.constants import SRIOV, TSC_FREQUENCY, StorageClassNames
 from utilities.infra import ExecCommandOnPod
 from utilities.network import is_destination_pingable_from_vm, network_nad
 from utilities.virt import (
@@ -342,9 +341,7 @@ def sap_hana_data_volume_templates(sap_hana_template):
         ]
     )[0]
     data_volume_templates["metadata"]["name"] = SAP_HANA_VM_NAME
-    data_volume_templates["spec"]["storage"][
-        "storageClassName"
-    ] = StorageClass.Types.NFS
+    data_volume_templates["spec"]["storage"]["storageClassName"] = StorageClassNames.NFS
 
     src_containerdisk_str = "SRC_CONTAINERDISK"
     data_volume_templates["spec"]["source"]["registry"][

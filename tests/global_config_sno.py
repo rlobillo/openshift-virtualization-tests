@@ -1,7 +1,7 @@
 import pytest_testconfig
 from ocp_resources.datavolume import DataVolume
-from ocp_resources.storage_class import StorageClass
 
+from utilities.constants import StorageClassNames
 from utilities.storage import HppCsiStorageClass
 
 
@@ -22,7 +22,7 @@ new_hpp_storage_class_matrix = [
 
 storage_class_matrix = [
     {
-        StorageClass.Types.NFS: {
+        StorageClassNames.NFS: {
             "volume_mode": DataVolume.VolumeMode.FILE,
             "access_mode": DataVolume.AccessMode.RWX,
         }

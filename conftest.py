@@ -44,6 +44,7 @@ from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import config as py_config
 
 import utilities.infra
+from utilities.constants import StorageClassNames
 from utilities.infra import get_admin_client
 from utilities.logger import setup_logging
 from utilities.pytest_utils import (
@@ -596,7 +597,7 @@ def pytest_sessionstart(session):
     if not skip_if_pytest_flags_exists(pytest_config=session.config):
         # If Legacy storage 'hostpath-provisioner' is present in the cluster,
         # add Legacy HPP storage classes instead of new HPP (CSI) storage classes
-        if cluster_resource(StorageClass).Types.HOSTPATH in [
+        if StorageClassNames.HOSTPATH in [
             sc.name
             for sc in list(
                 cluster_resource(StorageClass).get(dyn_client=get_admin_client())

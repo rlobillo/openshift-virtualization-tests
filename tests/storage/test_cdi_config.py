@@ -8,12 +8,11 @@ from ocp_resources.cdi import CDI
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.route import Route
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 import utilities.storage
 from tests.storage import utils
-from utilities.constants import CDI_UPLOADPROXY, Images
+from utilities.constants import CDI_UPLOADPROXY, Images, StorageClassNames
 from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.infra import cluster_resource, get_cert
 from utilities.storage import (
@@ -255,7 +254,7 @@ def test_cdiconfig_changing_storage_class_default(
                     dv_name="import-cdiconfig-scratch-space-not-default",
                     namespace=configmap.namespace,
                     url=url,
-                    storage_class=cluster_resource(StorageClass).Types.CEPH_RBD,
+                    storage_class=StorageClassNames.CEPH_RBD,
                     cert_configmap=configmap.name,
                 ) as dv:
                     dv.wait()

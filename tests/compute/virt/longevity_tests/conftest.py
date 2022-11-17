@@ -1,7 +1,6 @@
 import logging
 
 import pytest
-from ocp_resources.storage_class import StorageClass
 from pytest_testconfig import config as py_config
 
 from tests.compute.utils import (
@@ -17,6 +16,7 @@ from tests.compute.virt.longevity_tests.utils import (
     create_dv_vms,
     wait_vms_booted_and_start_processes,
 )
+from utilities.constants import StorageClassNames
 from utilities.storage import create_or_update_data_source, data_volume
 
 
@@ -135,7 +135,7 @@ def golden_image_data_volume_ocs(request, admin_client, golden_images_namespace)
     yield from data_volume(
         request=request,
         namespace=golden_images_namespace,
-        storage_class=StorageClass.Types.CEPH_RBD,
+        storage_class=StorageClassNames.CEPH_RBD,
         check_dv_exists=True,
         admin_client=admin_client,
     )
@@ -153,7 +153,7 @@ def golden_image_data_volume_nfs(request, admin_client, golden_images_namespace)
     yield from data_volume(
         request=request,
         namespace=golden_images_namespace,
-        storage_class=StorageClass.Types.NFS,
+        storage_class=StorageClassNames.NFS,
         check_dv_exists=True,
         admin_client=admin_client,
     )

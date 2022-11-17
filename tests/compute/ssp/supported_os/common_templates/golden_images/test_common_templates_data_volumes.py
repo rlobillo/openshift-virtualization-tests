@@ -1,7 +1,6 @@
 import pytest
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
 
@@ -9,7 +8,7 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.utils import 
     assert_missing_golden_image_pvc,
 )
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
-from utilities.constants import HOSTPATH_CSI_BASIC, TIMEOUT_8MIN
+from utilities.constants import HOSTPATH_CSI_BASIC, TIMEOUT_8MIN, StorageClassNames
 from utilities.infra import cluster_resource
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
@@ -179,7 +178,7 @@ def test_vm_with_existing_dv(
             },
             {
                 "updated_storage_class_params": {
-                    "storage_class": StorageClass.Types.NFS,
+                    "storage_class": StorageClassNames.NFS,
                     "access_mode": DataVolume.AccessMode.RWX,
                     "volume_mode": DataVolume.VolumeMode.FILE,
                 },

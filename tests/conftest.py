@@ -86,6 +86,7 @@ from utilities.constants import (
     WORKER_NODE_LABEL_KEY,
     WORKERS_TYPE,
     Images,
+    StorageClassNames,
 )
 from utilities.exceptions import CommonNodesCpusNotFoundError
 from utilities.infra import (
@@ -1492,7 +1493,7 @@ def ocs_storage_class(cluster_storage_classes):
     Get the OCS storage class if configured
     """
     for sc in cluster_storage_classes:
-        if sc.name == StorageClass.Types.CEPH_RBD:
+        if sc.name == StorageClassNames.CEPH_RBD:
             return sc
 
 
@@ -1932,7 +1933,7 @@ def updated_nfs_storage_profile(request, cluster_storage_classes, installing_cnv
     if installing_cnv:
         yield
     else:
-        nfs_sc_name = StorageClass.Types.NFS
+        nfs_sc_name = StorageClassNames.NFS
         nfs_sc = [sc for sc in cluster_storage_classes if sc.name == nfs_sc_name]
         # Update NFS storage profile only if there's no known storage provisioner
         if (

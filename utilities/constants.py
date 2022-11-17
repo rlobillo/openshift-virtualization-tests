@@ -458,3 +458,10 @@ ALL_CNV_CRDS = [
     f"virtualmachinepreferences.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
 ]
 PRODUCTION_CATALOG_SOURCE = "redhat-operators"
+
+
+class StorageClassNames:
+    CEPH_RBD = "ocs-storagecluster-ceph-rbd"
+    HOSTPATH = "hostpath-provisioner"
+    NFS = "nfs"
+    TOPOLVM = "odf-lvm-vg1"

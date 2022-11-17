@@ -1,7 +1,6 @@
 import logging
 
 import pytest
-from ocp_resources.storage_class import StorageClass
 
 from tests.os_params import (
     RHEL_LATEST,
@@ -11,7 +10,7 @@ from tests.os_params import (
     WINDOWS_LATEST_LABELS,
     WINDOWS_LATEST_OS,
 )
-from utilities.constants import ROOTDISK
+from utilities.constants import ROOTDISK, StorageClassNames
 from utilities.virt import get_guest_os_info, vm_instance_from_template
 
 
@@ -20,7 +19,7 @@ pytestmark = pytest.mark.usefixtures("skip_test_if_no_ocs_sc")
 
 LOGGER = logging.getLogger(__name__)
 # Use OCS SC for Block disk IO logic
-STORAGE_CLASS = StorageClass.Types.CEPH_RBD
+STORAGE_CLASS = StorageClassNames.CEPH_RBD
 
 
 def _vm_test_params(

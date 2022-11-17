@@ -7,7 +7,6 @@ from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.namespace import Namespace
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.resource import Resource, ResourceEditor
-from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import py_config
@@ -22,6 +21,7 @@ from utilities.constants import (
     TIMEOUT_4MIN,
     TIMEOUT_10MIN,
     TIMEOUT_30MIN,
+    StorageClassNames,
 )
 from utilities.ssp import (
     wait_for_at_least_one_auto_update_data_import_cron,
@@ -230,7 +230,7 @@ def wait_for_hco_post_update_stable_state(admin_client, hco_namespace):
         admin_client=admin_client, namespace=hco_namespace.name
     ):
         # We need to skip checking "hostpath-provisioner" daemonset, since it is not managed by HCO CR
-        if not ds.name.startswith(StorageClass.Types.HOSTPATH):
+        if not ds.name.startswith(StorageClassNames.HOSTPATH):
             wait_for_ds(ds=ds)
     for deployment in utilities.infra.get_deployments(
         admin_client=admin_client,
