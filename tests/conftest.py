@@ -1314,7 +1314,7 @@ def nodes_common_cpu_model(nodes_common_cpu_model_list, nodes_cpu_architecture):
     """
     Get a CPU model that is common for all nodes
     """
-    # Due to BZ 2122283 (targeted to 4.13) need to exclude Opteron_G1 and Opteron_G2
+    # Due to BZ 2122283 <skip-bug-check> (targeted to 4.13) need to exclude Opteron_G1 and Opteron_G2
     # CPU models from the common CPUs list
     if nodes_cpu_architecture == INTEL:
         for model in AMD_CPU_MODELS:

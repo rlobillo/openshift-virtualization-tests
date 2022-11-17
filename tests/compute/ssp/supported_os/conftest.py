@@ -319,7 +319,7 @@ def skip_win_11_and_2022_on_fips_enabled_cluster(
     win_ver = [*windows_os_matrix__class__][0]
     if fips_enabled_cluster and win_ver in ("win-11", "win-2022"):
         pytest.skip(
-            "Skip Win-11 and Win-2022 tests on FIPS enabled cluster (BZ 2089301)"
+            "Skip Win-11 and Win-2022 tests on FIPS enabled cluster (BZ 2089301 <skip-bug-check>)"
         )
 
 

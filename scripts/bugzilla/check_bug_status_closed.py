@@ -76,7 +76,15 @@ def get_all_bugs_from_file(file_content):
         r"https://bugzilla.redhat.com/show_bug.cgi\?id=(\d{7,}(?! <skip-bug-check>))",
         file_content,
     )
-    return set(_pytest_bugzilla_marker_bugs + _is_bug_open_bugs + _bugzilla_url_bugs)
+    bugzilla_comments = re.findall(
+        r"(?:BZ |.*BZ)(\d{7,}(?! <skip-bug-check>))", file_content, re.IGNORECASE
+    )
+    return set(
+        _pytest_bugzilla_marker_bugs
+        + _is_bug_open_bugs
+        + _bugzilla_url_bugs
+        + bugzilla_comments
+    )
 
 
 def main():
