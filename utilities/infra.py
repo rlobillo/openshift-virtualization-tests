@@ -728,11 +728,14 @@ def exit_pytest_execution(
         junitxml_property (pytest plugin): record_testsuite_property
     """
     if filename:
+        base_directory = py_config.get("data_collector", {}).get(
+            "data_collector_base_directory"
+        )
         write_to_file(
             file_name=filename,
             content=message,
             extra_dir_name="pytest_exit_errors",
-            base_directory=py_config["data_collector"]["data_collector_base_directory"],
+            base_directory=base_directory or "tests-collected-info",
         )
     if junitxml_property:
         junitxml_property(name="exit_code", value=return_code)
