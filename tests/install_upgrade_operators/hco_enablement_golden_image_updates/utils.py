@@ -22,7 +22,6 @@ DATA_IMPORT_SCHEDULE_RANDOM_MINUTES_REGEX = (
 )
 COMMON_TEMPLATE = "commonTemplate"
 DATASOURCE_NAME = "custom-datasource"
-KEY_PATH_SEPARATOR = "->"
 
 DATA_IMPORT_CRON_ENABLE = (
     f"metadata->annotations->{DataImportCron.ApiGroup.DATA_IMPORT_CRON_TEMPLATE_KUBEVIRT_IO}/"

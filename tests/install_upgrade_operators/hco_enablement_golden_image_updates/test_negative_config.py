@@ -7,10 +7,10 @@ from benedict import benedict
 from kubernetes.client.rest import ApiException
 from ocp_resources.resource import ResourceEditor
 
+from tests.install_upgrade_operators.constants import KEY_PATH_SEPARATOR
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
     CUSTOM_CRON_TEMPLATE,
     DATA_IMPORT_CRON_ENABLE,
-    KEY_PATH_SEPARATOR,
     get_template_dict_by_name,
     update_custom_template,
 )

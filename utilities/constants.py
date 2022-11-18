@@ -459,6 +459,8 @@ ALL_CNV_CRDS = [
     f"virtualmachinepreferences.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
 ]
 PRODUCTION_CATALOG_SOURCE = "redhat-operators"
+CLUSTER_RESOURCE_NAME = "cluster"
+OLD_POLICY = "old"
 
 
 class StorageClassNames:
