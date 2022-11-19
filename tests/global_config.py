@@ -14,9 +14,11 @@ from utilities.constants import (
     ALL_CNV_DEPLOYMENTS,
     ALL_CNV_PODS,
     BREW_REGISTERY_SOURCE,
+    CUSTOM_POLICY,
     HCO_CATALOG_SOURCE,
     INTEL,
     LINUX_BRIDGE,
+    OLD_POLICY,
     OVS_BRIDGE,
     Images,
     StorageClassNames,
@@ -411,6 +413,7 @@ ip_stack_version_matrix = [
 ]
 cnv_pod_matrix = ALL_CNV_PODS
 cnv_crd_matrix = ALL_CNV_CRDS
+cnv_crypto_policy_matrix = [OLD_POLICY, CUSTOM_POLICY]
 
 cnv_deployment_matrix = ALL_CNV_DEPLOYMENTS
 cnv_daemonset_matrix = ALL_CNV_DAEMONSETS

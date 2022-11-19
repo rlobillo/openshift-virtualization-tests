@@ -26,9 +26,6 @@ from utilities.constants import (
 )
 
 
-HCO_NAMESPACE = py_config["hco_namespace"]
-HCO_CR_NAME = py_config["hco_cr_name"]
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -48,8 +45,8 @@ LOGGER = logging.getLogger(__name__)
         pytest.param(
             {
                 RESOURCE_TYPE_STR: HyperConverged,
-                RESOURCE_NAME_STR: HCO_CR_NAME,
-                RESOURCE_NAMESPACE_STR: HCO_NAMESPACE,
+                RESOURCE_NAME_STR: py_config["hco_cr_name"],
+                RESOURCE_NAMESPACE_STR: py_config["hco_namespace"],
                 KEY_NAME_STR: TLS_SECURITY_PROFILE,
             },
             HyperConverged,
@@ -60,7 +57,7 @@ LOGGER = logging.getLogger(__name__)
             {
                 RESOURCE_TYPE_STR: KubeVirt,
                 RESOURCE_NAME_STR: KUBEVIRT_HCO_NAME,
-                RESOURCE_NAMESPACE_STR: HCO_NAMESPACE,
+                RESOURCE_NAMESPACE_STR: py_config["hco_namespace"],
                 KEY_NAME_STR: "configuration->tlsConfiguration",
             },
             KubeVirt,
@@ -71,7 +68,7 @@ LOGGER = logging.getLogger(__name__)
             {
                 RESOURCE_TYPE_STR: SSP,
                 RESOURCE_NAME_STR: SSP_KUBEVIRT_HYPERCONVERGED,
-                RESOURCE_NAMESPACE_STR: HCO_NAMESPACE,
+                RESOURCE_NAMESPACE_STR: py_config["hco_namespace"],
                 KEY_NAME_STR: TLS_SECURITY_PROFILE,
             },
             SSP,

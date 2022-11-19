@@ -1,16 +1,26 @@
 import logging
 
 import pytest
+from ocp_resources.api_server import APIServer
+from ocp_resources.resource import ResourceEditor
+from ocp_utilities.infra import cluster_resource
+from openshift.dynamic.exceptions import ResourceNotFoundError
 
 from tests.install_upgrade_operators.crypto_policy.constants import (
+    CRYPTO_POLICY_SPEC_DICT,
     KEY_NAME_STR,
+    MANAGED_CRS_LIST,
     RESOURCE_NAME_STR,
     RESOURCE_NAMESPACE_STR,
     RESOURCE_TYPE_STR,
+    TLS_SECURITY_PROFILE,
 )
 from tests.install_upgrade_operators.crypto_policy.utils import (
     get_resource_crypto_policy,
+    wait_for_cluster_operator_stabilize,
 )
+from utilities.constants import CLUSTER_RESOURCE_NAME
+from utilities.hco import wait_for_hco_conditions
 
 
 LOGGER = logging.getLogger(__name__)
@@ -24,4 +34,38 @@ def resource_crypto_policy_settings(request, admin_client):
         name=request.param.get(RESOURCE_NAME_STR),
         namespace=request.param.get(RESOURCE_NAMESPACE_STR),
         key_name=request.param.get(KEY_NAME_STR),
+    )
+
+
+@pytest.fixture(scope="module")
+def api_server(admin_client):
+    api_server = cluster_resource(APIServer)(
+        client=admin_client, name=CLUSTER_RESOURCE_NAME
+    )
+    if api_server.exists:
+        return api_server
+    raise ResourceNotFoundError(
+        f"{api_server.kind}: {CLUSTER_RESOURCE_NAME} not found."
+    )
+
+
+@pytest.fixture()
+def updated_api_server_crypto_policy(
+    admin_client, hco_namespace, cnv_crypto_policy_matrix__function__, api_server
+):
+    tls_security_spec = CRYPTO_POLICY_SPEC_DICT.get(
+        cnv_crypto_policy_matrix__function__
+    )
+    assert (
+        tls_security_spec
+    ), f"{cnv_crypto_policy_matrix__function__} needs to be added to {CRYPTO_POLICY_SPEC_DICT}"
+    with ResourceEditor(
+        patches={api_server: {"spec": {TLS_SECURITY_PROFILE: tls_security_spec}}},
+    ):
+        yield
+    wait_for_cluster_operator_stabilize(admin_client=admin_client)
+    wait_for_hco_conditions(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        list_dependent_crs_to_check=MANAGED_CRS_LIST,
     )

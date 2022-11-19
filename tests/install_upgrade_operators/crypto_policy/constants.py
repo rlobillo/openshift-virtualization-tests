@@ -3,6 +3,8 @@ from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.ssp import SSP
 
+from utilities.constants import CUSTOM_POLICY, OLD_POLICY
+
 
 MANAGED_CRS_LIST = [KubeVirt, CDI, NetworkAddonsConfig, SSP]
 
@@ -13,8 +15,42 @@ RESOURCE_TYPE_STR = "resource_type"
 RESOURCE_NAME_STR = "resource_name"
 EXPECTED_VALUE_STR = "expected_value"
 RESOURCE_NAMESPACE_STR = "resource_namespace"
+TLS_CUSTOM_PROFILE = {
+    CUSTOM_POLICY: {
+        "minTLSVersion": "VersionTLS12",
+        "ciphers": ["ECDHE-RSA-AES128-GCM-SHA256", "ECDHE-ECDSA-AES128-GCM-SHA256"],
+    },
+    "type": "Custom",
+}
+TLS_OLD_PROFILE = {OLD_POLICY: {}, "type": "Old"}
+CRYPTO_POLICY_SPEC_DICT = {
+    OLD_POLICY: TLS_OLD_PROFILE,
+    CUSTOM_POLICY: TLS_CUSTOM_PROFILE,
+}
 
-
+KUBEVIRT_OLD_PROFILE = {
+    "ciphers": [
+        "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+        "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+        "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_RSA_WITH_AES_128_CBC_SHA256",
+        "TLS_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+    ],
+    "minTLSVersion": "VersionTLS10",
+}
 TLS_SECURITY_PROFILE = "tlsSecurityProfile"
 
 KEY_NAME_STR = "key_name"
@@ -34,5 +70,17 @@ CRYPTO_POLICY_EXPECTED_DICT = {
         SSP: TLS_INTERMEDIATE_PROFILE,
         CDI: TLS_INTERMEDIATE_PROFILE,
         NetworkAddonsConfig: TLS_INTERMEDIATE_PROFILE,
+    },
+    CUSTOM_POLICY: {
+        KubeVirt: TLS_CUSTOM_PROFILE[CUSTOM_POLICY],
+        SSP: TLS_CUSTOM_PROFILE,
+        CDI: TLS_CUSTOM_PROFILE,
+        NetworkAddonsConfig: TLS_CUSTOM_PROFILE,
+    },
+    OLD_POLICY: {
+        KubeVirt: KUBEVIRT_OLD_PROFILE,
+        SSP: TLS_OLD_PROFILE,
+        CDI: TLS_OLD_PROFILE,
+        NetworkAddonsConfig: TLS_OLD_PROFILE,
     },
 }

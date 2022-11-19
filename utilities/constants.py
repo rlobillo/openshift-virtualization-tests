@@ -461,6 +461,7 @@ ALL_CNV_CRDS = [
 PRODUCTION_CATALOG_SOURCE = "redhat-operators"
 CLUSTER_RESOURCE_NAME = "cluster"
 OLD_POLICY = "old"
+CUSTOM_POLICY = "custom"
 
 
 class StorageClassNames:
