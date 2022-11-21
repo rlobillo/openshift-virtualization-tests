@@ -474,6 +474,31 @@ breaking the rest of the code, and if so, to mark them as Verified+1.
 author and their reviewer.) It's required that the procedure used to verify a
 patch is listed in comments to the review request.
 
+## Download cnv-tests repo
+
+### Add your computer's public SSH key to the repo
+* Note: Described here is the basic way of generating a general key and using it to connect to gerrit.
+ If you prefer generating a key which will be used **only** for connecting to gerrit, please search for the instructions on the web.
+
+```bash
+ssh-keygen
+cat ~/.ssh/id_rsa.pub
+```
+Copy the file's contents to https://code.engineering.redhat.com/gerrit/settings/#SSHKeys -> New SSH key
+
+### Update your computers SSH configurations
+Add
+```bash
+Host code.engineering.redhat.com
+    PubkeyAcceptedKeyTypes=+ssh-rsa
+```
+to `~/.ssh/config`.
+
+### Clone the repo to your computer
+```bash
+git clone "ssh://<username>@code.engineering.redhat.com/cnv-tests" && scp -p <username>@code.engineering.redhat.com:hooks/commit-msg "cnv-tests/.git/hooks/"
+```
+
 ## How-to verify your patch
 
 ### Check the code
