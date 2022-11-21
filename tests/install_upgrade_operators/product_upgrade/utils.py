@@ -41,7 +41,12 @@ from utilities.operator import approve_install_plan, wait_for_mcp_update_complet
 LOGGER = logging.getLogger(__name__)
 TIER_2_PODS_TYPE = "tier-2"
 FIRING_STATE = "firing"
-IGNORE_ALERTS = ["APIRemovedInNextEUSReleaseInUse", "APIRemovedInNextReleaseInUse"]
+IGNORE_ALERTS = [
+    "APIRemovedInNextEUSReleaseInUse",
+    "APIRemovedInNextReleaseInUse",
+    "etcdHighCommitDurations",
+    "etcdGRPCRequestsSlow",
+]
 
 
 def wait_for_new_operator_pod(
