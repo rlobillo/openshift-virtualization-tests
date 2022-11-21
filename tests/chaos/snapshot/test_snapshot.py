@@ -5,10 +5,14 @@ from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
-from utilities.constants import TIMEOUT_5MIN, TIMEOUT_5SEC
+from utilities.constants import TIMEOUT_5MIN, TIMEOUT_5SEC, NamespacesNames
 
 
-pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
+pytestmark = pytest.mark.usefixtures(
+    "skip_if_no_storage_class_for_snapshot",
+    "chaos_namespace",
+    "cluster_monitoring_process",
+)
 
 
 @pytest.mark.parametrize(
@@ -18,7 +22,7 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
             {
                 "pod_prefix": "apiserver",
                 "resource": Deployment,
-                "namespace_name": "openshift-apiserver",
+                "namespace_name": NamespacesNames.OPENSHIFT_APISERVER,
                 "ratio": 0.5,
                 "interval": TIMEOUT_5SEC,
                 "max_duration": TIMEOUT_5MIN,
@@ -57,7 +61,7 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
             {
                 "pod_prefix": "rook-ceph-osd",
                 "resource": Deployment,
-                "namespace_name": "openshift-storage",
+                "namespace_name": NamespacesNames.OPENSHIFT_STORAGE,
                 "ratio": 0.5,
                 "interval": TIMEOUT_5SEC,
                 "max_duration": TIMEOUT_5MIN,
@@ -70,7 +74,7 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
             {
                 "pod_prefix": "csi-rbdplugin",
                 "resource": DaemonSet,
-                "namespace_name": "openshift-storage",
+                "namespace_name": NamespacesNames.OPENSHIFT_STORAGE,
                 "ratio": 0.5,
                 "interval": TIMEOUT_5SEC,
                 "max_duration": TIMEOUT_5MIN,

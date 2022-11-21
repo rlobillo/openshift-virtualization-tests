@@ -1,13 +1,33 @@
 import http
+import json
 import logging
 import multiprocessing
 import random
 import time
+from contextlib import contextmanager
+from datetime import datetime
 
+from ocp_resources.node import Node
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler, TimeoutWatch
+from ocp_utilities.data_collector import write_to_file
+from pytest_testconfig import py_config
 
-from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC
-from utilities.infra import ExecCommandOnPod, get_pod_by_name_prefix
+from utilities.constants import (
+    DEFAULT_HCO_CONDITIONS,
+    TIMEOUT_1MIN,
+    TIMEOUT_5SEC,
+    TIMEOUT_10SEC,
+    TIMEOUT_30MIN,
+)
+from utilities.infra import (
+    ExecCommandOnPod,
+    get_daemonsets,
+    get_deployments,
+    get_hco_mismatch_statuses,
+    get_hyperconverged_resource,
+    get_pod_by_name_prefix,
+    get_pods,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -76,7 +96,9 @@ def create_pod_deleting_process(
         )
         for pod in deleted_pods:
             if pod.name not in [surviving_pod.name for surviving_pod in surviving_pods]:
-                pod.delete()
+                # Set the log level to ERROR to avoid cluttering the console with the logs resulting from pod deletion
+                with resource_log_level_error(resource=pod) as _pod:
+                    _pod.delete()
 
     def _delete_pods_continuously(
         dyn_client, pod_prefix, namespace_name, ratio, interval, max_duration
@@ -103,6 +125,7 @@ def create_pod_deleting_process(
             LOGGER.info("Pod deleting process finished.")
 
     return multiprocessing.Process(
+        name="pod_delete",
         target=_delete_pods_continuously,
         args=(
             dyn_client,
@@ -144,6 +167,7 @@ def create_nginx_monitoring_process(
         LOGGER.info("HTTP querying finished successfully ")
 
     return multiprocessing.Process(
+        name="nginx_monitoring",
         target=_monitor_nginx_server,
         args=(
             url,
@@ -156,8 +180,160 @@ def create_nginx_monitoring_process(
     )
 
 
+def get_pods_status(admin_client, namespaces):
+    pods_status = {"pod_status": {}}
+    for namespace in namespaces:
+        pods = get_pods(dyn_client=admin_client, namespace=namespace)
+        pods_status["pod_status"][namespace.name] = {}
+        for pod in pods:
+            # Set the log level to ERROR to avoid cluttering the console
+            with resource_log_level_error(resource=pod) as _pod:
+                pods_status["pod_status"][namespace.name][_pod.name] = _pod.status
+
+    return pods_status
+
+
+def get_deployment_replicas(admin_client, namespaces):
+    deployments_replicas = {"deployment_replicas": {}}
+    for namespace in namespaces:
+        deployments = get_deployments(
+            admin_client=admin_client, namespace=namespace.name
+        )
+        deployments_replicas["deployment_replicas"][namespace.name] = {}
+        for deployment in deployments:
+            # Set the log level to ERROR to avoid cluttering the console
+            with resource_log_level_error(resource=deployment) as _deployment:
+                deployment_instance = _deployment.instance
+                deployments_replicas["deployment_replicas"][namespace.name][
+                    _deployment.name
+                ] = {
+                    "desired": deployment_instance.spec.replicas,
+                    "available": deployment_instance.status.availableReplicas,
+                }
+
+    return deployments_replicas
+
+
+def get_daemonset_replicas(admin_client, namespaces):
+    daemonsets_replicas = {"daemonset_replicas": {}}
+    for namespace in namespaces:
+        daemonsets = get_daemonsets(admin_client=admin_client, namespace=namespace.name)
+        daemonsets_replicas["daemonset_replicas"][namespace.name] = {}
+        for daemonset in daemonsets:
+            # Set the log level to ERROR to avoid cluttering the console
+            with resource_log_level_error(resource=daemonset) as _daemonset:
+                daemonset_instance = _daemonset.instance
+                daemonsets_replicas["daemonset_replicas"][namespace.name][
+                    _daemonset.name
+                ] = {
+                    "desired": daemonset_instance.status.desiredNumberScheduled,
+                    "ready": daemonset_instance.status.numberReady,
+                }
+
+    return daemonsets_replicas
+
+
+def get_nodes_status():
+    nodes_status = {"nodes": {}}
+    for node in Node.get():
+        # Set loglevel to ERROR to avoid cluttering with the logs resulting from getting node status
+        with resource_log_level_error(resource=node) as _node:
+            nodes_status["nodes"][node.name] = (
+                "ready" if _node.kubelet_ready else "not ready"
+            )
+
+    return nodes_status
+
+
+def get_hyperconverged_status_conditions(client, hco_namespace):
+    hco_instance = get_hyperconverged_resource(
+        client=client, hco_ns_name=hco_namespace.name
+    ).instance
+    hco_status_summary = (
+        "OK"
+        if not get_hco_mismatch_statuses(
+            hco_instance.status.conditions, DEFAULT_HCO_CONDITIONS
+        )
+        else "NOK"
+    )
+
+    return {
+        "hco_status": {
+            "summary": hco_status_summary,
+            "hco_status_conditions": hco_instance.to_dict()["status"]["conditions"],
+        }
+    }
+
+
+def collect_cluster_health_info(client, hco_namespace, additional_namespaces):
+    namespaces_to_monitor = additional_namespaces + [hco_namespace]
+    pods_status = get_pods_status(admin_client=client, namespaces=namespaces_to_monitor)
+    deployments_replicas = get_deployment_replicas(
+        admin_client=client, namespaces=namespaces_to_monitor
+    )
+    daemonset_replicas = get_daemonset_replicas(
+        admin_client=client, namespaces=namespaces_to_monitor
+    )
+    nodes_status = get_nodes_status()
+    hco_status_conditions = get_hyperconverged_status_conditions(
+        client=client, hco_namespace=hco_namespace
+    )
+
+    log_content = json.dumps(
+        {
+            f'{datetime.utcnow().strftime("%Y/%m/%d %H:%M:%S")}': [
+                pods_status,
+                deployments_replicas,
+                daemonset_replicas,
+                nodes_status,
+                hco_status_conditions,
+            ]
+        },
+        indent=4,
+    )
+
+    write_to_file(
+        file_name="chaos-monitoring.txt",
+        content=f"{log_content}\n",
+        base_directory=py_config["data_collector"]["collector_directory"],
+        mode="a",
+    )
+
+
+def create_cluster_monitoring_process(
+    client,
+    hco_namespace,
+    additional_namespaces,
+    interval=TIMEOUT_10SEC,
+    max_duration=TIMEOUT_30MIN,
+):
+    def _monitor_cluster():
+
+        timeout_watch = TimeoutWatch(timeout=max_duration)
+        while timeout_watch.remaining_time() > 0:
+            collect_cluster_health_info(
+                client=client,
+                hco_namespace=hco_namespace,
+                additional_namespaces=additional_namespaces,
+            )
+            time.sleep(interval)
+
+    return multiprocessing.Process(
+        name="cluster_monitoring",
+        target=_monitor_cluster,
+    )
+
+
 def terminate_process(process):
     if process.is_alive():
+        LOGGER.info(f"Terminating process: {process.name}")
         process.terminate()
         process.join()
         process.close()
+
+
+@contextmanager
+def resource_log_level_error(resource):
+    resource.logger.setLevel(level=logging.ERROR)
+    yield resource
+    resource.logger.setLevel(level=logging.INFO)

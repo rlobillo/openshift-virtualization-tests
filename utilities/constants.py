@@ -467,3 +467,9 @@ class StorageClassNames:
     HOSTPATH = "hostpath-provisioner"
     NFS = "nfs"
     TOPOLVM = "odf-lvm-vg1"
+
+
+class NamespacesNames:
+    OPENSHIFT_APISERVER = "openshift-apiserver"
+    OPENSHIFT_STORAGE = "openshift-storage"
+    CHAOS = "chaos"

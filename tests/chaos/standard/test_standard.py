@@ -9,8 +9,12 @@ from utilities.constants import (
     TIMEOUT_5SEC,
     TIMEOUT_10SEC,
     Images,
+    NamespacesNames,
 )
 from utilities.virt import VirtualMachineForTests, running_vm
+
+
+pytestmark = pytest.mark.usefixtures("chaos_namespace", "cluster_monitoring_process")
 
 
 @pytest.mark.parametrize(
@@ -23,7 +27,7 @@ from utilities.virt import VirtualMachineForTests, running_vm
             {
                 "pod_prefix": "apiserver",
                 "resource": Deployment,
-                "namespace_name": "openshift-apiserver",
+                "namespace_name": NamespacesNames.OPENSHIFT_APISERVER,
                 "ratio": 0.5,
                 "interval": TIMEOUT_5SEC,
                 "max_duration": TIMEOUT_5MIN,
@@ -34,7 +38,10 @@ from utilities.virt import VirtualMachineForTests, running_vm
 )
 @pytest.mark.polarion("CNV-5428")
 @pytest.mark.chaos
-def test_pod_delete_openshift_apiserver(pod_deleting_process, chaos_vms_list_rhel9):
+def test_pod_delete_openshift_apiserver(
+    pod_deleting_process,
+    chaos_vms_list_rhel9,
+):
     """
     Verifies that VMs can be created, started, stopped and deleted
     while openshift-apiserver pods are continuously being deleted.
@@ -56,7 +63,11 @@ def test_pod_delete_openshift_apiserver(pod_deleting_process, chaos_vms_list_rhe
     indirect=True,
 )
 @pytest.mark.chaos
-def test_master_node_restart(admin_client, chaos_namespace, rebooting_master_node):
+def test_master_node_restart(
+    admin_client,
+    chaos_namespace,
+    rebooting_master_node,
+):
     """
     This test verifies that a RHEL VM can be created, started, stopped and deleted
     while a given master node (randomly selected either from the nodes that have

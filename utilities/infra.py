@@ -890,6 +890,20 @@ def run_virtctl_command(command, namespace=None):
 
 
 def validate_hco_status_conditions(hco_status_conditions, expected_hco_status):
+    mismatch_statuses = get_hco_mismatch_statuses(
+        hco_status_conditions=hco_status_conditions,
+        expected_hco_status=expected_hco_status,
+    )
+
+    if mismatch_statuses:
+        mismatch_str = "\n".join(mismatch_statuses)
+        raise ClusterSanityError(
+            err_str=f"{mismatch_str} \nHCO is unhealthy. "
+            f"Expected {expected_hco_status}, Current: {hco_status_conditions}"
+        )
+
+
+def get_hco_mismatch_statuses(hco_status_conditions, expected_hco_status):
     current_status = {
         condition["type"]: condition["status"] for condition in hco_status_conditions
     }
@@ -901,12 +915,7 @@ def validate_hco_status_conditions(hco_status_conditions, expected_hco_status):
                 f"Current condition type {condition_type} does not match expected status {condition_status}"
             )
 
-    if mismatch_statuses:
-        mismatch_str = "\n".join(mismatch_statuses)
-        raise ClusterSanityError(
-            err_str=f"{mismatch_str} \nHCO is unhealthy. "
-            f"Expected {expected_hco_status}, Current: {hco_status_conditions}"
-        )
+    return mismatch_statuses
 
 
 def is_jira_open(jira_id):

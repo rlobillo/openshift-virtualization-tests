@@ -10,13 +10,18 @@ from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
-from tests.chaos.utils import create_pod_deleting_process
+from tests.chaos.utils import (
+    create_cluster_monitoring_process,
+    create_pod_deleting_process,
+    terminate_process,
+)
 from utilities.constants import (
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     OS_FLAVOR_RHEL,
     TIMEOUT_3MIN,
     TIMEOUT_10MIN,
     Images,
+    NamespacesNames,
 )
 from utilities.infra import (
     ExecCommandOnPod,
@@ -30,12 +35,10 @@ from utilities.virt import VirtualMachineForTests, running_vm, taint_node_no_sch
 
 LOGGER = logging.getLogger(__name__)
 
-CHAOS_NAMESPACE_NAME = "chaos"
-
 
 @pytest.fixture()
 def chaos_namespace():
-    yield from create_ns(name=CHAOS_NAMESPACE_NAME)
+    yield from create_ns(name=NamespacesNames.CHAOS)
 
 
 @pytest.fixture()
@@ -112,7 +115,7 @@ def tainted_node_for_vm_migration(admin_client, chaos_vm_rhel9):
 @pytest.fixture()
 def downscaled_storage_provisioner_deployment(request):
     deployment = cluster_resource(Deployment)(
-        namespace="openshift-storage",
+        namespace=NamespacesNames.OPENSHIFT_STORAGE,
         name=request.param["storage_provisioner_deployment"],
     )
     initial_replicas = deployment.instance.spec.replicas
@@ -209,14 +212,27 @@ def pod_deleting_process(request, admin_client):
     )
     pod_deleting_process.start()
     yield pod_deleting_process
-    if pod_deleting_process.is_alive():
-        LOGGER.info("Terminating pod deleting process...")
-        pod_deleting_process.terminate()
-        pod_deleting_process.join()
-        pod_deleting_process.close()
+    terminate_process(process=pod_deleting_process)
 
     _pod_deleting_process_recover(
         _resource=request.param["resource"],
         _namespace=namespace_name,
         _pod_prefix=pod_prefix,
     )
+
+
+@pytest.fixture()
+def cluster_monitoring_process(admin_client, hco_namespace, chaos_namespace):
+
+    LOGGER.info(
+        f"Monitoring pods in namespaces: {hco_namespace.name}, {chaos_namespace.name}"
+    )
+
+    cluster_monitoring_process = create_cluster_monitoring_process(
+        client=admin_client,
+        hco_namespace=hco_namespace,
+        additional_namespaces=[chaos_namespace],
+    )
+    cluster_monitoring_process.start()
+    yield cluster_monitoring_process
+    terminate_process(process=cluster_monitoring_process)

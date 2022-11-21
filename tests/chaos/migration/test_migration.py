@@ -3,7 +3,16 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
 from tests.chaos.migration.utils import verify_vmi_migration
-from utilities.constants import TIMEOUT_2MIN, TIMEOUT_5MIN, TIMEOUT_5SEC, TIMEOUT_30SEC
+from utilities.constants import (
+    TIMEOUT_2MIN,
+    TIMEOUT_5MIN,
+    TIMEOUT_5SEC,
+    TIMEOUT_30SEC,
+    NamespacesNames,
+)
+
+
+pytestmark = pytest.mark.usefixtures("chaos_namespace", "cluster_monitoring_process")
 
 
 @pytest.mark.parametrize(
@@ -13,7 +22,7 @@ from utilities.constants import TIMEOUT_2MIN, TIMEOUT_5MIN, TIMEOUT_5SEC, TIMEOU
             {
                 "pod_prefix": "apiserver",
                 "resource": Deployment,
-                "namespace_name": "openshift-apiserver",
+                "namespace_name": NamespacesNames.OPENSHIFT_APISERVER,
                 "ratio": 0.5,
                 "interval": TIMEOUT_5SEC,
                 "max_duration": TIMEOUT_5MIN,
@@ -25,7 +34,7 @@ from utilities.constants import TIMEOUT_2MIN, TIMEOUT_5MIN, TIMEOUT_5SEC, TIMEOU
             {
                 "pod_prefix": "virt-launcher",
                 "resource": VirtualMachineInstance,
-                "namespace_name": "chaos",
+                "namespace_name": NamespacesNames.CHAOS,
                 "ratio": 1,
                 "interval": TIMEOUT_30SEC,
                 "max_duration": TIMEOUT_2MIN,
