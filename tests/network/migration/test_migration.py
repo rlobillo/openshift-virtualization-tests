@@ -23,6 +23,7 @@ from utilities.constants import (
     LINUX_BRIDGE,
     OS_FLAVOR_FEDORA,
     OS_LOGIN_PARAMS,
+    TIMEOUT_1MIN,
     TIMEOUT_2MIN,
 )
 from utilities.infra import cluster_resource
@@ -287,10 +288,40 @@ def brcnv_ssh_in_background(
 
 
 @pytest.fixture(scope="module")
-def migrated_vmb(running_vmb, http_service):
+def migrated_vmb_and_wait_for_success(running_vmb, http_service):
     migrate_vm_and_verify(
         vm=running_vmb,
     )
+
+
+@pytest.fixture(scope="module")
+def vma_ip_address(br1test_nad, running_vma):
+    return get_vmi_ip_v4_by_name(vm=running_vma, name=br1test_nad.name)
+
+
+@pytest.fixture(scope="module")
+def migrated_vmb_without_waiting_for_success(vma_ip_address, running_vmb, br1test_nad):
+    """
+    1. Assert ping is successful before migrating vmb.
+    2. Migrate vmb without waiting for success. As soon as the VMI acquire a new IP address, return.
+    Since the wait_for_migration_success in the migration is set to false, migrate_vm_and_verify will not delete the
+    migration object.
+    """
+    assert_ping_successful(src_vm=running_vmb, dst_ip=vma_ip_address, count=10)
+    vmb_ip_before_migration = running_vmb.vmi.interfaces[0]["ipAddress"]
+    migrated_vmi = migrate_vm_and_verify(
+        vm=running_vmb, wait_for_migration_success=False
+    )
+    for sample in TimeoutSampler(
+        wait_timeout=TIMEOUT_1MIN,
+        sleep=1,
+        func=lambda: vmb_ip_before_migration
+        != running_vmb.vmi.interfaces[0]["ipAddress"],
+    ):
+        if sample:
+            break
+    yield
+    migrated_vmi.clean_up()
 
 
 @pytest.fixture()
@@ -315,7 +346,7 @@ def test_ping_vm_migration(
     running_vma,
     running_vmb,
     ping_in_background,
-    migrated_vmb,
+    migrated_vmb_and_wait_for_success,
 ):
     assert_low_packet_loss(vm=running_vma)
 
@@ -330,7 +361,7 @@ def test_ssh_vm_migration(
     running_vma,
     running_vmb,
     ssh_in_background,
-    migrated_vmb,
+    migrated_vmb_and_wait_for_success,
 ):
     src_ip = str(get_vmi_ip_v4_by_name(vm=running_vma, name=br1test_nad.name))
     assert_ssh_alive(ssh_vm=running_vma, src_ip=src_ip)
@@ -380,7 +411,7 @@ def test_migration_with_masquerade(
     vmb,
     running_vma,
     running_vmb,
-    migrated_vmb,
+    migrated_vmb_and_wait_for_success,
 ):
     LOGGER.info(
         f"Testing HTTP service after migration on node {running_vmb.vmi.node.name}"
@@ -392,3 +423,16 @@ def test_migration_with_masquerade(
         ),
         server_port=running_vmb.custom_service.service_port,
     )
+
+
+@pytest.mark.polarion("CNV-6548")
+def test_ping_from_migrated_vm(
+    br1test_nad,
+    vma,
+    vmb,
+    running_vma,
+    running_vmb,
+    vma_ip_address,
+    migrated_vmb_without_waiting_for_success,
+):
+    assert_ping_successful(src_vm=running_vmb, dst_ip=vma_ip_address, count=10)
