@@ -223,6 +223,19 @@ rhel_os_matrix = [
         }
     },
     {
+        "rhel-8-8": {
+            "image_name": Images.Rhel.RHEL8_7_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_7_IMG),
+            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
+            # TODO: Modify to 8.8 once it is added to templates
+            "template_labels": {
+                "os": "rhel8.7",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
+            },
+        }
+    },
+    {
         "rhel-9-0": {
             "image_name": Images.Rhel.RHEL9_0_IMG,
             "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL9_0_IMG),
@@ -239,9 +252,21 @@ rhel_os_matrix = [
             "image_name": Images.Rhel.RHEL9_1_IMG,
             "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL9_1_IMG),
             "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            # TODO: Modify to 9.1 once it is added to templates
             "template_labels": {
-                "os": "rhel9.0",
+                "os": "rhel9.1",
+                "workload": Template.Workload.SERVER,
+                "flavor": Template.Flavor.TINY,
+            },
+        }
+    },
+    {
+        "rhel-9-2": {
+            "image_name": Images.Rhel.RHEL9_1_IMG,
+            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL9_1_IMG),
+            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
+            # TODO: Modify to 9.2 once it is added to templates
+            "template_labels": {
+                "os": "rhel9.1",
                 "workload": Template.Workload.SERVER,
                 "flavor": Template.Flavor.TINY,
             },
