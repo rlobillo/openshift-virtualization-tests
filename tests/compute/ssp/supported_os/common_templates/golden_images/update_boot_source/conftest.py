@@ -63,18 +63,13 @@ def golden_images_data_volumes_scope_function(admin_client, golden_images_namesp
 
 @pytest.fixture()
 def golden_images_persistent_volume_claims_scope_function(
-    admin_client, golden_images_namespace, golden_images_data_volumes_scope_function
+    admin_client, golden_images_namespace
 ):
-    golden_image_pvcs = list(
+    return list(
         PersistentVolumeClaim.get(
             dyn_client=admin_client, namespace=golden_images_namespace.name
         )
     )
-    return [
-        pvc
-        for pvc in golden_image_pvcs
-        if pvc.name in [dv.name for dv in golden_images_data_volumes_scope_function]
-    ]
 
 
 @pytest.fixture()
