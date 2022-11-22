@@ -20,7 +20,7 @@ from utilities.constants import (
     OVS_BRIDGE,
     VIRT_HANDLER,
 )
-from utilities.infra import ClusterHosts, ExecCommandOnPod
+from utilities.infra import ClusterHosts, ExecCommandOnPod, is_jira_open
 from utilities.network import ip_version_data_from_matrix, network_nad
 
 
@@ -193,3 +193,13 @@ def brcnv_vma_with_vlan_1(
         address_suffix=1,
         node_selector=worker_node1.hostname,
     )
+
+
+# TODO: Remove skip_if_service_mesh_ovn_bug_not_closed when OSSM-1097 (Jira) is fixed
+@pytest.fixture(scope="module")
+def skip_if_service_mesh_ovn_and_jira_1097_not_closed(ovn_kubernetes_cluster):
+    jira_id = "OSSM-1097"
+    if is_jira_open(jira_id=jira_id) and ovn_kubernetes_cluster:
+        pytest.skip(
+            f"{jira_id} is not closed, prevents running Service Mesh on OVN clusters"
+        )
