@@ -166,8 +166,14 @@ def test_vm_from_auto_update_boot_source(
     existing_data_source_pvc,
     auto_update_boot_source_vm,
     boot_source_os_from_data_source_dict,
+    latest_fedora_release_version,
 ):
     LOGGER.info(f"Verify {auto_update_boot_source_vm.name} OS version and virtctl info")
+    if (
+        "fedora" in boot_source_os_from_data_source_dict
+        and latest_fedora_release_version
+    ):
+        boot_source_os_from_data_source_dict = f"fedora{latest_fedora_release_version}"
     assert_os_version_mismatch_in_vm(
         vm=auto_update_boot_source_vm,
         expected_os=boot_source_os_from_data_source_dict,

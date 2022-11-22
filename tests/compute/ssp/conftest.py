@@ -1,5 +1,6 @@
 import os
 import re
+from pathlib import Path
 
 import pytest
 import requests
@@ -45,6 +46,24 @@ def latest_osinfo_db_file_name(osinfo_repo):
         "a", {"href": re.compile(r"osinfo-db-[0-9]*.tar.xz")}
     ).get("href")
     return full_link
+
+
+@pytest.fixture(scope="module")
+def latest_fedora_release_version(downloaded_latest_libosinfo_db):
+    """
+    Extract the version from file name, if no files found raise KeyError
+    file example: /tmp/pytest-6axFnW3vzouCkjWokhvbDi/osinfodb0/osinfo-db-20221121/os/fedoraproject.org/fedora-37.xml
+    """
+    osinfo_file_folder_path = os.path.join(
+        downloaded_latest_libosinfo_db, "os/fedoraproject.org/"
+    )
+    list_of_fedora_os_files = list(
+        sorted(Path(osinfo_file_folder_path).glob("*fedora-[0-9][0-9]*.xml"))
+    )
+    if not list_of_fedora_os_files:
+        raise FileNotFoundError("No fedora files were found in osinfo db")
+    latest_fedora_os_file = list_of_fedora_os_files[-1]
+    return re.findall(r"\d+", latest_fedora_os_file.name)[0]
 
 
 @pytest.fixture(scope="module")
