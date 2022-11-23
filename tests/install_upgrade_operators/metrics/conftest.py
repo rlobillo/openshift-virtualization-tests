@@ -383,7 +383,7 @@ def vmi_domain_total_memory_bytes_metric_value_from_prometheus(
     return get_vmi_memory_domain_metric_value_from_prometheus(
         prometheus=prometheus,
         vmi_name=single_metric_vm.vmi.name,
-        query="kubevirt_vmi_memory_domain_total_bytes",
+        query="kubevirt_vmi_memory_domain_bytes_total",
     )
 
 

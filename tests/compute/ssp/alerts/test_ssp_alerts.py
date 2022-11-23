@@ -189,7 +189,7 @@ class TestSSPAlerts:
         "modified_metrics_timer, alert",
         [
             pytest.param(
-                "kubevirt_ssp_total_restored_common_templates",
+                "kubevirt_ssp_common_templates_restored_total",
                 SSP_COMMON_TEMPLATES_MODIFICATION_REVERTED,
                 marks=pytest.mark.polarion("CNV-8097"),
             ),

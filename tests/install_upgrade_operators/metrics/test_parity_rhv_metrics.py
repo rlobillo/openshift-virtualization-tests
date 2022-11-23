@@ -23,9 +23,9 @@ pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
             id="kubevirt_vmi_network_transmit_packets_dropped_total",
         ),
         pytest.param(
-            "kubevirt_vmi_memory_domain_total_bytes",
+            "kubevirt_vmi_memory_domain_bytes_total",
             marks=pytest.mark.polarion("CNV-8194"),
-            id="kubevirt_vmi_memory_domain_total_bytes",
+            id="kubevirt_vmi_memory_domain_bytes_total",
         ),
         pytest.param(
             "kubevirt_vmi_memory_unused_bytes",
