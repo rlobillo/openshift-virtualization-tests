@@ -227,6 +227,7 @@ class VirtualMachineForTests(VirtualMachine):
         iothreads_policy=None,
         dedicated_iothread=False,
         smm_enabled=None,
+        pvspinlock_enabled=None,
         efi_params=None,
         diskless_vm=False,
         running=False,
@@ -366,6 +367,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.dedicated_iothread = dedicated_iothread
         self.data_volume = data_volume
         self.smm_enabled = smm_enabled
+        self.pvspinlock_enabled = pvspinlock_enabled
         self.efi_params = efi_params
         self.diskless_vm = diskless_vm
         self.is_vm_from_template = False
@@ -416,6 +418,7 @@ class VirtualMachineForTests(VirtualMachine):
         template_spec = self.update_vm_memory_configuration(template_spec=template_spec)
         template_spec = self.set_service_accounts(template_spec=template_spec)
         template_spec = self.set_smm(template_spec=template_spec)
+        template_spec = self.set_pvspinlock(template_spec=template_spec)
         template_spec = self.set_efi_params(template_spec=template_spec)
         template_spec = self.set_machine_type(template_spec=template_spec)
         template_spec = self.set_iothreads_policy(template_spec=template_spec)
@@ -540,6 +543,14 @@ class VirtualMachineForTests(VirtualMachine):
             template_spec.setdefault("domain", {}).setdefault(
                 "features", {}
             ).setdefault("smm", {})["enabled"] = self.smm_enabled
+
+        return template_spec
+
+    def set_pvspinlock(self, template_spec):
+        if self.pvspinlock_enabled:
+            template_spec.setdefault("domain", {}).setdefault(
+                "features", {}
+            ).setdefault("pvspinlock", {})["enabled"] = self.pvspinlock_enabled
 
         return template_spec
 
@@ -1066,6 +1077,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         run_strategy=None,
         disk_options_vm=None,
         smm_enabled=None,
+        pvspinlock_enabled=None,
         efi_params=None,
         macs=None,
         interfaces_types=None,
@@ -1136,6 +1148,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             run_strategy=run_strategy,
             disk_io_options=disk_options_vm,
             smm_enabled=smm_enabled,
+            pvspinlock_enabled=pvspinlock_enabled,
             efi_params=efi_params,
             macs=macs,
             interfaces_types=interfaces_types,

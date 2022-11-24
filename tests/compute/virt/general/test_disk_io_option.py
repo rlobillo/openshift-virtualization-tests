@@ -96,6 +96,14 @@ class TestRHELIOOptions:
             ),
             pytest.param(
                 _vm_test_params(
+                    disk_io_option="default",
+                    template_labels=RHEL_LATEST_LABELS,
+                ),
+                "default",
+                marks=(pytest.mark.polarion("CNV-4667"),),
+            ),
+            pytest.param(
+                _vm_test_params(
                     template_labels=RHEL_LATEST_LABELS,
                 ),
                 "native",
