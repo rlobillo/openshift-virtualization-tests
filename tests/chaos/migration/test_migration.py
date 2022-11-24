@@ -42,6 +42,18 @@ pytestmark = pytest.mark.usefixtures("chaos_namespace", "cluster_monitoring_proc
             marks=pytest.mark.polarion("CNV-5454"),
             id="virt_launcher",
         ),
+        pytest.param(
+            {
+                "pod_prefix": "rook-ceph-operator",
+                "resource": Deployment,
+                "namespace_name": NamespacesNames.OPENSHIFT_STORAGE,
+                "ratio": 1,
+                "interval": TIMEOUT_5SEC,
+                "max_duration": TIMEOUT_5MIN,
+            },
+            marks=pytest.mark.polarion("CNV-7257"),
+            id="rook-ceph-operator",
+        ),
     ],
     indirect=True,
 )
