@@ -2,17 +2,21 @@ import pytest
 from ocp_resources.deployment import Deployment
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 
-from tests.chaos.migration.utils import verify_vmi_migration
+from tests.chaos.constants import STRESS_NG
+from tests.chaos.migration.utils import verify_vmi_was_migrated
 from utilities.constants import (
     TIMEOUT_2MIN,
     TIMEOUT_5MIN,
     TIMEOUT_5SEC,
+    TIMEOUT_10SEC,
     TIMEOUT_30SEC,
     NamespacesNames,
 )
 
 
-pytestmark = pytest.mark.usefixtures("chaos_namespace", "cluster_monitoring_process")
+pytestmark = pytest.mark.usefixtures(
+    "skip_if_sno_cluster", "chaos_namespace", "cluster_monitoring_process"
+)
 
 
 @pytest.mark.parametrize(
@@ -61,7 +65,7 @@ pytestmark = pytest.mark.usefixtures("chaos_namespace", "cluster_monitoring_proc
 def test_pod_delete_migration(
     chaos_vm_rhel9,
     pod_deleting_process,
-    tainted_node_for_vm_migration,
+    tainted_node_for_vm_chaos_rhel9_migration,
 ):
     """
     This experiment tests the robustness of the cluster
@@ -70,7 +74,53 @@ def test_pod_delete_migration(
     is running on a different node at the end of the test
     """
 
-    assert verify_vmi_migration(
-        vm=chaos_vm_rhel9,
-        initial_node=tainted_node_for_vm_migration,
-    ), "The VMI has not been migrated to a different node."
+    verify_vmi_was_migrated(
+        vm=chaos_vm_rhel9, initial_node=tainted_node_for_vm_chaos_rhel9_migration
+    )
+
+
+@pytest.mark.parametrize(
+    "nginx_monitoring_process, chaos_worker_background_process",
+    [
+        pytest.param(
+            {
+                "curl_timeout": TIMEOUT_10SEC,
+                "sampling_duration": TIMEOUT_2MIN,
+                "sampling_interval": TIMEOUT_5SEC,
+            },
+            {
+                "max_duration": TIMEOUT_2MIN,
+                # The background_command may change when we have tools to create more stress.
+                "background_command": f"{STRESS_NG}  --io 5 -t 120s",
+                "process_name": STRESS_NG,
+            },
+        ),
+    ],
+    indirect=True,
+)
+@pytest.mark.chaos
+@pytest.mark.polarion("CNV-7302")
+def test_io_stress_migration_target_node(
+    label_host_node,
+    vm_with_nginx_service_and_node_selector,
+    nginx_monitoring_process,
+    label_migration_target_node_for_chaos,
+    chaos_worker_background_process,
+    tainted_node_for_vm_nginx_migration,
+):
+    """
+    This experiment generates I/O load on the target node of a VM migration. The expected result is for the VM to
+    eventually be successfully migrated.
+    """
+    verify_vmi_was_migrated(
+        vm=vm_with_nginx_service_and_node_selector,
+        initial_node=tainted_node_for_vm_nginx_migration,
+    )
+    chaos_worker_background_process.join()
+    nginx_monitoring_process.join()
+    assert (
+        nginx_monitoring_process.exitcode == 0
+    ), "The NGINX server running inside the VM failed to remain responsive during the sampling duration"
+    assert (
+        chaos_worker_background_process.exitcode == 0
+    ), "Background process execution failed"

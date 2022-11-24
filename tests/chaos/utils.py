@@ -8,12 +8,15 @@ from contextlib import contextmanager
 from datetime import datetime
 
 from ocp_resources.node import Node
+from ocp_resources.service import Service
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler, TimeoutWatch
 from ocp_utilities.data_collector import write_to_file
+from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
 from utilities.constants import (
     DEFAULT_HCO_CONDITIONS,
+    PORT_80,
     TIMEOUT_1MIN,
     TIMEOUT_5SEC,
     TIMEOUT_10SEC,
@@ -28,6 +31,7 @@ from utilities.infra import (
     get_pod_by_name_prefix,
     get_pods,
 )
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -146,6 +150,21 @@ def create_nginx_monitoring_process(
     utility_pods,
     master_host_node,
 ):
+    """
+    Creates a process that, when started,
+    Continuously queries the HTTP server that runs on the VM. Runs for the duration defined
+    in 'sampling_duration' or until interrupted.
+
+    Args:
+        url (str): The url of the http server.
+        curl_timeout (int): timeout in seconds for curl connect-timeout parameter.
+        sampling_duration (str): The amount of time during which sampling will take place.
+        sampling_interval (int): Interval that determines how often the http server will be queried.
+
+    Returns:
+        multiprocessing.Process: Process that continuously query the http server.
+    """
+
     def _monitor_nginx_server(
         _url,
         _curl_timeout,
@@ -308,7 +327,6 @@ def create_cluster_monitoring_process(
     max_duration=TIMEOUT_30MIN,
 ):
     def _monitor_cluster():
-
         timeout_watch = TimeoutWatch(timeout=max_duration)
         while timeout_watch.remaining_time() > 0:
             collect_cluster_health_info(
@@ -335,3 +353,23 @@ def resource_log_level_error(resource):
     resource.logger.setLevel(level=logging.ERROR)
     yield resource
     resource.logger.setLevel(level=logging.INFO)
+
+
+def create_vm_with_nginx_service(
+    chaos_namespace, admin_client, node_selector_label=None
+):
+    name = "nginx"
+    with cluster_resource(VirtualMachineForTests)(
+        namespace=chaos_namespace.name,
+        name=name,
+        body=fedora_vm_body(name=name),
+        client=admin_client,
+        node_selector_labels=node_selector_label,
+        eviction=True,
+    ) as vm:
+        running_vm(vm=vm, check_ssh_connectivity=False)
+        vm.custom_service_enable(
+            service_name=name, port=PORT_80, service_type=Service.Type.CLUSTER_IP
+        )
+        LOGGER.info(f"VMI Host Node:{vm.vmi.node.name}")
+        yield vm

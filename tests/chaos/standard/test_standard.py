@@ -3,6 +3,7 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.resource import Resource
 from ocp_utilities.infra import cluster_resource
 
+from tests.chaos.constants import STRESS_NG
 from utilities.constants import (
     TIMEOUT_2MIN,
     TIMEOUT_5MIN,
@@ -143,7 +144,8 @@ def test_ceph_storage_outage(
             },
             {
                 "max_duration": TIMEOUT_2MIN,
-                "background_command": "stress-ng  --io 5 -t 120s",
+                "background_command": f"{STRESS_NG}  --io 5 -t 120s",
+                "process_name": STRESS_NG,
             },
         ),
     ],
@@ -152,7 +154,6 @@ def test_ceph_storage_outage(
 @pytest.mark.chaos
 @pytest.mark.polarion("CNV-6994")
 def test_host_io_stress(
-    masters_utility_pods,
     vm_with_nginx_service,
     vm_node_with_chaos_label,
     nginx_monitoring_process,
@@ -163,8 +164,6 @@ def test_host_io_stress(
     stressing the worker IO and testing to make sure the server
     and its VMI remain responsive throughout chaos duration.
     """
-    chaos_worker_background_process.start()
-    nginx_monitoring_process.start()
     chaos_worker_background_process.join()
     nginx_monitoring_process.join()
     assert nginx_monitoring_process.exitcode == 0, (

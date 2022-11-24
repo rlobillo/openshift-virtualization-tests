@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import random
 
 import pytest
@@ -10,15 +11,20 @@ from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
+from tests.chaos.constants import CHAOS_LABEL, CHAOS_LABEL_KEY, HOST_LABEL
 from tests.chaos.utils import (
     create_cluster_monitoring_process,
+    create_nginx_monitoring_process,
     create_pod_deleting_process,
+    create_vm_with_nginx_service,
     terminate_process,
 )
 from utilities.constants import (
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     OS_FLAVOR_RHEL,
+    PORT_80,
     TIMEOUT_3MIN,
+    TIMEOUT_5SEC,
     TIMEOUT_10MIN,
     Images,
     NamespacesNames,
@@ -26,7 +32,9 @@ from utilities.constants import (
 from utilities.infra import (
     ExecCommandOnPod,
     create_ns,
+    get_nodes_with_label,
     get_pod_by_name_prefix,
+    label_nodes,
     scale_deployment_replicas,
     wait_for_node_status,
 )
@@ -104,12 +112,18 @@ def chaos_dv_rhel9(request, admin_client, chaos_namespace, rhel9_http_image_url)
 
 
 @pytest.fixture()
-def tainted_node_for_vm_migration(admin_client, chaos_vm_rhel9):
-    initial_node = chaos_vm_rhel9.vmi.node
-    node_editor = taint_node_no_schedule(node=initial_node)
-    node_editor.update(backup_resources=True)
-    yield initial_node
-    node_editor.restore()
+def tainted_node_for_vm_chaos_rhel9_migration(chaos_vm_rhel9):
+    yield from taint_node_for_migration(initial_node=chaos_vm_rhel9.vmi.node)
+
+
+@pytest.fixture()
+def tainted_node_for_vm_nginx_migration(vm_with_nginx_service):
+    yield from taint_node_for_migration(initial_node=vm_with_nginx_service.vmi.node)
+
+
+def taint_node_for_migration(initial_node):
+    with taint_node_no_schedule(node=initial_node):
+        yield initial_node
 
 
 @pytest.fixture()
@@ -223,7 +237,6 @@ def pod_deleting_process(request, admin_client):
 
 @pytest.fixture()
 def cluster_monitoring_process(admin_client, hco_namespace, chaos_namespace):
-
     LOGGER.info(
         f"Monitoring pods in namespaces: {hco_namespace.name}, {chaos_namespace.name}"
     )
@@ -236,3 +249,96 @@ def cluster_monitoring_process(admin_client, hco_namespace, chaos_namespace):
     cluster_monitoring_process.start()
     yield cluster_monitoring_process
     terminate_process(process=cluster_monitoring_process)
+
+
+@pytest.fixture()
+def chaos_worker_background_process(
+    request,
+    workers,
+    workers_utility_pods,
+):
+    """
+    Creates a process that, when started,
+    executes a command on the worker node that has the label "chaos=true".
+
+    request.params:
+        max_duration (int): Used for commands with timeouts.
+        background_command (str): The command that will be executed inside the node.
+        process_name (str): Name for the background process.
+    Returns:
+        multiprocessing.Process: Process that execute a command inside a worker node .
+    """
+
+    process_name = request.param["process_name"]
+    target_nodes = get_nodes_with_label(nodes=workers, label=CHAOS_LABEL_KEY)
+    assert target_nodes, f"no nodes with label:{CHAOS_LABEL_KEY} were found"
+    target_node = target_nodes[0]
+    LOGGER.info(f"Target node is: {target_node.name}")
+    background_process = multiprocessing.Process(
+        name=process_name,
+        target=lambda: ExecCommandOnPod(
+            utility_pods=workers_utility_pods, node=target_node
+        ).exec(
+            command=request.param["background_command"],
+            chroot_host=False,
+            timeout=request.param["max_duration"] + TIMEOUT_5SEC,
+        ),
+    )
+    background_process.start()
+    LOGGER.info(f"{process_name} process started")
+    yield background_process
+    terminate_process(process=background_process)
+
+
+@pytest.fixture()
+def nginx_monitoring_process(
+    request,
+    masters,
+    masters_utility_pods,
+    vm_with_nginx_service,
+):
+    nginx_monitoring_process = create_nginx_monitoring_process(
+        url=f"{vm_with_nginx_service.custom_service.instance.spec.clusterIPs[0]}:{PORT_80}",
+        curl_timeout=request.param["curl_timeout"],
+        sampling_duration=request.param["sampling_duration"],
+        sampling_interval=request.param["sampling_interval"],
+        utility_pods=masters_utility_pods,
+        master_host_node=random.choice(masters),
+    )
+    nginx_monitoring_process.start()
+    LOGGER.info(f"{nginx_monitoring_process} process started")
+    yield nginx_monitoring_process
+    terminate_process(process=nginx_monitoring_process)
+
+
+@pytest.fixture()
+def vm_with_nginx_service(chaos_namespace, admin_client):
+    yield from create_vm_with_nginx_service(
+        chaos_namespace=chaos_namespace, admin_client=admin_client
+    )
+
+
+@pytest.fixture()
+def vm_with_nginx_service_and_node_selector(chaos_namespace, admin_client):
+    yield from create_vm_with_nginx_service(
+        chaos_namespace=chaos_namespace,
+        admin_client=admin_client,
+        node_selector_label=HOST_LABEL,
+    )
+
+
+@pytest.fixture()
+def label_host_node(workers):
+    yield from label_nodes(nodes=[random.choice(workers)], labels=HOST_LABEL)
+
+
+@pytest.fixture()
+def label_migration_target_node_for_chaos(workers, vm_with_nginx_service):
+    target_node = random.choice(
+        [node for node in workers if node.name != vm_with_nginx_service.vmi.node.name]
+    )
+    LOGGER.info(f"Migration target Node is: {target_node.name}")
+    yield from label_nodes(
+        nodes=[target_node],
+        labels={**CHAOS_LABEL, **HOST_LABEL},
+    )
