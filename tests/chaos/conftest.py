@@ -2,23 +2,19 @@ import logging
 import random
 
 import pytest
+from kubernetes.dynamic.exceptions import ResourceNotFoundError
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
-from ocp_resources.utils import TimeoutSampler
-from ocp_resources.virtual_machine_instance_migration import (
-    VirtualMachineInstanceMigration,
-)
+from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
-from tests.chaos.utils import create_pod_deleting_process, terminate_process
+from tests.chaos.utils import create_pod_deleting_process
 from utilities.constants import (
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     OS_FLAVOR_RHEL,
-    TIMEOUT_1MIN,
     TIMEOUT_3MIN,
-    TIMEOUT_5SEC,
     TIMEOUT_10MIN,
     Images,
 )
@@ -29,13 +25,7 @@ from utilities.infra import (
     scale_deployment_replicas,
     wait_for_node_status,
 )
-from utilities.virt import (
-    VirtualMachineForTests,
-    running_vm,
-    taint_node_no_schedule,
-    verify_vm_migrated,
-    wait_for_migration_finished,
-)
+from utilities.virt import VirtualMachineForTests, running_vm, taint_node_no_schedule
 
 
 LOGGER = logging.getLogger(__name__)
@@ -110,45 +100,11 @@ def chaos_dv_rhel9(request, admin_client, chaos_namespace, rhel9_http_image_url)
     )
 
 
-def wait_for_vmi_migration_and_verify(
-    dyn_client, vm, initial_node, initial_vmi_source_pod
-):
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_1MIN,
-        sleep=TIMEOUT_5SEC,
-        func=lambda: list(
-            cluster_resource(VirtualMachineInstanceMigration).get(
-                dyn_client=dyn_client, namespace=vm.namespace
-            )
-        ),
-    )
-    for sample in samples:
-        if sample and vm.vmi.name == sample[0].instance.spec.vmiName:
-            migration = sample[0]
-            break
-
-    wait_for_migration_finished(vm=vm, migration=migration)
-    verify_vm_migrated(
-        vm=vm,
-        node_before=initial_node,
-        vmi_source_pod=initial_vmi_source_pod,
-        wait_for_interfaces=False,
-        check_ssh_connectivity=False,
-    )
-
-
 @pytest.fixture()
 def tainted_node_for_vm_migration(admin_client, chaos_vm_rhel9):
     initial_node = chaos_vm_rhel9.vmi.node
-    initial_vmi_source_pod = chaos_vm_rhel9.vmi.virt_launcher_pod
     node_editor = taint_node_no_schedule(node=initial_node)
     node_editor.update(backup_resources=True)
-    wait_for_vmi_migration_and_verify(
-        dyn_client=admin_client,
-        vm=chaos_vm_rhel9,
-        initial_node=initial_node,
-        initial_vmi_source_pod=initial_vmi_source_pod,
-    )
     yield initial_node
     node_editor.restore()
 
@@ -215,8 +171,32 @@ def rebooting_master_node(
 
 @pytest.fixture()
 def pod_deleting_process(request, admin_client):
+    def _get_resources_to_recover(_resource, _namespace, _pod_prefix):
+        resources = [
+            resource
+            for resource in cluster_resource(_resource).get(namespace=_namespace)
+            if _pod_prefix in resource.name or _resource == VirtualMachineInstance
+        ]
+        if not resources:
+            raise ResourceNotFoundError(
+                f"No {_resource}s were found in the {_namespace} namespace."
+            )
+        return resources
+
+    def _pod_deleting_process_recover(_resource, _namespace, _pod_prefix):
+        # This function will make sure that the pods for the affected deployment/daemonset/VMI recover after the test.
+        resources = _get_resources_to_recover(
+            _resource=_resource, _namespace=_namespace, _pod_prefix=_pod_prefix
+        )
+        for resource in resources:
+            if resource.kind == DaemonSet.kind:
+                resource.wait_until_deployed()
+            elif resource.kind == Deployment.kind:
+                resource.wait_for_replicas()
+            elif resource.kind == VirtualMachineInstance.kind:
+                resource.wait_until_running()
+
     pod_prefix = request.param["pod_prefix"]
-    kind = request.param["kind"].lower()
     namespace_name = request.param["namespace_name"]
 
     pod_deleting_process = create_pod_deleting_process(
@@ -229,21 +209,14 @@ def pod_deleting_process(request, admin_client):
     )
     pod_deleting_process.start()
     yield pod_deleting_process
-    terminate_process(process=pod_deleting_process)
-    # Make sure that the replicas from the affected deployment/daemonset recover after the test.
-    if kind == "deployment":
-        deployments = [
-            deployment
-            for deployment in cluster_resource(Deployment).get(namespace=namespace_name)
-            if pod_prefix in deployment.name
-        ]
-        for deployment in deployments:
-            deployment.wait_for_replicas()
-    elif kind == "daemonset":
-        daemonsets = [
-            daemonset
-            for daemonset in cluster_resource(DaemonSet).get(namespace=namespace_name)
-            if pod_prefix in daemonset.name
-        ]
-        for daemonset in daemonsets:
-            daemonset.wait_until_deployed()
+    if pod_deleting_process.is_alive():
+        LOGGER.info("Terminating pod deleting process...")
+        pod_deleting_process.terminate()
+        pod_deleting_process.join()
+        pod_deleting_process.close()
+
+    _pod_deleting_process_recover(
+        _resource=request.param["resource"],
+        _namespace=namespace_name,
+        _pod_prefix=pod_prefix,
+    )

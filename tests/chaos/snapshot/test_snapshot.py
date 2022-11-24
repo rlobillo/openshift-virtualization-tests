@@ -1,4 +1,6 @@
 import pytest
+from ocp_resources.daemonset import DaemonSet
+from ocp_resources.deployment import Deployment
 from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
@@ -15,7 +17,7 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
         pytest.param(
             {
                 "pod_prefix": "apiserver",
-                "kind": "deployment",
+                "resource": Deployment,
                 "namespace_name": "openshift-apiserver",
                 "ratio": 0.5,
                 "interval": TIMEOUT_5SEC,
@@ -28,7 +30,7 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
         pytest.param(
             {
                 "pod_prefix": "csi-snapshot-controller",
-                "kind": "deployment",
+                "resource": Deployment,
                 "namespace_name": "openshift-cluster-storage-operator",
                 "ratio": 0.5,
                 "interval": TIMEOUT_5SEC,
@@ -41,7 +43,7 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
         pytest.param(
             {
                 "pod_prefix": "virt-api",
-                "kind": "deployment",
+                "resource": Deployment,
                 "namespace_name": py_config["hco_namespace"],
                 "ratio": 0.5,
                 "interval": TIMEOUT_5SEC,
@@ -54,7 +56,7 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
         pytest.param(
             {
                 "pod_prefix": "rook-ceph-osd",
-                "kind": "deployment",
+                "resource": Deployment,
                 "namespace_name": "openshift-storage",
                 "ratio": 0.5,
                 "interval": TIMEOUT_5SEC,
@@ -67,7 +69,7 @@ pytestmark = pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
         pytest.param(
             {
                 "pod_prefix": "csi-rbdplugin",
-                "kind": "daemonset",
+                "resource": DaemonSet,
                 "namespace_name": "openshift-storage",
                 "ratio": 0.5,
                 "interval": TIMEOUT_5SEC,

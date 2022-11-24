@@ -1,4 +1,5 @@
 import pytest
+from ocp_resources.deployment import Deployment
 from ocp_resources.resource import Resource
 from ocp_utilities.infra import cluster_resource
 
@@ -21,7 +22,7 @@ from utilities.virt import VirtualMachineForTests, running_vm
             },
             {
                 "pod_prefix": "apiserver",
-                "kind": "deployment",
+                "resource": Deployment,
                 "namespace_name": "openshift-apiserver",
                 "ratio": 0.5,
                 "interval": TIMEOUT_5SEC,
