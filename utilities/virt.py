@@ -247,6 +247,7 @@ class VirtualMachineForTests(VirtualMachine):
         disable_sha2_algorithms=False,
         additional_labels=None,
         generate_unique_name=True,
+        node_selector_labels=None,
     ):
         """
         Virtual machine creation
@@ -314,6 +315,7 @@ class VirtualMachineForTests(VirtualMachine):
                 when creating a ssh connection
             additional_labels (dict, optional): Dict of additional labels for VM (e.g. {"vm-label": "best-vm"})
             generate_unique_name: if True then it will set dynamic name for the vm, False will use the name of vm passed
+            node_selector_labels (str, optional): Labels for node selector.
         """
         # Sets VM unique name - replaces "." with "-" in the name to handle valid values.
 
@@ -327,6 +329,8 @@ class VirtualMachineForTests(VirtualMachine):
             teardown=teardown,
             privileged_client=utilities.infra.get_admin_client(),
             dry_run=dry_run,
+            node_selector=node_selector,
+            node_selector_labels=node_selector_labels,
         )
         self.body = body
         self.interfaces = interfaces or []
@@ -381,9 +385,10 @@ class VirtualMachineForTests(VirtualMachine):
         self.priority_class_name = priority_class_name
         self.disable_sha2_algorithms = disable_sha2_algorithms
         self.additional_labels = additional_labels
+        self.node_selector_labels = node_selector_labels
 
-    def deploy(self):
-        super().deploy()
+    def deploy(self, wait=False):
+        super().deploy(wait=wait)
         return self
 
     def clean_up(self):
@@ -403,6 +408,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.is_vm_from_template = self._is_vm_from_template()
 
         template_spec = self.res["spec"]["template"]["spec"]
+        template_spec = self.update_node_selector(template_spec=template_spec)
         template_spec = self.update_vm_network_configuration(
             template_spec=template_spec
         )
@@ -446,6 +452,11 @@ class VirtualMachineForTests(VirtualMachine):
                     template_spec = self.update_vm_ssh_secret_configuration(
                         template_spec=template_spec
                     )
+
+    def update_node_selector(self, template_spec):
+        if self.node_selector_spec:
+            template_spec["nodeSelector"] = self.node_selector_spec
+        return template_spec
 
     def set_disk_io_configuration(self, template_spec):
         if self.disk_io_options or self.dedicated_iothread:
@@ -765,11 +776,6 @@ class VirtualMachineForTests(VirtualMachine):
         return template_spec
 
     def update_vm_cpu_configuration(self, template_spec):
-        if self.node_selector:
-            template_spec["nodeSelector"] = {
-                "kubernetes.io/hostname": self.node_selector
-            }
-
         if self.eviction:
             template_spec["evictionStrategy"] = LIVE_MIGRATE
 
