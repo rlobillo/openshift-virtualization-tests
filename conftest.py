@@ -102,13 +102,26 @@ RESOURCES_TO_COLLECT_INFO = [
 ]
 
 
-def data_collector_enabled(session):
+def set_data_collector_values(session):
     data_collector = session.config.getoption("--data-collector")
     data_collector_failed_tests = session.config.getoption(
         "--data-collector-failed-tests"
     )
     if data_collector or data_collector_failed_tests:
-        return data_collector
+        with open(data_collector, "r") as fd:
+            py_config["data_collector"] = yaml.safe_load(fd.read())
+
+    else:
+        py_config["data_collector"] = {
+            "data_collector_base_directory": "tests-collected-info"
+        }
+
+
+def set_collector_directory(item, subdirectory_name):
+    base_directory = py_config["data_collector"]["data_collector_base_directory"]
+    py_config["data_collector"]["collector_directory"] = prepare_pytest_item_data_dir(
+        item=item, base_directory=base_directory, subdirectory_name=subdirectory_name
+    )
 
 
 def pytest_addoption(parser):
@@ -471,37 +484,17 @@ def pytest_runtest_setup(item):
         if previousfailed is not None:
             pytest.xfail("previous test failed (%s)" % previousfailed.name)
 
-    if data_collector_enabled(session=item.session):
-        base_directory = py_config["data_collector"]["data_collector_base_directory"]
-        py_config["data_collector"][
-            "collector_directory"
-        ] = prepare_pytest_item_data_dir(
-            item=item, base_directory=base_directory, subdirectory_name="setup"
-        )
+    set_collector_directory(item=item, subdirectory_name="setup")
 
 
 def pytest_runtest_call(item):
     BASIC_LOGGER.info(f"{separator(symbol_='-', val='CALL')}")
-    if data_collector_enabled(session=item.session):
-        base_directory = py_config["data_collector"]["data_collector_base_directory"]
-        py_config["data_collector"][
-            "collector_directory"
-        ] = prepare_pytest_item_data_dir(
-            item=item, base_directory=base_directory, subdirectory_name="call"
-        )
+    set_collector_directory(item=item, subdirectory_name="call")
 
 
 def pytest_runtest_teardown(item):
     BASIC_LOGGER.info(f"{separator(symbol_='-', val='TEARDOWN')}")
-    if data_collector_enabled(session=item.session):
-        base_directory = py_config["data_collector"]["data_collector_base_directory"]
-        py_config["data_collector"][
-            "collector_directory"
-        ] = prepare_pytest_item_data_dir(
-            item=item,
-            base_directory=base_directory,
-            subdirectory_name="teardown",
-        )
+    set_collector_directory(item=item, subdirectory_name="teardown")
 
 
 def pytest_generate_tests(metafunc):
@@ -571,14 +564,11 @@ def pytest_sessionstart(session):
                 )
             ]
 
-    data_collector = data_collector_enabled(session=session)
-    if data_collector:
-        with open(data_collector, "r") as fd:
-            py_config["data_collector"] = yaml.safe_load(fd.read())
-            shutil.rmtree(
-                py_config["data_collector"]["data_collector_base_directory"],
-                ignore_errors=True,
-            )
+    set_data_collector_values(session=session)
+    shutil.rmtree(
+        py_config["data_collector"]["data_collector_base_directory"],
+        ignore_errors=True,
+    )
 
     tests_log_file = session.config.getoption("pytest_log_file")
     if os.path.exists(tests_log_file):
@@ -678,11 +668,8 @@ def pytest_sessionfinish(session, exitstatus):
     )
     BASIC_LOGGER.info(f"{separator(symbol_='-', val=summary)}")
 
-    # Remove empty directories from data collector directory
-    if data_collector_enabled(session=session):
-        collector_directory = py_config["data_collector"][
-            "data_collector_base_directory"
-        ]
+    collector_directory = py_config["data_collector"]["data_collector_base_directory"]
+    if os.path.exists(collector_directory):
         for root, dirs, files in os.walk(collector_directory, topdown=False):
             for _dir in dirs:
                 dir_path = os.path.join(root, _dir)

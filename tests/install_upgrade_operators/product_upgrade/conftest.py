@@ -277,10 +277,8 @@ def extracted_ocp_version_from_image_url(ocp_image_url):
 
 @pytest.fixture(scope="session")
 def alert_dir():
-    base_directory = py_config.get("data_collector", {}).get(
-        "data_collector_base_directory"
-    )
-    return os.path.join(base_directory or "tests-collected-info", "alert_information")
+    base_directory = py_config["data_collector"]["data_collector_base_directory"]
+    return os.path.join(base_directory, "alert_information")
 
 
 @pytest.fixture(scope="session")
