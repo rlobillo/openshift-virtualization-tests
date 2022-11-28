@@ -151,7 +151,6 @@ sysprep_source_matrix = ["ConfigMap", "Secret"]
 
 # If the DataImportCron uses a different prefix than the DataSource name
 # use data_import_cron_prefix in matrix dict to specify new prefix.
-# This is related to closed bz 2081343
 auto_update_data_source_matrix = [
     {"centos-stream8": {"template_os": "centos-stream8"}},
     {"centos-stream9": {"template_os": "centos-stream9"}},
