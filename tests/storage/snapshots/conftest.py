@@ -16,7 +16,7 @@ from tests.storage.snapshots.utils import assert_directory_existence
 from tests.storage.utils import create_cirros_vm, create_windows19_vm, set_permissions
 from utilities.constants import TIMEOUT_10MIN, UNPRIVILEGED_USER
 from utilities.infra import cluster_resource
-from utilities.storage import create_cirros_dv_for_snapshot, write_file
+from utilities.storage import create_cirros_dv_for_snapshot_dict, write_file
 
 
 LOGGER = logging.getLogger(__name__)
@@ -31,12 +31,12 @@ def check_snapshot_indication(snapshot, is_online):
 
 
 @pytest.fixture()
-def cirros_dv_for_snapshot(
+def cirros_dv_for_snapshot_dict(
     namespace,
     cirros_vm_name,
     storage_class_matrix_snapshot_matrix__module__,
 ):
-    yield create_cirros_dv_for_snapshot(
+    yield create_cirros_dv_for_snapshot_dict(
         name=cirros_vm_name,
         namespace=namespace.name,
         storage_class=[*storage_class_matrix_snapshot_matrix__module__][0],
@@ -48,14 +48,14 @@ def cirros_vm_for_snapshot(
     admin_client,
     namespace,
     cirros_vm_name,
-    cirros_dv_for_snapshot,
+    cirros_dv_for_snapshot_dict,
 ):
     """
-    Create a VM with a DV from the cirros_dv fixture
+    Create a VM with a DV that supports snapshots
     """
     with create_cirros_vm(
         admin_client=admin_client,
-        cirros_dv=cirros_dv_for_snapshot,
+        cirros_dv=cirros_dv_for_snapshot_dict,
         cirros_vm_name=cirros_vm_name,
     ) as vm:
         yield vm

@@ -434,14 +434,16 @@ def create_cirros_vm(
     """
     Create a VM with a DV from the cirros_dv
     """
-    dv_dict = cirros_dv.to_dict()
     with cluster_resource(VirtualMachineForTests)(
         client=admin_client,
         name=cirros_vm_name,
-        namespace=dv_dict["metadata"]["namespace"],
+        namespace=cirros_dv["metadata"]["namespace"],
         os_flavor=OS_FLAVOR_CIRROS,
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-        data_volume_template={"metadata": dv_dict["metadata"], "spec": dv_dict["spec"]},
+        data_volume_template={
+            "metadata": cirros_dv["metadata"],
+            "spec": cirros_dv["spec"],
+        },
     ) as vm:
         yield vm
 

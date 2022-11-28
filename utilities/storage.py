@@ -21,6 +21,7 @@ from ocp_resources.resource import NamespacedResource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.volume_snapshot_class import VolumeSnapshotClass
+from ocp_utilities.infra import cluster_resource
 from ocp_utilities.utils import run_ssh_commands
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
@@ -125,7 +126,7 @@ def create_dv(
             # Make sure URL and the file exists
             utilities.infra.validate_file_exists_in_url(url=url)
 
-    with utilities.infra.cluster_resource(DataVolume)(
+    with cluster_resource(DataVolume)(
         source=source,
         name=dv_name,
         namespace=namespace,
@@ -805,7 +806,7 @@ def create_or_update_data_source(admin_client, dv):
             ):
                 yield data_source
     except NotFoundError:
-        with utilities.infra.cluster_resource(DataSource)(
+        with cluster_resource(DataSource)(
             name=target_name,
             namespace=target_namespaces,
             client=admin_client,
@@ -894,11 +895,8 @@ def is_snapshot_supported_by_sc(sc_name, client):
     return False
 
 
-def create_cirros_dv_for_snapshot(name, namespace, storage_class):
-    """
-    Define a DV that resides on OCS for use by a VM
-    """
-    return DataVolume(
+def create_cirros_dv_for_snapshot_dict(name, namespace, storage_class):
+    dv = cluster_resource(DataVolume)(
         api_name="storage",
         name=f"dv-{name}",
         namespace=namespace,
@@ -909,3 +907,5 @@ def create_cirros_dv_for_snapshot(name, namespace, storage_class):
         storage_class=storage_class,
         size=Images.Cirros.DEFAULT_DV_SIZE,
     )
+    dv.to_dict()
+    return dv.res
