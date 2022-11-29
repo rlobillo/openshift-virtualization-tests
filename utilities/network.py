@@ -151,22 +151,6 @@ class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         }
 
         for port in bridge_ports:
-            # ToDo: The following block (5 lines) should remain commented-out until BZ 2026621 is fixed.
-            # When uncommenting these lines, they should be refactored to take the correct range from the vlans in the
-            # py_config.
-            # vlan_trunk = {
-            #     "mode": "trunk",
-            #     "trunk-tags": [{"id-range": {"min": 1000, "max": 1019}}],
-            # }
-            # set port["vlan"] = vlan_trunk
-            # TODO: Remove below if statement after BZ 2026621 fixed
-            if (
-                os.environ.get(WORKERS_TYPE)
-                == utilities.infra.ClusterHosts.Type.PHYSICAL
-                and self.bridge_type != self.ovs_bridge_type
-            ):
-                port["vlan"] = {}
-
             # OVS MTU handled in OvsBridgeNodeNetworkConfigurationPolicy
             if self.mtu and self.bridge_type != self.ovs_bridge_type:
                 nns = NodeNetworkState(name=self.node_selector or self.nodes[0].name)
