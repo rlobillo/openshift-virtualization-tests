@@ -9,14 +9,20 @@ import shlex
 import pytest
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
+from ocp_utilities.infra import cluster_resource
 from ocp_utilities.utils import run_ssh_commands
 
 from tests.storage.snapshots.constants import WINDOWS_DIRECTORY_PATH
 from tests.storage.snapshots.utils import assert_directory_existence
-from tests.storage.utils import create_cirros_vm, create_windows19_vm, set_permissions
-from utilities.constants import TIMEOUT_10MIN, UNPRIVILEGED_USER
-from utilities.infra import cluster_resource
+from tests.storage.utils import create_windows19_vm, set_permissions
+from utilities.constants import (
+    OS_FLAVOR_CIRROS,
+    TIMEOUT_10MIN,
+    UNPRIVILEGED_USER,
+    Images,
+)
 from utilities.storage import create_cirros_dv_for_snapshot_dict, write_file
+from utilities.virt import VirtualMachineForTests
 
 
 LOGGER = logging.getLogger(__name__)
@@ -53,10 +59,17 @@ def cirros_vm_for_snapshot(
     """
     Create a VM with a DV that supports snapshots
     """
-    with create_cirros_vm(
-        admin_client=admin_client,
-        cirros_dv=cirros_dv_for_snapshot_dict,
-        cirros_vm_name=cirros_vm_name,
+    dv_metadata = cirros_dv_for_snapshot_dict["metadata"]
+    with cluster_resource(VirtualMachineForTests)(
+        client=admin_client,
+        name=cirros_vm_name,
+        namespace=dv_metadata["namespace"],
+        os_flavor=OS_FLAVOR_CIRROS,
+        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
+        data_volume_template={
+            "metadata": dv_metadata,
+            "spec": cirros_dv_for_snapshot_dict["spec"],
+        },
     ) as vm:
         yield vm
 

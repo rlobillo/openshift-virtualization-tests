@@ -15,14 +15,14 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
+from ocp_utilities.infra import cluster_resource
 from ocp_utilities.utils import run_ssh_commands
 
 from tests.storage import utils
-from tests.storage.utils import create_cirros_dv, create_cirros_vm
-from utilities.constants import TIMEOUT_4MIN, Images
-from utilities.infra import cluster_resource
+from tests.storage.utils import create_cirros_dv
+from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_4MIN, Images
 from utilities.storage import ErrorMsg, create_dv, is_snapshot_supported_by_sc
-from utilities.virt import migrate_vm_and_verify, running_vm
+from utilities.virt import VirtualMachineForTests, migrate_vm_and_verify, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -205,10 +205,12 @@ def cirros_vm_for_online_resize(
     """
     Create a VM with a DV from the cirros_dv_for_online_resize fixture
     """
-    with create_cirros_vm(
-        admin_client=admin_client,
-        cirros_dv=cirros_dv_for_online_resize,
-        cirros_vm_name=cirros_vm_name,
+    with cluster_resource(VirtualMachineForTests)(
+        name=cirros_vm_name,
+        namespace=namespace.name,
+        data_volume=cirros_dv_for_online_resize,
+        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
+        os_flavor=OS_FLAVOR_CIRROS,
     ) as vm:
         yield vm
 

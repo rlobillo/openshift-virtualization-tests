@@ -426,29 +426,6 @@ def get_hpp_daemonset(hco_namespace, hpp_cr_suffix):
 
 
 @contextmanager
-def create_cirros_vm(
-    admin_client,
-    cirros_dv,
-    cirros_vm_name,
-):
-    """
-    Create a VM with a DV from the cirros_dv
-    """
-    with cluster_resource(VirtualMachineForTests)(
-        client=admin_client,
-        name=cirros_vm_name,
-        namespace=cirros_dv["metadata"]["namespace"],
-        os_flavor=OS_FLAVOR_CIRROS,
-        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-        data_volume_template={
-            "metadata": cirros_dv["metadata"],
-            "spec": cirros_dv["spec"],
-        },
-    ) as vm:
-        yield vm
-
-
-@contextmanager
 def create_windows19_vm(dv_name, namespace, client, vm_name, cpu_model, storage_class):
     dv = cluster_resource(DataVolume)(
         name=dv_name,
