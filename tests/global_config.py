@@ -160,115 +160,126 @@ auto_update_data_source_matrix = [
     {"rhel9": {"template_os": "rhel9.0"}},
 ]
 
+IMAGE_NAME_STR = "image_name"
+IMAGE_PATH_STR = "image_path"
+DV_SIZE_STR = "dv_size"
+TEMPLATE_LABELS_STR = "template_labels"
+OS_STR = "os"
+WORKLOAD_STR = "workload"
+FLAVOR_STR = "flavor"
+LATEST_RELEASE_STR = "latest_released"
+OS_VERSION_STR = "os_version"
+LICENSE_STR = "license"
+
 rhel_os_matrix = [
     {
         "rhel-6-10": {
-            "image_name": Images.Rhel.RHEL6_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL6_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "rhel6.0",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
+            IMAGE_NAME_STR: Images.Rhel.RHEL6_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL6_IMG),
+            DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "rhel6.0",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.TINY,
             },
         }
     },
     {
         "rhel-7-8": {
-            "image_name": Images.Rhel.RHEL7_8_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_8_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "rhel7.8",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
+            IMAGE_NAME_STR: Images.Rhel.RHEL7_8_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_8_IMG),
+            DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "rhel7.8",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.TINY,
             },
         }
     },
     {
         "rhel-7-9": {
-            "image_name": Images.Rhel.RHEL7_9_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_9_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "rhel7.9",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
+            IMAGE_NAME_STR: Images.Rhel.RHEL7_9_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_9_IMG),
+            DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "rhel7.9",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.TINY,
             },
         }
     },
     {
         "rhel-8-6": {
-            "image_name": Images.Rhel.RHEL8_6_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_6_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "rhel8.6",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
+            IMAGE_NAME_STR: Images.Rhel.RHEL8_6_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_6_IMG),
+            DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "rhel8.6",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.TINY,
             },
         }
     },
     {
         "rhel-8-7": {
-            "image_name": Images.Rhel.RHEL8_7_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_7_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "latest_released": True,
-            "template_labels": {
-                "os": "rhel8.7",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
+            IMAGE_NAME_STR: Images.Rhel.RHEL8_7_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_7_IMG),
+            DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
+            LATEST_RELEASE_STR: True,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "rhel8.7",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.TINY,
             },
         }
     },
     {
         "rhel-8-8": {
-            "image_name": Images.Rhel.RHEL8_7_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_7_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
+            IMAGE_NAME_STR: Images.Rhel.RHEL8_7_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_7_IMG),
+            DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
             # TODO: Modify to 8.8 once it is added to templates
-            "template_labels": {
-                "os": "rhel8.7",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "rhel8.7",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.TINY,
             },
         }
     },
     {
         "rhel-9-0": {
-            "image_name": Images.Rhel.RHEL9_0_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL9_0_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "rhel9.0",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
+            IMAGE_NAME_STR: Images.Rhel.RHEL9_0_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL9_0_IMG),
+            DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "rhel9.0",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.TINY,
             },
         }
     },
     {
         "rhel-9-1": {
-            "image_name": Images.Rhel.RHEL9_1_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL9_1_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "rhel9.1",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
+            IMAGE_NAME_STR: Images.Rhel.RHEL9_1_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL9_1_IMG),
+            DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "rhel9.1",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.TINY,
             },
         }
     },
     {
         "rhel-9-2": {
-            "image_name": Images.Rhel.RHEL9_1_IMG,
-            "image_path": os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL9_1_IMG),
-            "dv_size": Images.Rhel.DEFAULT_DV_SIZE,
+            IMAGE_NAME_STR: Images.Rhel.RHEL9_1_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL9_1_IMG),
+            DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
             # TODO: Modify to 9.2 once it is added to templates
-            "template_labels": {
-                "os": "rhel9.1",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "rhel9.1",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.TINY,
             },
         }
     },
@@ -277,87 +288,89 @@ rhel_os_matrix = [
 windows_os_matrix = [
     {
         "win-10": {
-            "os_version": "10",
-            "image_name": Images.Windows.WIM10_IMG,
-            "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIM10_IMG),
-            "dv_size": Images.Windows.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "win10",
-                "workload": Template.Workload.DESKTOP,
-                "flavor": Template.Flavor.MEDIUM,
+            OS_VERSION_STR: "10",
+            IMAGE_NAME_STR: Images.Windows.WIM10_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Windows.DIR, Images.Windows.WIM10_IMG),
+            DV_SIZE_STR: Images.Windows.DEFAULT_DV_SIZE,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "win10",
+                WORKLOAD_STR: Template.Workload.DESKTOP,
+                FLAVOR_STR: Template.Flavor.MEDIUM,
             },
-            "license": "BRNVR-4HQGD-GH2WT-Y2CXR-W8F8R",
+            LICENSE_STR: "BRNVR-4HQGD-GH2WT-Y2CXR-W8F8R",
         }
     },
     {
         "win-2012": {
-            "os_version": "2012",
-            "image_name": Images.Windows.WIN12_IMG,
-            "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN12_IMG),
-            "dv_size": Images.Windows.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "win2k12r2",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.MEDIUM,
+            OS_VERSION_STR: "2012",
+            IMAGE_NAME_STR: Images.Windows.WIN12_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Windows.DIR, Images.Windows.WIN12_IMG),
+            DV_SIZE_STR: Images.Windows.DEFAULT_DV_SIZE,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "win2k12r2",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.MEDIUM,
             },
-            "license": "CKN69-V8PF9-KT726-Y23JM-XBRRY",
+            LICENSE_STR: "CKN69-V8PF9-KT726-Y23JM-XBRRY",
         }
     },
     {
         "win-2016": {
-            "os_version": "2016",
-            "image_name": Images.Windows.WIN16_IMG,
-            "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN16_IMG),
-            "dv_size": Images.Windows.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "win2k16",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.MEDIUM,
+            OS_VERSION_STR: "2016",
+            IMAGE_NAME_STR: Images.Windows.WIN16_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Windows.DIR, Images.Windows.WIN16_IMG),
+            DV_SIZE_STR: Images.Windows.DEFAULT_DV_SIZE,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "win2k16",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.MEDIUM,
             },
-            "license": "8KHNW-H9K6W-4XXX8-8WKW9-3RT3F",
+            LICENSE_STR: "8KHNW-H9K6W-4XXX8-8WKW9-3RT3F",
         }
     },
     {
         "win-2019": {
-            "os_version": "2019",
-            "image_name": Images.Windows.WIN19_IMG,
-            "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
-            "dv_size": Images.Windows.DEFAULT_DV_SIZE,
-            "latest_released": True,
-            "template_labels": {
-                "os": "win2k19",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.MEDIUM,
+            OS_VERSION_STR: "2019",
+            IMAGE_NAME_STR: Images.Windows.WIN19_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
+            DV_SIZE_STR: Images.Windows.DEFAULT_DV_SIZE,
+            LATEST_RELEASE_STR: True,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "win2k19",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.MEDIUM,
             },
-            "license": "NQJPH-YJBCM-K9F34-YMKPW-Q7CHQ",
+            LICENSE_STR: "NQJPH-YJBCM-K9F34-YMKPW-Q7CHQ",
         }
     },
     {
         "win-11": {
-            "os_version": "11",
-            "image_name": Images.Windows.WIN11_IMG,
-            "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN11_IMG),
-            "dv_size": Images.Windows.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "win11",
-                "workload": Template.Workload.DESKTOP,
-                "flavor": Template.Flavor.MEDIUM,
+            OS_VERSION_STR: "11",
+            IMAGE_NAME_STR: Images.Windows.WIN11_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Windows.DIR, Images.Windows.WIN11_IMG),
+            DV_SIZE_STR: Images.Windows.DEFAULT_DV_SIZE,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "win11",
+                WORKLOAD_STR: Template.Workload.DESKTOP,
+                FLAVOR_STR: Template.Flavor.MEDIUM,
             },
-            "license": "FMJBN-MMJ6V-TGTWY-XKY73-BG9TT",
+            LICENSE_STR: "FMJBN-MMJ6V-TGTWY-XKY73-BG9TT",
         }
     },
     {
         "win-2022": {
-            "os_version": "2022",
-            "image_name": Images.Windows.WIN2022_IMG,
-            "image_path": os.path.join(Images.Windows.DIR, Images.Windows.WIN2022_IMG),
-            "dv_size": Images.Windows.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "win2k22",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.MEDIUM,
+            OS_VERSION_STR: "2022",
+            IMAGE_NAME_STR: Images.Windows.WIN2022_IMG,
+            IMAGE_PATH_STR: os.path.join(
+                Images.Windows.DIR, Images.Windows.WIN2022_IMG
+            ),
+            DV_SIZE_STR: Images.Windows.DEFAULT_DV_SIZE,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "win2k22",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.MEDIUM,
             },
-            "license": "VTVFN-R9H2P-GBXF7-TBY2B-XBW9Y",
+            LICENSE_STR: "VTVFN-R9H2P-GBXF7-TBY2B-XBW9Y",
         }
     },
 ]
@@ -365,14 +378,14 @@ windows_os_matrix = [
 fedora_os_matrix = [
     {
         "fedora-35": {
-            "image_name": Images.Fedora.FEDORA35_IMG,
-            "image_path": os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA35_IMG),
-            "dv_size": Images.Fedora.DEFAULT_DV_SIZE,
-            "latest_released": True,
-            "template_labels": {
-                "os": "fedora35",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
+            IMAGE_NAME_STR: Images.Fedora.FEDORA35_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Fedora.DIR, Images.Fedora.FEDORA35_IMG),
+            DV_SIZE_STR: Images.Fedora.DEFAULT_DV_SIZE,
+            LATEST_RELEASE_STR: True,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "fedora35",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.TINY,
             },
         }
     },
@@ -381,42 +394,42 @@ fedora_os_matrix = [
 centos_os_matrix = [
     {
         "centos-7": {
-            "image_name": Images.CentOS.CENTOS7_IMG,
-            "image_path": os.path.join(Images.CentOS.DIR, Images.CentOS.CENTOS7_IMG),
-            "dv_size": Images.CentOS.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "centos7.0",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
+            IMAGE_NAME_STR: Images.CentOS.CENTOS7_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.CentOS.DIR, Images.CentOS.CENTOS7_IMG),
+            DV_SIZE_STR: Images.CentOS.DEFAULT_DV_SIZE,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "centos7.0",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.TINY,
             },
         }
     },
     {
         "centos-stream-8": {
-            "image_name": Images.CentOS.CENTOS_STREAM_8_IMG,
-            "image_path": os.path.join(
+            IMAGE_NAME_STR: Images.CentOS.CENTOS_STREAM_8_IMG,
+            IMAGE_PATH_STR: os.path.join(
                 Images.CentOS.DIR, Images.CentOS.CENTOS_STREAM_8_IMG
             ),
-            "dv_size": Images.CentOS.DEFAULT_DV_SIZE,
-            "template_labels": {
-                "os": "centos-stream8",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
+            DV_SIZE_STR: Images.CentOS.DEFAULT_DV_SIZE,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "centos-stream8",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.TINY,
             },
         }
     },
     {
         "centos-stream-9": {
-            "image_name": Images.CentOS.CENTOS_STREAM_9_IMG,
-            "image_path": os.path.join(
+            IMAGE_NAME_STR: Images.CentOS.CENTOS_STREAM_9_IMG,
+            IMAGE_PATH_STR: os.path.join(
                 Images.CentOS.DIR, Images.CentOS.CENTOS_STREAM_9_IMG
             ),
-            "dv_size": Images.CentOS.DEFAULT_DV_SIZE,
-            "latest_released": True,
-            "template_labels": {
-                "os": "centos-stream9",
-                "workload": Template.Workload.SERVER,
-                "flavor": Template.Flavor.TINY,
+            DV_SIZE_STR: Images.CentOS.DEFAULT_DV_SIZE,
+            LATEST_RELEASE_STR: True,
+            TEMPLATE_LABELS_STR: {
+                OS_STR: "centos-stream9",
+                WORKLOAD_STR: Template.Workload.SERVER,
+                FLAVOR_STR: Template.Flavor.TINY,
             },
         }
     },
