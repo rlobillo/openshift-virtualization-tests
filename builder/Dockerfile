@@ -1,4 +1,4 @@
-FROM quay.io/centos/centos:stream8
+FROM quay.io/centos/centos:stream9
 #TODO: remove pipenv commands and exports once our infra move to poetry
 
 ENV PIPENV_VENV_IN_PROJECT=1 \
@@ -10,17 +10,18 @@ ARG OPENSHIFT_PYTHON_UTILITIES_COMMIT
 
 RUN dnf -y install epel-release \
     && dnf -y install \
-        python3-pip \
-        python3-devel \
-        procps-ng \
-        rsync \
-        gcc \
-        git \
-        wget \
-        libcurl-devel \
-        libxslt-devel \
-        libxml2-devel \
-        openssl-devel \
+    systemd-container \
+    python3-pip \
+    python3-devel \
+    procps-ng \
+    rsync \
+    gcc \
+    git \
+    wget \
+    libcurl-devel \
+    libxslt-devel \
+    libxml2-devel \
+    openssl-devel \
     && dnf clean all
 
 COPY / cnv-tests/

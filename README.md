@@ -44,6 +44,7 @@ and 50G volume size (default deployment configuration).
 Upgrade tests must be run against a large deployment(24GiB RAM, 250GB volume size)
 
 ## Prerequirements
+python >=3.8
 
 Following binaries are needed:
 ```bash
@@ -83,17 +84,22 @@ After installation, run:
 ```bash
 poetry install
 ```
-To get current env info
+To get current env list
 ```bash
-poetry env info
+poetry env list
 ```
 To remove current env
 ```bash
-poetry env remove 3.10.6 # the python version from poetry env info output
+poetry env remove <env name> # One of the names from poetry env list command
 ```
 To update one package
 ```bash
 poetry update openshift-python-wrapper
+```
+If no update found (and should be one) clear poetry cache
+```bash
+poetry cache clear --all pypi
+poetry cache clear --all PyPI
 ```
 
 # Getting started
