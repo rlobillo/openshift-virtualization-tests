@@ -22,6 +22,7 @@ from tests.install_upgrade_operators.product_upgrade.utils import (
 )
 from tests.install_upgrade_operators.utils import wait_for_operator_condition
 from utilities.constants import BREW_REGISTERY_SOURCE, HCO_CATALOG_SOURCE, TIMEOUT_10MIN
+from utilities.data_collector import get_data_collector_dict
 from utilities.infra import (
     cluster_resource,
     get_csv_by_name,
@@ -178,11 +179,10 @@ def target_csv(admin_client, hco_namespace, hco_target_version):
             f"timeout waiting for target cluster service version: {hco_target_version}"
         )
         if py_config.get("data_collector"):
+            data_collector_dict = get_data_collector_dict()
             collect_resources_yaml_instance(
                 resources_to_collect=[ClusterServiceVersion],
-                base_directory=py_config["data_collector"][
-                    "data_collector_base_directory"
-                ],
+                base_directory=data_collector_dict["data_collector_base_directory"],
             )
         raise
 
@@ -277,7 +277,8 @@ def extracted_ocp_version_from_image_url(ocp_image_url):
 
 @pytest.fixture(scope="session")
 def alert_dir():
-    base_directory = py_config["data_collector"]["data_collector_base_directory"]
+    data_collector_dict = get_data_collector_dict()
+    base_directory = data_collector_dict["data_collector_base_directory"]
     return os.path.join(base_directory, "alert_information")
 
 

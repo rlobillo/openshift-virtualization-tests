@@ -66,6 +66,7 @@ from utilities.constants import (
     TIMEOUT_6MIN,
     TIMEOUT_10MIN,
 )
+from utilities.data_collector import get_data_collector_dict
 from utilities.exceptions import UtilityPodNotFoundError
 from utilities.storage import get_images_server_url
 
@@ -699,7 +700,8 @@ def exit_pytest_execution(
         junitxml_property (pytest plugin): record_testsuite_property
     """
     if filename:
-        base_directory = py_config["data_collector"]["data_collector_base_directory"]
+        data_collector_dict = get_data_collector_dict()
+        base_directory = data_collector_dict["data_collector_base_directory"]
         write_to_file(
             file_name=filename,
             content=message,

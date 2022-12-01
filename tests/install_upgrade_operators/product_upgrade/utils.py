@@ -10,7 +10,6 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.data_collector import collect_resources_yaml_instance, write_to_file
 from ocp_utilities.utils import run_command
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
-from pytest_testconfig import config as py_config
 
 from tests.install_upgrade_operators.utils import (
     wait_for_install_plan,
@@ -26,6 +25,7 @@ from utilities.constants import (
     TIMEOUT_180MIN,
     TSC_FREQUENCY,
 )
+from utilities.data_collector import get_data_collector_dict
 from utilities.hco import wait_for_hco_conditions, wait_for_hco_version
 from utilities.infra import (
     cluster_resource,
@@ -540,9 +540,10 @@ def wait_for_cluster_version_state_and_version(cluster_version, target_ocp_versi
             "Timeout reached while upgrading OCP. "
             f"clusterversion conditions: {cluster_version.instance.status.conditions}"
         )
+        data_collector_dict = get_data_collector_dict()
         collect_resources_yaml_instance(
             resources_to_collect=[ClusterOperator],
-            base_directory=py_config["data_collector"]["data_collector_base_directory"],
+            base_directory=data_collector_dict["data_collector_base_directory"],
         )
         raise
 

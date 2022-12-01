@@ -12,7 +12,6 @@ import shutil
 
 import pytest
 import shortuuid
-import yaml
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.namespace import Namespace
 from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
@@ -38,13 +37,17 @@ from ocp_resources.virtual_machine_instance_migration import (
 from ocp_utilities.data_collector import (
     collect_pods_data,
     collect_resources_yaml_instance,
-    prepare_pytest_item_data_dir,
 )
 from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import config as py_config
 
 import utilities.infra
 from utilities.constants import StorageClassNames
+from utilities.data_collector import (
+    get_data_collector_dict,
+    set_collector_directory,
+    set_data_collector_values,
+)
 from utilities.infra import get_admin_client
 from utilities.logger import setup_logging
 from utilities.pytest_utils import (
@@ -100,28 +103,6 @@ RESOURCES_TO_COLLECT_INFO = [
     PodDisruptionBudget,
     Node,
 ]
-
-
-def set_data_collector_values(session):
-    data_collector = session.config.getoption("--data-collector")
-    data_collector_failed_tests = session.config.getoption(
-        "--data-collector-failed-tests"
-    )
-    if data_collector or data_collector_failed_tests:
-        with open(data_collector, "r") as fd:
-            py_config["data_collector"] = yaml.safe_load(fd.read())
-
-    else:
-        py_config["data_collector"] = {
-            "data_collector_base_directory": "tests-collected-info"
-        }
-
-
-def set_collector_directory(item, subdirectory_name):
-    base_directory = py_config["data_collector"]["data_collector_base_directory"]
-    py_config["data_collector"]["collector_directory"] = prepare_pytest_item_data_dir(
-        item=item, base_directory=base_directory, subdirectory_name=subdirectory_name
-    )
 
 
 def pytest_addoption(parser):
@@ -242,7 +223,8 @@ def pytest_addoption(parser):
     )
     data_collector_group.addoption(
         "--data-collector-failed-tests",
-        help="pass YAML file path to enable data collector to capture additional logs and resources",
+        help="Enable data collector to capture additional logs and resources for failed tests",
+        action="store_true",
     )
     data_collector_group.addoption(
         "--pytest-log-file",
@@ -564,9 +546,9 @@ def pytest_sessionstart(session):
                 )
             ]
 
-    set_data_collector_values(session=session)
+    data_collector_dict = set_data_collector_values(session=session)
     shutil.rmtree(
-        py_config["data_collector"]["data_collector_base_directory"],
+        data_collector_dict["data_collector_base_directory"],
         ignore_errors=True,
     )
 
@@ -668,7 +650,8 @@ def pytest_sessionfinish(session, exitstatus):
     )
     BASIC_LOGGER.info(f"{separator(symbol_='-', val=summary)}")
 
-    collector_directory = py_config["data_collector"]["data_collector_base_directory"]
+    data_collector_dict = get_data_collector_dict()
+    collector_directory = data_collector_dict["data_collector_base_directory"]
     if os.path.exists(collector_directory):
         for root, dirs, files in os.walk(collector_directory, topdown=False):
             for _dir in dirs:
@@ -681,8 +664,9 @@ def pytest_exception_interact(node, call, report):
     BASIC_LOGGER.error(report.longreprtext)
     if node.session.config.getoption("--data-collector-failed-tests"):
         try:
+            data_collector_dict = get_data_collector_dict()
             base_directory = os.path.join(
-                py_config["data_collector"]["collector_directory"],
+                data_collector_dict["collector_directory"],
                 "pytest_exception_interact",
             )
             namespace_name = utilities.infra.generate_namespace_name(
@@ -698,7 +682,7 @@ def pytest_exception_interact(node, call, report):
             collect_pods_data(
                 pods_list=pods,
                 base_directory=base_directory,
-                collect_pod_logs=py_config["data_collector"]["collect_pod_logs"],
+                collect_pod_logs=data_collector_dict["collect_pod_logs"],
             )
 
         except Exception as exp:

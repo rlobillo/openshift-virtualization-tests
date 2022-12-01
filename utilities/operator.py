@@ -33,7 +33,7 @@ from utilities.constants import (
     TIMEOUT_20MIN,
     TIMEOUT_75MIN,
 )
-from utilities.data_collector import collect_mcp_information
+from utilities.data_collector import collect_mcp_information, get_data_collector_dict
 
 
 LOGGER = logging.getLogger(__name__)
@@ -121,11 +121,10 @@ def wait_for_machine_config_pools_condition_status(
             f"current mcp status={ {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools_list}}"
         )
         if py_config.get("data_collector"):
+            data_collector_dict = get_data_collector_dict()
             collect_resources_yaml_instance(
                 resources_to_collect=[MachineConfigPool, Node],
-                base_directory=py_config["data_collector"][
-                    "data_collector_base_directory"
-                ],
+                base_directory=data_collector_dict["data_collector_base_directory"],
             )
             collect_mcp_information()
         raise

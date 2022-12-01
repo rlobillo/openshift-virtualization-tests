@@ -20,6 +20,7 @@ from utilities.constants import (
     TIMEOUT_30MIN,
     TIMEOUT_40MIN,
 )
+from utilities.data_collector import get_data_collector_dict
 from utilities.infra import get_subscription
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
@@ -107,11 +108,10 @@ def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
             f"subscription install plan: {install_plan_name_in_subscription}"
         )
         if py_config.get("data_collector"):
+            data_collector_dict = get_data_collector_dict()
             collect_resources_yaml_instance(
                 resources_to_collect=[InstallPlan],
-                base_directory=py_config["data_collector"][
-                    "data_collector_base_directory"
-                ],
+                base_directory=data_collector_dict["data_collector_base_directory"],
             )
         raise
 
