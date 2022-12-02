@@ -2,11 +2,16 @@ import logging
 
 import pytest
 from ocp_resources.api_server import APIServer
+from ocp_resources.cdi import CDI
+from ocp_resources.kubevirt import KubeVirt
+from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.service import Service
+from ocp_resources.ssp import SSP
 from ocp_utilities.infra import cluster_resource
 from openshift.dynamic.exceptions import ResourceNotFoundError
 
+from tests.install_upgrade_operators.constants import KEY_PATH_SEPARATOR
 from tests.install_upgrade_operators.crypto_policy.constants import (
     CRYPTO_POLICY_SPEC_DICT,
     KEY_NAME_STR,
@@ -20,12 +25,42 @@ from tests.install_upgrade_operators.crypto_policy.utils import (
     get_resource_crypto_policy,
     wait_for_cluster_operator_stabilize,
 )
-from utilities.constants import CLUSTER_RESOURCE_NAME
+from utilities.constants import (
+    CDI_KUBEVIRT_HYPERCONVERGED,
+    CLUSTER_RESOURCE_NAME,
+    KUBEVIRT_HCO_NAME,
+    SSP_KUBEVIRT_HYPERCONVERGED,
+)
 from utilities.hco import wait_for_hco_conditions
 from utilities.infra import MissingResourceException
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="session")
+def resources_dict(hco_namespace):
+    return {
+        KubeVirt: {
+            RESOURCE_NAME_STR: KUBEVIRT_HCO_NAME,
+            RESOURCE_NAMESPACE_STR: hco_namespace.name,
+            KEY_NAME_STR: f"configuration{KEY_PATH_SEPARATOR}{TLS_SECURITY_PROFILE}",
+        },
+        SSP: {
+            RESOURCE_NAME_STR: SSP_KUBEVIRT_HYPERCONVERGED,
+            RESOURCE_NAMESPACE_STR: hco_namespace.name,
+            KEY_NAME_STR: TLS_SECURITY_PROFILE,
+        },
+        CDI: {
+            RESOURCE_NAME_STR: CDI_KUBEVIRT_HYPERCONVERGED,
+            KEY_NAME_STR: f"config{KEY_PATH_SEPARATOR}{TLS_SECURITY_PROFILE}",
+        },
+        NetworkAddonsConfig: {
+            RESOURCE_NAME_STR: CLUSTER_RESOURCE_NAME,
+            RESOURCE_NAMESPACE_STR: None,
+            KEY_NAME_STR: TLS_SECURITY_PROFILE,
+        },
+    }
 
 
 @pytest.fixture()

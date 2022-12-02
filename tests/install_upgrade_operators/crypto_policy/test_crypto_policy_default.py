@@ -31,6 +31,7 @@ from utilities.constants import (
 
 
 LOGGER = logging.getLogger(__name__)
+pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 @pytest.mark.parametrize(

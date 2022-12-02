@@ -25,6 +25,7 @@ from utilities.constants import (
     StorageClassNames,
 )
 from utilities.ssp import (
+    verify_ssp_pod_is_running,
     wait_for_at_least_one_auto_update_data_import_cron,
     wait_for_deleted_data_import_crons,
     wait_for_ssp_conditions,
@@ -66,10 +67,20 @@ class ResourceEditorValidateHCOReconcile(ResourceEditor):
         self.wait_for_reconcile_post_update = wait_for_reconcile_post_update
         self._consecutive_checks_count = consecutive_checks_count
         self.list_resource_reconcile = list_resource_reconcile or []
+        # TODO: Remove this variable when https://issues.redhat.com/browse/CNV-23504 is fixed
+        self.hco_crypto_policy_update = utilities.infra.is_jira_open(
+            jira_id="CNV-23504"
+        )
 
     def update(self, backup_resources=False):
         super().update(backup_resources=backup_resources)
         if self.wait_for_reconcile_post_update:
+            # TODO: Remove this check when https://issues.redhat.com/browse/CNV-23504 is fixed
+            if self.hco_crypto_policy_update:
+                verify_ssp_pod_is_running(
+                    dyn_client=self.admin_client,
+                    hco_namespace=self.hco_namespace,
+                )
             wait_for_hco_conditions(
                 admin_client=self.admin_client,
                 hco_namespace=self.hco_namespace,
@@ -79,6 +90,12 @@ class ResourceEditorValidateHCOReconcile(ResourceEditor):
 
     def restore(self):
         super().restore()
+        # TODO: Remove this check when https://issues.redhat.com/browse/CNV-23504 is fixed
+        if self.hco_crypto_policy_update:
+            verify_ssp_pod_is_running(
+                dyn_client=self.admin_client,
+                hco_namespace=self.hco_namespace,
+            )
         wait_for_hco_conditions(
             admin_client=self.admin_client,
             hco_namespace=self.hco_namespace,

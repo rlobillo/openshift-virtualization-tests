@@ -12,8 +12,11 @@ import utilities.storage
 from utilities.constants import (
     DEFAULT_RESOURCE_CONDITIONS,
     SSP_KUBEVIRT_HYPERCONVERGED,
+    SSP_OPERATOR,
     TIMEOUT_2MIN,
     TIMEOUT_3MIN,
+    TIMEOUT_6MIN,
+    TIMEOUT_10SEC,
 )
 
 
@@ -118,3 +121,70 @@ def wait_for_ssp_conditions(
         polling_interval=polling_interval,
         consecutive_checks_count=consecutive_checks_count,
     )
+
+
+def is_ssp_pod_running(dyn_client, hco_namespace):
+    pod = utilities.infra.get_pod_by_name_prefix(
+        dyn_client=dyn_client,
+        pod_prefix=SSP_OPERATOR,
+        namespace=hco_namespace.name,
+    )
+    return (
+        pod.instance.status.phase == pod.Status.RUNNING
+        and pod.instance.status.containerStatuses[0]["ready"]
+    )
+
+
+def verify_ssp_pod_is_running(
+    dyn_client,
+    hco_namespace,
+    wait_timeout=TIMEOUT_6MIN,
+    sleep=TIMEOUT_10SEC,
+    consecutive_checks_count=3,
+):
+    """
+    Verifies that SSP pod is up and running
+
+    This function polls for the status of SSP pod every 'sleep' seconds for
+    the maximum time duration of 'wait_timeout', before it raises
+    'TimeoutExpiredError'. Also this function makes sure that SSP pod
+    is up and running for at least 'consecutive_checks_count'
+
+    Args:
+        dyn_client (DynamicClient): Dynamic client object
+        hco_namespace (Namespace): Namespace object
+        wait_timeout (int) : Maximum time to wait till SSP pod is up
+        sleep (int): polling interval
+        consecutive_checks_count (int): Minimum repetitive check iteration before
+            assuring that SSP pod is up.
+
+    Raises:
+        'TimeoutExpiredError' when SSP pod is not up and running
+         for the time duration of 'wait_timeout'
+    """
+    sampler = TimeoutSampler(
+        wait_timeout=wait_timeout,
+        sleep=sleep,
+        func=is_ssp_pod_running,
+        dyn_client=dyn_client,
+        hco_namespace=hco_namespace,
+    )
+    sample = None
+    checks_count = 0
+    try:
+        for sample in sampler:
+            if sample:
+                checks_count += 1
+                if checks_count == consecutive_checks_count:
+                    return
+            else:
+                checks_count = 0
+    except TimeoutExpiredError:
+        if sample:
+            LOGGER.warning(
+                f"SSP pod is up, but not for the last {consecutive_checks_count} "
+                "consecutive checks"
+            )
+        else:
+            LOGGER.error(f"SSP pod was not running for last {TIMEOUT_6MIN} seconds")
+            raise

@@ -10,7 +10,7 @@ from tests.os_params import FEDORA_LATEST_LABELS
 from utilities.constants import SSP_OPERATOR, TIMEOUT_3MIN, VIRT_TEMPLATE_VALIDATOR
 from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.infra import get_pod_by_name_prefix
-from utilities.ssp import wait_for_ssp_conditions
+from utilities.ssp import verify_ssp_pod_is_running, wait_for_ssp_conditions
 from utilities.virt import VirtualMachineForTestsFromTemplate
 
 
@@ -25,15 +25,6 @@ SSP_ALERTS_LIST = [
     SSP_TEMPLATE_VALIDATOR_DOWN,
     SSP_FAILING_TO_RECONCILE,
 ]
-
-
-def verify_ssp_pod_is_running(dyn_client, hco_namespace):
-    pod = get_pod_by_name_prefix(
-        dyn_client=dyn_client,
-        pod_prefix=SSP_OPERATOR,
-        namespace=hco_namespace.name,
-    )
-    pod.wait_for_status(status=pod.Status.RUNNING)
 
 
 def alert_not_firing_sampler(prometheus, alert):

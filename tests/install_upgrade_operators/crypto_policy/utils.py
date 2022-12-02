@@ -1,4 +1,5 @@
 import logging
+from contextlib import contextmanager
 
 from benedict import benedict
 from ocp_resources.cluster_operator import ClusterOperator
@@ -26,6 +27,7 @@ from utilities.constants import (
     TIMEOUT_2MIN,
     TIMEOUT_15MIN,
 )
+from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.infra import ExecCommandOnPod, is_bug_open
 
 
@@ -168,8 +170,26 @@ def assert_crypto_policy_propagated_to_components(
     admin_client,
     crypto_policy,
     resources_dict,
+    updated_resource_kind,
 ):
-    error_messages = []
+    """
+    This function is used to assert whether the updated crypto policy settings
+    propagated to all CNV components - CDI, KubeVirt, CNAO & SSP
+
+    Args:
+        admin_client (DynamicClient): OCP Client to use.
+        crypto_policy (str): Name of the policy ( "old" or "custom" )
+        resources_dict (dict): values for resources(name,key_name,namespace_name)
+                               in dict
+        updated_resource_kind (str): Resource kind of the updated resource
+            ( HyperConverged or APIServer )
+
+    Raises:
+        AssertionError: When TLS crypto policy of HCO managed CRs(KubeVirt, SSP, CNAO
+        & CDI) doesn't match with the expected 'crypto_policy'
+    """
+    conflicting_resources = []
+    kubevirt_bug_id = 2153527
     for resource in MANAGED_CRS_LIST:
         expected_value = CRYPTO_POLICY_EXPECTED_DICT[crypto_policy][resource]
         error_message = wait_for_crypto_policy_update(
@@ -181,12 +201,15 @@ def assert_crypto_policy_propagated_to_components(
             expected_policy=expected_value,
         )
         if error_message:
-            if resource == KubeVirt and is_bug_open(bug_id=2153527):
+            if resource.kind == KubeVirt.kind and is_bug_open(bug_id=kubevirt_bug_id):
+                LOGGER.warning(
+                    f"Skipping KubeVirt Cipher validation for bug {kubevirt_bug_id}"
+                )
                 continue
-            error_messages.append(error_message)
-    assert not error_messages, (
-        f"Updating APIServer {CLUSTER_RESOURCE_NAME} with {crypto_policy}, failed for the "
-        f"following CRs: {''.join(error_messages)}"
+            conflicting_resources.append(resource.kind)
+    assert not conflicting_resources, (
+        f"After updating the resource {updated_resource_kind} with {crypto_policy}, "
+        f"following CRs are found inconsistent: {','.join(conflicting_resources)}"
     )
 
 
@@ -272,3 +295,13 @@ def assert_tls_ciphers_blocked(
                     )
 
     assert not failed_service, f"Some services connections failed:\n {failed_service}"
+
+
+@contextmanager
+def set_hco_crypto_policy(hco_resource, tls_spec):
+    with ResourceEditorValidateHCOReconcile(
+        patches={hco_resource: {"spec": {TLS_SECURITY_PROFILE: tls_spec}}},
+        wait_for_reconcile_post_update=True,
+        list_resource_reconcile=MANAGED_CRS_LIST,
+    ):
+        yield
