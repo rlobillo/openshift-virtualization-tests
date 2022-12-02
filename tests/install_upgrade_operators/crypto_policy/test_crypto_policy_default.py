@@ -11,11 +11,11 @@ from pytest_testconfig import config as py_config
 
 from tests.install_upgrade_operators.crypto_policy.constants import (
     CRYPTO_POLICY_EXPECTED_DICT,
-    INTERMEDIATE_POLICY,
     KEY_NAME_STR,
     RESOURCE_NAME_STR,
     RESOURCE_NAMESPACE_STR,
     RESOURCE_TYPE_STR,
+    TLS_INTERMEDIATE_POLICY,
     TLS_SECURITY_PROFILE,
 )
 from utilities.constants import (
@@ -99,7 +99,7 @@ LOGGER = logging.getLogger(__name__)
     indirect=["resource_crypto_policy_settings"],
 )
 def test_default_crypto_policy(resource_crypto_policy_settings, resource_type):
-    expected_result = CRYPTO_POLICY_EXPECTED_DICT[INTERMEDIATE_POLICY].get(
+    expected_result = CRYPTO_POLICY_EXPECTED_DICT[TLS_INTERMEDIATE_POLICY].get(
         resource_type
     )
     assert resource_crypto_policy_settings == expected_result, (
