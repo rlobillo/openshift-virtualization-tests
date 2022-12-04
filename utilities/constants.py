@@ -234,6 +234,7 @@ PODS_TO_COLLECT_INFO = [
     UTILITY,
     NMSTATE_HANDLER,
 ]
+WORKERS_TYPE = "WORKERS_TYPE"
 
 
 # GPU/vGPU Common constants
@@ -303,10 +304,6 @@ HCO_SUBSCRIPTION = "hco-operatorhub"
 # VM configuration
 LIVE_MIGRATE = "LiveMigrate"
 ROOTDISK = "rootdisk"
-
-# W/A for BZ 2026621
-# TODO: Remove after BZ 2026621 fixed
-WORKERS_TYPE = "WORKERS_TYPE"
 
 # Upgrade tests configuration
 DEPENDENCY_SCOPE_SESSION = "session"
