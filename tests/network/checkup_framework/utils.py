@@ -1,26 +1,24 @@
 import contextlib
 import logging
 
-import packaging.version
-import pytest
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.job import Job
-from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.utils import TimeoutExpiredError
 from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
-from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5MIN
-from utilities.infra import get_pods
+from utilities.constants import TIMEOUT_5MIN
 
 
 LOGGER = logging.getLogger(__name__)
-LATENCY_CONFIGMAP = "latency-configmap"
 CHECKUP_FRAMEWORK_NAMESPACE = "kiagnose"
+MAX_DESIRED_LATENCY_MILLISECONDS = "15"
 
 
 @contextlib.contextmanager
-def create_latency_job(service_account, cnv_current_version, name=None):
-    current_version = packaging.version.parse(version=cnv_current_version).base_version
+def create_latency_job(
+    service_account, cnv_current_version, latency_configmap_name, name=None
+):
     with cluster_resource(Job)(
         name=name or "latency-job",
         namespace=service_account.namespace,
@@ -32,7 +30,7 @@ def create_latency_job(service_account, cnv_current_version, name=None):
                 "name": "framework",
                 "image": (
                     f"{py_config['cnv_registry_sources']['osbs']['source_map']}/"
-                    f"container-native-virtualization-checkup-framework:v{current_version}"
+                    f"container-native-virtualization-vm-network-latency-checkup:v{cnv_current_version}"
                 ),
                 "imagePullPolicy": "Always",
                 "env": [
@@ -40,7 +38,7 @@ def create_latency_job(service_account, cnv_current_version, name=None):
                         "name": "CONFIGMAP_NAMESPACE",
                         "value": service_account.namespace,
                     },
-                    {"name": "CONFIGMAP_NAME", "value": LATENCY_CONFIGMAP},
+                    {"name": "CONFIGMAP_NAME", "value": latency_configmap_name},
                 ],
             }
         ],
@@ -49,36 +47,51 @@ def create_latency_job(service_account, cnv_current_version, name=None):
 
 
 @contextlib.contextmanager
-def create_latency_configmap(framework_service_account, cnv_current_version, **kwargs):
+def create_latency_configmap(
+    network_attachment_definition_namespace,
+    network_attachment_definition_name,
+    namespace,
+    timeout=f"{TIMEOUT_5MIN}m",
+    max_desired_latency_milliseconds=MAX_DESIRED_LATENCY_MILLISECONDS,
+    sample_duration_seconds="5",
+    source_node=None,
+    target_node=None,
+):
     data = compose_configmap_data(
-        framework_service_account=framework_service_account,
-        cnv_current_version=cnv_current_version,
-        **kwargs,
+        timeout=timeout,
+        network_attachment_definition_namespace=network_attachment_definition_namespace,
+        network_attachment_definition_name=network_attachment_definition_name,
+        max_desired_latency_milliseconds=max_desired_latency_milliseconds,
+        sample_duration_seconds=sample_duration_seconds,
+        source_node=source_node,
+        target_node=target_node,
     )
     with cluster_resource(ConfigMap)(
-        namespace=framework_service_account.namespace, name=LATENCY_CONFIGMAP, data=data
+        namespace=namespace, name="latency-configmap", data=data
     ) as configmap:
         yield configmap
 
 
 def compose_configmap_data(
-    framework_service_account,
-    cnv_current_version,
-    image="container-native-virtualization-vm-network-latency-checkup",
-    timeout=f"{TIMEOUT_5MIN}m",
-    cluster_role=None,
-    **kwargs,
+    timeout,
+    network_attachment_definition_namespace,
+    network_attachment_definition_name,
+    max_desired_latency_milliseconds,
+    sample_duration_seconds,
+    source_node,
+    target_node,
 ):
-    current_version = packaging.version.parse(version=cnv_current_version).base_version
     data_dict = {
-        "spec.image": f"{py_config['cnv_registry_sources']['osbs']['source_map']}/{image+':v'+current_version}",
         "spec.timeout": timeout,
-        "spec.serviceAccountName": framework_service_account.name,
+        "spec.param.network_attachment_definition_namespace": network_attachment_definition_namespace,
+        "spec.param.network_attachment_definition_name": network_attachment_definition_name,
+        "spec.param.max_desired_latency_milliseconds": max_desired_latency_milliseconds,
+        "spec.param.sample_duration_seconds": sample_duration_seconds,
     }
-    if cluster_role:
-        data_dict["spec.clusterRoles"] = cluster_role
-    for key in kwargs:
-        data_dict[f"spec.param.{key}"] = kwargs[key]
+    if source_node:
+        data_dict["spec.param.source_node"] = source_node
+    if target_node:
+        data_dict["spec.param.target_node"] = target_node
 
     return data_dict
 
@@ -88,60 +101,26 @@ def assert_successful_checkup(configmap, job):
         job.wait_for_condition(
             condition=job.Condition.COMPLETE, status=job.Condition.Status.TRUE
         )
-        configmap_data = configmap.instance.data
+        configmap_data = configmap.instance.to_dict()["data"]
         assert (
-            "true" in configmap_data["status.succeeded"]
+            configmap_data["status.succeeded"] == "true"
         ), f"Checkup failed. Reported reason - {configmap_data['status.failureReason']}"
+        # Make sure the result parameter are valid:
+        assert (
+            int(configmap_data["status.result.avgLatencyNanoSec"]) > 0
+        ), f"avgLatencyNanoSec is not valid: {configmap_data['status.result.avgLatencyNanoSec']}"
+        assert int(configmap_data["status.result.maxLatencyNanoSec"]) > 0, (
+            f"maxLatencyNanoSec is not valid:"
+            f" {configmap_data['status.result.maxLatencyNanoSec']}"
+        )
+        assert int(configmap_data["status.result.maxLatencyNanoSec"]) / 1000000 < int(
+            MAX_DESIRED_LATENCY_MILLISECONDS
+        ), f"maxLatencyNanoSec is not valid: {configmap_data['status.result.maxLatencyNanoSec']}"
+        assert (
+            int(configmap_data["status.result.minLatencyNanoSec"]) > 0
+        ), f"minLatencyNanoSec is not valid: {configmap_data['status.result.minLatencyNanoSec']}"
     except TimeoutExpiredError:
         LOGGER.error(
             f"Couldn't run checkup. Framework job failed. status - {job.instance.status}"
         )
         raise
-
-
-def assert_checkup_timeout(configmap, job):
-    """
-    Negative framework test cases should reach timeout on successful runs
-    """
-    with pytest.raises(TimeoutExpiredError):
-        assert_successful_checkup(configmap=configmap, job=job)
-
-
-def get_job_status(job):
-    sample = None
-    sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_1MIN,
-        sleep=1,
-        func=lambda: job.instance.status.conditions[0]["type"],
-    )
-    try:
-        for sample in sampler:
-            if sample:
-                return sample
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"Current job {job.name} status type cannot be retrieved. Current job status - {sample}"
-        )
-        raise
-
-
-def assert_configmap_in_use(admin_client, job, framework_ns):
-    job_status = get_job_status(job=job)
-    assert job_status == job.Status.FAILED, (
-        f"Job {job.name} current status is {job_status} and not "
-        f"{job.Status.FAILED} as expected."
-    )
-
-    concurrent_job_pod = None
-    for pod in get_pods(
-        dyn_client=admin_client,
-        namespace=framework_ns,
-        label=f"job-name={job.name}",
-    ):
-        concurrent_job_pod = pod
-        command_output = concurrent_job_pod.log()
-        error_message = "configMap is already in use"
-        assert (
-            error_message in command_output
-        ), f"Error message expected: {error_message}. Error message received: {command_output}."
-    assert concurrent_job_pod, "No pod found for concurrent job"
