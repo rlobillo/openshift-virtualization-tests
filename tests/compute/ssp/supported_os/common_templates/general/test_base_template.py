@@ -87,6 +87,7 @@ def get_windows_templates_list():
         "windows2k12r2",
         "windows2k16",
         "windows2k19",
+        "windows2k22",
     ]
     windows_for_desktop_names_list = [windows10, windows11]
 
