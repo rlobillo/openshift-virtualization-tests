@@ -89,10 +89,23 @@ def wait_for_install_plan(dyn_client, hco_namespace, hco_target_version):
     try:
         for install_plan_samples in install_plan_sampler:
             # wait for the install plan to be created and updated in the subscription.
-            install_plan_name_in_subscription = (
-                subscription.instance.status.installplan.name
+            install_plan_name_in_subscription = getattr(
+                subscription.instance.status.installplan, "name", None
             )
             for ip in install_plan_samples:
+                # If we find a not-approved install plan that is associated with production catalogsource, we need
+                # to delete it. Deleting the install plan associated with production catalogsource, would cause
+                # install plan associated with custom catalog source to generate. Upgrade automation is supposed to
+                # upgrade cnv using custom catalogsource, to a specified version. Approving install plan associated
+                # with the production catalogsource would also lead to failure as production catalogsource has been
+                # disabled at this point.
+                if (
+                    not ip.instance.spec.approved
+                    and ip.instance.status.bundleLookups[0]["catalogSourceRef"]["name"]
+                    == "redhat-operators"
+                ):
+                    ip.delete(wait=True)
+                    continue
                 if (
                     hco_target_version == ip.instance.spec.clusterServiceVersionNames[0]
                     and ip.name == install_plan_name_in_subscription
