@@ -54,7 +54,7 @@ class CustomTemplate(Template):
             template_dict = self.get_template_dict_with_added_vm_validation_rule(
                 template_dict=template_dict
             )
-        return template_dict
+        self.res = template_dict
 
     def get_template_dict_with_added_vm_validation_rule(self, template_dict):
         modified_template_dict = template_dict.copy()
