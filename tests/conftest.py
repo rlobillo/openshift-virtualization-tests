@@ -2528,3 +2528,19 @@ def is_production_source(cnv_source):
 @pytest.fixture(scope="session")
 def cnv_source(pytestconfig):
     return pytestconfig.option.cnv_source or "osbs"
+
+
+@pytest.fixture(scope="session")
+def fips_enabled_cluster(workers_utility_pods):
+    """
+    Check if FIPS is enabled on cluster
+    """
+    for pod in workers_utility_pods:
+        # command output: 0 == fips disabled
+        #                 1 == fips enabled
+        cluster_fips_status = pod.execute(
+            ["bash", "-c", "cat /proc/sys/crypto/fips_enabled"]
+        ).strip()
+        if int(cluster_fips_status) == 1:
+            return True
+    return False

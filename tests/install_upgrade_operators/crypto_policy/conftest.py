@@ -3,6 +3,7 @@ import logging
 import pytest
 from ocp_resources.api_server import APIServer
 from ocp_resources.resource import ResourceEditor
+from ocp_resources.service import Service
 from ocp_utilities.infra import cluster_resource
 from openshift.dynamic.exceptions import ResourceNotFoundError
 
@@ -21,6 +22,7 @@ from tests.install_upgrade_operators.crypto_policy.utils import (
 )
 from utilities.constants import CLUSTER_RESOURCE_NAME
 from utilities.hco import wait_for_hco_conditions
+from utilities.infra import MissingResourceException
 
 
 LOGGER = logging.getLogger(__name__)
@@ -69,3 +71,26 @@ def updated_api_server_crypto_policy(
         hco_namespace=hco_namespace,
         list_dependent_crs_to_check=MANAGED_CRS_LIST,
     )
+
+
+@pytest.fixture(scope="session")
+def services_to_check_connectivity(hco_namespace):
+    services_list = []
+    missing_services = []
+    for service_name in [
+        "virt-api",
+        "ssp-operator-service",
+        "kubemacpool-service",
+        "cdi-api",
+    ]:
+        service = cluster_resource(Service)(
+            name=service_name, namespace=hco_namespace.name
+        )
+        services_list.append(service) if service.exists else missing_services.append(
+            service_name
+        )
+
+    if missing_services:
+        raise MissingResourceException(f"Services: {missing_services}.")
+
+    return services_list

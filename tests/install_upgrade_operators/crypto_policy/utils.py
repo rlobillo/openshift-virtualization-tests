@@ -2,12 +2,31 @@ import logging
 
 from benedict import benedict
 from ocp_resources.cluster_operator import ClusterOperator
+from ocp_resources.hyperconverged import HyperConverged
+from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.resource import Resource
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import cluster_resource
+from packaging.version import Version
 
 from tests.install_upgrade_operators.constants import KEY_PATH_SEPARATOR
-from utilities.constants import DEFAULT_RESOURCE_CONDITIONS, TIMEOUT_2MIN, TIMEOUT_15MIN
+from tests.install_upgrade_operators.crypto_policy.constants import (
+    CRYPTO_POLICY_EXPECTED_DICT,
+    KEY_NAME_STR,
+    MANAGED_CRS_LIST,
+    MIN_TLS_VERSIONS,
+    RESOURCE_NAME_STR,
+    RESOURCE_NAMESPACE_STR,
+    TLS_INTERMEDIATE_CIPHERS_IANA_OPENSSL_SYNTAX,
+    TLS_SECURITY_PROFILE,
+)
+from utilities.constants import (
+    CLUSTER_RESOURCE_NAME,
+    DEFAULT_RESOURCE_CONDITIONS,
+    TIMEOUT_2MIN,
+    TIMEOUT_15MIN,
+)
+from utilities.infra import ExecCommandOnPod, is_bug_open
 
 
 LOGGER = logging.getLogger(__name__)
@@ -143,3 +162,113 @@ def wait_for_cluster_operator_stabilize(admin_client):
         LOGGER.error(f"Following cluster operators failed to stabilize: {sample}")
         if sample:
             raise
+
+
+def assert_crypto_policy_propagated_to_components(
+    admin_client,
+    crypto_policy,
+    resources_dict,
+):
+    error_messages = []
+    for resource in MANAGED_CRS_LIST:
+        expected_value = CRYPTO_POLICY_EXPECTED_DICT[crypto_policy][resource]
+        error_message = wait_for_crypto_policy_update(
+            admin_client=admin_client,
+            resource=resource,
+            resource_namespace=resources_dict[resource].get(RESOURCE_NAMESPACE_STR),
+            resource_name=resources_dict[resource][RESOURCE_NAME_STR],
+            key_name=resources_dict[resource][KEY_NAME_STR],
+            expected_policy=expected_value,
+        )
+        if error_message:
+            if resource == KubeVirt and is_bug_open(bug_id=2153527):
+                continue
+            error_messages.append(error_message)
+    assert not error_messages, (
+        f"Updating APIServer {CLUSTER_RESOURCE_NAME} with {crypto_policy}, failed for the "
+        f"following CRs: {''.join(error_messages)}"
+    )
+
+
+def assert_no_crypto_policy_in_hco(
+    admin_client, crypto_policy, hco_namespace, hco_name
+):
+    hco_crypto_policy = get_resource_crypto_policy(
+        admin_client=admin_client,
+        resource=HyperConverged,
+        name=hco_name,
+        namespace=hco_namespace,
+        key_name=TLS_SECURITY_PROFILE,
+    )
+    assert not hco_crypto_policy, (
+        f"On updating APIServer {CLUSTER_RESOURCE_NAME} with {crypto_policy}, HCO crypto policy "
+        f"was set up to {hco_crypto_policy}:"
+    )
+
+
+def compose_openssl_command(service_spec, version, cipher="", extra_arguments=""):
+    return (
+        f"openssl s_client -connect {service_spec.clusterIP}:{service_spec.ports[0].port} "
+        f"-tls{version.replace('.','_')} {cipher} -brief <<< 'Q' 2>&1 {extra_arguments}"
+    )
+
+
+def assert_tls_version_connection(utility_pods, node, services, minimal_version):
+    failed_service = {}
+    for service in services:
+        service_instance = service.instance
+        service_name = service_instance.metadata.name
+        LOGGER.info(f"Checking service: {service_name}")
+        for version in set(MIN_TLS_VERSIONS.values()):
+            cmd = compose_openssl_command(
+                service_spec=service_instance.spec,
+                version=version,
+                extra_arguments="| grep 'Protocol version:'",
+            )
+            out = ExecCommandOnPod(utility_pods=utility_pods, node=node).exec(
+                command=cmd, ignore_rc=True
+            )
+            # All TLS versions below the `minimal` configured version should be blocked
+            if Version(version) < Version(minimal_version) and version in out:
+                failed_service[service_name] = (
+                    f"TLS v{version} should be blocked. "
+                    f"Expected minimal v{minimal_version}"
+                )
+
+            # All versions equal or greater to `minimal` configured should be accepted (present in output)
+            if Version(version) >= Version(minimal_version) and version not in out:
+                failed_service[service_name] = (
+                    f"Can't connect with TLS v{version}. "
+                    f"Expected minimal v{minimal_version}"
+                )
+
+    assert not failed_service, f"Some services connections failed:\n {failed_service}"
+
+
+def assert_tls_ciphers_blocked(
+    utility_pods, node, services, tls_version, allowed_ciphers
+):
+    failed_service = {}
+    for service in services:
+        service_name = service.instance.metadata.name
+        service_spec = service.instance.spec
+        LOGGER.info(f"Checking service: {service_name}")
+        for cipher_openssl in TLS_INTERMEDIATE_CIPHERS_IANA_OPENSSL_SYNTAX.values():
+            # check only non-allowed ciphers, because not all explicitly set ciphers may be accepted by cluster itself
+            if cipher_openssl not in allowed_ciphers:
+                cmd = compose_openssl_command(
+                    service_spec=service_spec,
+                    version=tls_version,
+                    cipher=f"-cipher {cipher_openssl}",
+                    extra_arguments="| grep 'Ciphersuite:'",
+                )
+                out = ExecCommandOnPod(utility_pods=utility_pods, node=node).exec(
+                    command=cmd, ignore_rc=True
+                )
+                if cipher_openssl in out:
+                    failed_service[service_name] = (
+                        f"Cipher {cipher_openssl} should be blocked. "
+                        f"Allowed ciphers: {allowed_ciphers}"
+                    )
+
+    assert not failed_service, f"Some services connections failed:\n {failed_service}"

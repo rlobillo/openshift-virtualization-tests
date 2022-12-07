@@ -397,19 +397,3 @@ def ping_process_in_centos_os(
         process_name=process_name,
         args="localhost",
     )
-
-
-@pytest.fixture(scope="session")
-def fips_enabled_cluster(workers_utility_pods):
-    """
-    Check if FIPS is enabled on cluster
-    """
-    for pod in workers_utility_pods:
-        # command output: 0 == fips disabled
-        #                 1 == fips enabled
-        cluster_fips_status = pod.execute(
-            ["bash", "-c", "cat /proc/sys/crypto/fips_enabled"]
-        ).strip()
-        if int(cluster_fips_status) == 1:
-            return True
-    return False
