@@ -50,6 +50,10 @@ FULL_OPERATOR_IMAGE ?= "$(IMAGE_REGISTRY)/$(REGISTRY_NAMESPACE)/$(OPERATOR_IMAGE
 POETRY_CMD = $(shell which poetry 2>/dev/null || which pipenv)
 POETRY_PYTEST_CMD = $(POETRY_CMD) run pytest
 
+# Building qe-cnv-tests-internal-http container
+INTERNAL_HTTP_SERVER_IMAGE_NAME = "qe-cnv-tests-internal-http"
+FULL_INTERNAL_HTTP_IMAGE ?= "$(IMAGE_REGISTRY)/$(REGISTRY_NAMESPACE)/$(INTERNAL_HTTP_SERVER_IMAGE_NAME):$(IMAGE_TAG)"
+
 all: check
 
 check:
@@ -89,6 +93,14 @@ push-container:
 
 build-and-push-container: build-container push-container
 
+build-internal-http-server-container:
+	$(IMAGE_BUILD_CMD) build --no-cache -f containers/internal_http/Dockerfile -t $(FULL_INTERNAL_HTTP_IMAGE) containers/internal_http
+
+push-internal-http-server-container:
+	$(IMAGE_BUILD_CMD) push $(FULL_INTERNAL_HTTP_IMAGE)
+
+build-and-push-internal-http-server-container: build-internal-http-server-container push-internal-http-server-container
+
 .PHONY: \
 	check \
 	cluster-down \
@@ -99,4 +111,7 @@ build-and-push-container: build-container push-container
 	tests \
 	build-container \
 	push-container \
-	build-and-push-container
+	build-and-push-container \
+	build-internal-http-server-container \
+	push-internal-http-server-container \
+	build-and-push-internal-http-server-container

@@ -76,7 +76,7 @@ def hpp_resources(request, admin_client):
 
 @pytest.fixture(scope="module")
 def internal_http_configmap(namespace):
-    path = os.path.join("tests/storage/internal_http/certs", "tls.crt")
+    path = os.path.join("containers/internal_http/certs", "tls.crt")
     with open(path, "r") as cert_content:
         with cluster_resource(ConfigMap)(
             name="internal-https-configmap",
