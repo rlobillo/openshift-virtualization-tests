@@ -5,6 +5,8 @@ from ocp_resources.service_account import ServiceAccount
 from ocp_utilities.infra import cluster_resource
 
 from tests.network.checkup_framework.utils import (
+    LATENCY_CONFIGMAP,
+    assert_successful_checkup,
     create_latency_configmap,
     create_latency_job,
 )
@@ -14,7 +16,6 @@ from utilities.network import network_device, network_nad
 
 
 DISCONNECTED = "disconnected"
-DISCONNECTED_BR = f"{DISCONNECTED}-br"
 CHECKUP_NODE_LABEL = {"checkup_framework": "allow"}
 GET = "get"
 CREATE = "create"
@@ -180,12 +181,85 @@ def network_type(request):
 
 @pytest.fixture()
 def default_latency_configmap(
-    checkup_ns, cnv_current_version, framework_latency_role, network_type
+    checkup_ns,
+    network_type,
 ):
     with create_latency_configmap(
-        namespace=checkup_ns.name,
+        namespace_name=checkup_ns.name,
         network_attachment_definition_namespace=checkup_ns.name,
         network_attachment_definition_name=network_type.name,
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture()
+def first_latency_job_checkup_ready(
+    unprivileged_client, default_latency_configmap, latency_job
+):
+    assert_successful_checkup(
+        unprivileged_client=unprivileged_client,
+        configmap=default_latency_configmap,
+        job=latency_job,
+    )
+
+
+@pytest.fixture()
+def latency_concurrent_job(
+    framework_service_account,
+    default_latency_configmap,
+    cnv_current_version,
+    first_latency_job_checkup_ready,
+):
+    # To prevent race condition we must first make sure the first job was configured successfully, and only then
+    # create the concurrent one.
+    with create_latency_job(
+        service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
+        name="concurrent-checkup-job",
+        latency_configmap_name=default_latency_configmap.name,
+    ) as job:
+        yield job
+
+
+@pytest.fixture()
+def latency_disconnected_configmap(
+    checkup_ns,
+    disconnected_checkup_nad,
+):
+    with create_latency_configmap(
+        namespace_name=checkup_ns.name,
+        network_attachment_definition_namespace=disconnected_checkup_nad.namespace,
+        network_attachment_definition_name=disconnected_checkup_nad.name,
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture()
+def latency_nonexistent_configmap_env_job(
+    framework_service_account,
+    cnv_current_version,
+):
+    with create_latency_job(
+        name="latency-nonexistent-configmap-env-job",
+        service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
+        latency_configmap_name="nonexistent-configmap",
+    ) as job:
+        yield job
+
+
+@pytest.fixture()
+def latency_same_node_configmap(
+    worker_node1,
+    checkup_ns,
+    network_type,
+):
+    with create_latency_configmap(
+        namespace_name=checkup_ns.name,
+        network_attachment_definition_namespace=checkup_ns.name,
+        network_attachment_definition_name=network_type.name,
+        source_node=worker_node1.hostname,
+        target_node=worker_node1.hostname,
     ) as configmap:
         yield configmap
 
@@ -194,11 +268,36 @@ def default_latency_configmap(
 def latency_job(
     framework_service_account,
     cnv_current_version,
-    default_latency_configmap,
 ):
     with create_latency_job(
         service_account=framework_service_account,
         cnv_current_version=cnv_current_version,
-        latency_configmap_name=default_latency_configmap.name,
+        latency_configmap_name=LATENCY_CONFIGMAP,
     ) as job:
         yield job
+
+
+@pytest.fixture()
+def linux_bridge_disconnected_device():
+    bridge_name = f"{DISCONNECTED}-br"
+    with network_device(
+        interface_type=LINUX_BRIDGE,
+        nncp_name=f"{bridge_name}-nncp",
+        interface_name=bridge_name,
+        node_selector_labels=CHECKUP_NODE_LABEL,
+    ) as br_dev:
+        yield br_dev
+
+
+@pytest.fixture()
+def disconnected_checkup_nad(
+    checkup_ns,
+    linux_bridge_disconnected_device,
+):
+    with network_nad(
+        namespace=checkup_ns,
+        nad_type=linux_bridge_disconnected_device.bridge_type,
+        nad_name=f"{DISCONNECTED}-checkup-nad",
+        interface_name=linux_bridge_disconnected_device.bridge_name,
+    ) as nad:
+        yield nad
