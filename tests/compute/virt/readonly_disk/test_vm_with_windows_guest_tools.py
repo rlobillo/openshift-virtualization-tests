@@ -20,7 +20,7 @@ LOGGER = logging.getLogger(__name__)
 TESTS_CLASS_NAME = "TestWindowsGuestTools"
 
 
-class MissingCDRoomDeviceError(Exception):
+class MissingCDRomDeviceError(Exception):
     pass
 
 
@@ -71,9 +71,7 @@ def verify_cdrom_in_xml(vm):
                     "readonly"
                 ), f"readonly is not set {device_dict}"
                 return
-    raise MissingCDRoomDeviceError(
-        "cdrom device is missing; VMI devices: {vmi_devices}"
-    )
+    raise MissingCDRomDeviceError("cdrom device is missing; VMI devices: {vmi_devices}")
 
 
 @pytest.fixture(scope="class")
