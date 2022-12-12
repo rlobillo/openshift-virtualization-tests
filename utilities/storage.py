@@ -300,7 +300,7 @@ def data_volume(
                         timeout=10,
                     )
                 else:
-                    dv.wait(
+                    dv.wait_for_dv_success(
                         timeout=TIMEOUT_60MIN
                         if OS_FLAVOR_WINDOWS in image
                         else TIMEOUT_30MIN

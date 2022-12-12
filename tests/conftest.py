@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import tempfile
 from collections import defaultdict
+from contextlib import contextmanager
 from signal import SIGINT, SIGTERM, getsignal, signal
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
@@ -2471,6 +2472,22 @@ def alert_not_firing(request, prometheus):
     return alert
 
 
+@contextmanager
+def update_garbage_collector_ttl(seconds, hco_resource):
+    with utilities.hco.ResourceEditorValidateHCOReconcile(
+        patches={
+            hco_resource: utilities.hco.hco_cr_jsonpatch_annotations_dict(
+                component="cdi",
+                path="dataVolumeTTLSeconds",
+                value=seconds,
+            )
+        },
+        list_resource_reconcile=[CDI],
+    ):
+        yield
+
+
+# TODO remove once all storage tests updated to work with enabled GC
 @pytest.fixture(scope="session")
 def disabled_cdi_garbage_collector(
     skip_upstream,
@@ -2482,19 +2499,20 @@ def disabled_cdi_garbage_collector(
     else:
         if is_jira_open(jira_id="CNV-17513"):
             LOGGER.info("Garbage collector disabled while CNV-17513 is open")
-            with utilities.hco.ResourceEditorValidateHCOReconcile(
-                patches={
-                    hyperconverged_resource_scope_session: utilities.hco.hco_cr_jsonpatch_annotations_dict(
-                        component="cdi",
-                        path="dataVolumeTTLSeconds",
-                        value=-1,
-                    )
-                },
-                list_resource_reconcile=[CDI],
+            with update_garbage_collector_ttl(
+                seconds=-1, hco_resource=hyperconverged_resource_scope_session
             ):
                 yield
         else:
             yield
+
+
+@pytest.fixture(scope="module")
+def enable_cdi_garbage_collector(skip_upstream, hyperconverged_resource_scope_module):
+    with update_garbage_collector_ttl(
+        seconds=0, hco_resource=hyperconverged_resource_scope_module
+    ):
+        yield
 
 
 @pytest.fixture(scope="session")
