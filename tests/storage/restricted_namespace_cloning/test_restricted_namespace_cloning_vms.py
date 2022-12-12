@@ -94,6 +94,7 @@ def data_volume_clone_settings(
         )
         else None,
     )
+    dv.to_dict()
     return dv
 
 
@@ -167,7 +168,6 @@ def test_create_vm_with_cloned_data_volume_positive(
     permissions_src_sa,
     permissions_dst_sa,
 ):
-    data_volume_clone_settings.to_dict()
     with cluster_resource(VirtualMachineForTests)(
         name=VM_FOR_TEST,
         namespace=dst_ns.name,
@@ -214,7 +214,6 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
         ApiException,
         match=ErrorMsg.CANNOT_CREATE_RESOURCE,
     ):
-        dv_clone_dict = data_volume_clone_settings.to_dict()
         with cluster_resource(VirtualMachineForTests)(
             name=VM_FOR_TEST,
             namespace=dst_ns.name,
@@ -223,8 +222,8 @@ def test_create_vm_with_cloned_data_volume_grant_unprivileged_client_permissions
             client=unprivileged_client,
             memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
             data_volume_template={
-                METADATA: dv_clone_dict[METADATA],
-                SPEC: dv_clone_dict[SPEC],
+                METADATA: data_volume_clone_settings.res[METADATA],
+                SPEC: data_volume_clone_settings.res[SPEC],
             },
         ):
             return
@@ -256,7 +255,6 @@ def test_create_vm_with_cloned_data_volume_restricted_ns_service_account_missing
         ApiException,
         match=ErrorMsg.CANNOT_CREATE_RESOURCE,
     ):
-        dv_clone_dict = data_volume_clone_settings.to_dict()
         with cluster_resource(VirtualMachineForTests)(
             name=VM_FOR_TEST,
             namespace=dst_ns.name,
@@ -265,8 +263,8 @@ def test_create_vm_with_cloned_data_volume_restricted_ns_service_account_missing
             client=unprivileged_client,
             memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
             data_volume_template={
-                METADATA: dv_clone_dict[METADATA],
-                SPEC: dv_clone_dict[SPEC],
+                METADATA: data_volume_clone_settings.res[METADATA],
+                SPEC: data_volume_clone_settings.res[SPEC],
             },
         ):
             return
@@ -309,7 +307,6 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
             role_ref_name=cluster_role_for_creating_pods.name,
             subjects_namespace=dst_ns.name,
         ):
-            dv_clone_dict = data_volume_clone_settings.to_dict()
             with cluster_resource(VirtualMachineForTests)(
                 name=VM_FOR_TEST,
                 namespace=dst_ns.name,
@@ -318,8 +315,8 @@ def test_create_vm_with_cloned_data_volume_permissions_for_pods_positive(
                 client=unprivileged_client,
                 memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
                 data_volume_template={
-                    METADATA: dv_clone_dict[METADATA],
-                    SPEC: dv_clone_dict[SPEC],
+                    METADATA: data_volume_clone_settings.res[METADATA],
+                    SPEC: data_volume_clone_settings.res[SPEC],
                 },
             ) as vm:
                 vm.start(wait=True)
