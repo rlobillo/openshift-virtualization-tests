@@ -6,7 +6,6 @@ import pytest
 
 from tests.compute.utils import verify_no_listed_alerts_on_cluster
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import is_bug_open
 
 
 VIRT_ALERTS_LIST = [
@@ -59,9 +58,6 @@ class TestVirtAlerts:
         self,
         prometheus,
     ):
-        if is_bug_open(bug_id=2126397):
-            VIRT_ALERTS_LIST.remove("KubeVirtComponentExceedsRequestedMemory")
-
         verify_no_listed_alerts_on_cluster(
             prometheus=prometheus, alerts_list=VIRT_ALERTS_LIST
         )
