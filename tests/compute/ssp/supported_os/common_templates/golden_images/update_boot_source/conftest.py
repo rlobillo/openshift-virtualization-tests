@@ -67,7 +67,9 @@ def golden_images_persistent_volume_claims_scope_function(
 ):
     return list(
         PersistentVolumeClaim.get(
-            dyn_client=admin_client, namespace=golden_images_namespace.name
+            dyn_client=admin_client,
+            namespace=golden_images_namespace.name,
+            label_selector=RESOURCE_MANAGED_BY_DATA_IMPORT_CRON_LABEL,
         )
     )
 

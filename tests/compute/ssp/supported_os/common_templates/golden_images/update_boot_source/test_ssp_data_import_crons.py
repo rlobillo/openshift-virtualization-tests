@@ -272,20 +272,22 @@ def test_data_import_cron_using_default_storage_class(
 def test_data_import_cron_deletion_on_opt_out(
     golden_images_data_import_crons_scope_function,
     disabled_common_boot_image_import_feature_gate_scope_function,
-    golden_images_data_volumes_scope_function,
+    golden_images_persistent_volume_claims_scope_function,
 ):
     LOGGER.info("Verify DataImportCrons are deleted after opt-out.")
     wait_for_deleted_data_import_crons(
         data_import_crons=golden_images_data_import_crons_scope_function
     )
-    LOGGER.info("Verify DataVolumes are not deleted after opt-out.")
-    expected_num_dvs = len(py_config["auto_update_data_source_matrix"])
-    existing_dvs = [
-        dv.name for dv in golden_images_data_volumes_scope_function if dv.exists
+    LOGGER.info("Verify PersistenVolumeClaims are not deleted after opt-out.")
+    expected_num_pvcs = len(py_config["auto_update_data_source_matrix"])
+    existing_pvcs = [
+        pvc.name
+        for pvc in golden_images_persistent_volume_claims_scope_function
+        if pvc.exists
     ]
     assert (
-        len(existing_dvs) == expected_num_dvs
-    ), f"Not all DVs exist, existing: {existing_dvs}"
+        len(existing_pvcs) == expected_num_pvcs
+    ), f"Not all PVCs exist, existing: {existing_pvcs}"
 
 
 @pytest.mark.polarion("CNV-7569")
