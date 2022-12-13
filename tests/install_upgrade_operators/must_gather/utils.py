@@ -90,9 +90,11 @@ def check_list_of_resources(
     label_selector=None,
     filter_resource=None,
 ):
-    for resource_instance in cluster_resource(resource_type).get(
+    list_of_resources = cluster_resource(resource_type).get(
         dyn_client=dyn_client, namespace=namespace, label_selector=label_selector
-    ):
+    )
+    assert list_of_resources, f"{resource_type} is empty"
+    for resource_instance in list_of_resources:
         if filter_resource is None or filter_resource in resource_instance.name:
             compare_resources(
                 resource_instance=resource_instance,

@@ -8,6 +8,9 @@ import yaml
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.pod import Pod
+from ocp_resources.resource import Resource
+from ocp_resources.virtual_machine_instance_types import VirtualMachineInstancetype
+from ocp_resources.virtual_machine_preferences import VirtualMachinePreference
 from openshift.dynamic.exceptions import ResourceNotFoundError
 
 import utilities.network
@@ -408,3 +411,39 @@ def gathered_images(
         must_gather_image_url=must_gather_image_url,
         flag_names=["images"],
     )
+
+
+@pytest.fixture(scope="class")
+def gathered_instancetypes(
+    must_gather_tmpdir,
+    must_gather_image_url,
+):
+    return collect_must_gather(
+        must_gather_tmpdir=must_gather_tmpdir,
+        must_gather_image_url=must_gather_image_url,
+        flag_names=["instancetypes"],
+    )
+
+
+@pytest.fixture(scope="class")
+def must_gather_instance_type(instance_type_for_test):
+    with instance_type_for_test as instance:
+        yield instance
+
+
+@pytest.fixture(scope="class")
+def must_gather_preference(vm_preference_for_test):
+    with vm_preference_for_test as preference:
+        yield preference
+
+
+@pytest.fixture(scope="class")
+def resource_types_and_pathes_dict(must_gather_preference, must_gather_instance_type):
+    return {
+        VirtualMachineInstancetype: f"namespaces/{must_gather_instance_type.namespace}"
+        f"/{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}"
+        f"/virtualmachineinstancetypes/{must_gather_instance_type.name}.yaml",
+        VirtualMachinePreference: f"namespaces/{must_gather_instance_type.namespace}"
+        f"/{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}"
+        f"/virtualmachinepreferences/{must_gather_preference.name}.yaml",
+    }

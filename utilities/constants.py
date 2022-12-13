@@ -173,7 +173,6 @@ OS_LOGIN_PARAMS = {
     },
 }
 
-
 # OpenShift Virtualization components constants
 VIRT_OPERATOR = "virt-operator"
 VIRT_LAUNCHER = "virt-launcher"
@@ -232,7 +231,6 @@ PODS_TO_COLLECT_INFO = [
 ]
 WORKERS_TYPE = "WORKERS_TYPE"
 
-
 # GPU/vGPU Common constants
 # The GPU tests require GPU Device on the Worker Nodes.
 # ~]$ lspci -nnv | grep -i NVIDIA  , should display the GPU_DEVICE_ID
@@ -258,7 +256,6 @@ MDEV_GRID_T4_16Q_TYPE = "nvidia-234"
 # Compute: GPU Devices are bound to this Kernel Driver for GPU Passthrough.
 # Networking: For SRIOV Node Policy, The driver type for the virtual functions
 KERNEL_DRIVER = "vfio-pci"
-
 
 # cloud-init constants
 CLOUD_INIT_DISK_NAME = "cloudinitdisk"

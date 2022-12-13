@@ -71,6 +71,7 @@ fcn_exclude_functions =
 nit_exclude_imports =
     os_params,
     upgrade_params,
+    tests.utils
 
 
 enable-extensions =
