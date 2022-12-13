@@ -46,6 +46,7 @@ class VirtualMachineForDeschedulerTest(VirtualMachineForTests):
         memory_requests,
         client,
         cpu_model,
+        body,
         cpu_requests=None,
         descheduler_eviction=True,
     ):
@@ -56,12 +57,12 @@ class VirtualMachineForDeschedulerTest(VirtualMachineForTests):
             memory_requests=memory_requests,
             eviction=True,
             cpu_model=cpu_model,
+            body=body,
             cpu_requests=cpu_requests,
         )
         self.descheduler_eviction = descheduler_eviction
 
     def to_dict(self):
-        self.body = fedora_vm_body(name=self.name)
         super().to_dict()
         metadata = self.res["spec"]["template"]["metadata"]
         metadata.setdefault("annotations", {})
@@ -345,15 +346,17 @@ def get_profile_strategies(installed_descheduler):
 
 
 @contextmanager
-def install_profile_strategies(installed_descheduler, strategies):
+def install_profile_strategies(
+    installed_descheduler, descheduler_deployment, strategies
+):
     original_profile_strategies = get_profile_strategies(
         installed_descheduler=installed_descheduler
     )
     # Scale down KubeDescheduler to update configuration
     # Scale up KubeDescheduler to resume with new configuration
     with scale_deployment_replicas(
-        namespace=installed_descheduler.namespace,
-        deployment_name=installed_descheduler.name,
+        namespace=descheduler_deployment.namespace,
+        deployment_name=descheduler_deployment.name,
         replica_count=0,
     ):
         update_profile_strategies(
@@ -363,8 +366,8 @@ def install_profile_strategies(installed_descheduler, strategies):
     # yield after deployment scaled back up
     yield
     with scale_deployment_replicas(
-        namespace=installed_descheduler.namespace,
-        deployment_name=installed_descheduler.name,
+        namespace=descheduler_deployment.namespace,
+        deployment_name=descheduler_deployment.name,
         replica_count=0,
     ):
         update_profile_strategies(
@@ -393,17 +396,18 @@ def deploy_vms(
 ):
     vms = []
     for vm_index in range(vm_count):
+        vm_name = f"vm-{vm_index}"
         vm = VirtualMachineForDeschedulerTest(
-            name=f"vm-{vm_index}",
+            name=vm_name,
             namespace=namespace_name,
             client=client,
             cpu_requests=deployment_size["cpu"],
             memory_requests=deployment_size["memory"].bytes,
             cpu_model=cpu_model,
             descheduler_eviction=descheduler_eviction,
+            body=fedora_vm_body(name=vm_name),
         )
         vm.deploy()
-        vm.start()
         vms.append(vm)
 
     for vm in vms:

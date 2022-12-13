@@ -6,10 +6,8 @@ import pytest
 from ocp_resources.deployment import Deployment
 from ocp_resources.kube_descheduler import KubeDescheduler
 from ocp_resources.namespace import Namespace
-from ocp_resources.operator_group import OperatorGroup
 from ocp_resources.pod_disruption_budget import PodDisruptionBudget
 from ocp_resources.resource import Resource, ResourceEditor
-from ocp_resources.subscription import Subscription
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
@@ -37,18 +35,28 @@ from tests.compute.ssp.descheduler.utils import (
     wait_vmi_failover,
 )
 from tests.compute.utils import check_pod_disruption_budget_for_completed_migrations
-from utilities.constants import PRODUCTION_CATALOG_SOURCE, TIMEOUT_5SEC
-from utilities.infra import (
-    create_ns,
-    get_raw_package_manifest,
-    scale_deployment_replicas,
+from utilities.constants import TIMEOUT_5SEC
+from utilities.infra import create_ns, scale_deployment_replicas
+from utilities.operator import (
+    create_catalog_source,
+    create_folder_and_icsp_file,
+    create_icsp_from_file,
+    create_operator_group,
+    create_subscription,
+    delete_existing_icsp,
+    get_install_plan_from_subscription,
+    wait_for_catalogsource_ready,
+    wait_for_operator_install,
 )
 from utilities.virt import node_mgmt_console, wait_for_node_schedulable_status
 
 
 LOGGER = logging.getLogger(__name__)
 
+DESCHEDULER_CATALOG_SOURCE = "descheduler-catalog"
 DESCHEDULER_OPERATOR_DEPLOYMENT_NAME = "descheduler-operator"
+DESCHEDULER_DEPLOYMENT_NAME = "descheduler"
+
 DEPLOYMENT_SIZE = {
     "cpu": "500m",
     "memory": bitmath.GiB(value=2),
@@ -71,7 +79,7 @@ def skip_if_1tb_memory_or_more_node(allocatable_memory_per_node_scope_module):
 
 
 @pytest.fixture(scope="module")
-def descheduler_ns(admin_client):
+def created_descheduler_namespace(admin_client):
     yield from create_ns(
         admin_client=admin_client,
         name="openshift-kube-descheduler-operator",
@@ -79,49 +87,135 @@ def descheduler_ns(admin_client):
 
 
 @pytest.fixture(scope="module")
-def installed_descheduler_og(descheduler_ns):
-    with OperatorGroup(
-        name="descheduler-operator-group",
-        namespace=descheduler_ns.name,
-        target_namespaces=[descheduler_ns.name],
-    ):
-        yield
+def created_descheduler_operator_group(created_descheduler_namespace):
+    descheduler_operator_group = create_operator_group(
+        namespace_name=created_descheduler_namespace.name,
+        operator_group_name=DESCHEDULER_OPERATOR_DEPLOYMENT_NAME,
+        target_namespaces=[created_descheduler_namespace.name],
+    )
+    yield descheduler_operator_group
+    descheduler_operator_group.clean_up()
 
 
 @pytest.fixture(scope="module")
-def installed_descheduler_sub(admin_client, descheduler_ns, installed_descheduler_og):
-    descheduler_sub_name = "cluster-kube-descheduler-operator"
-    raw_package_manifest = get_raw_package_manifest(
-        admin_client=admin_client,
-        name=descheduler_sub_name,
-        catalog_source=PRODUCTION_CATALOG_SOURCE,
+def created_descheduler_subscription(
+    descheduler_catalog_source,
+    created_descheduler_namespace,
+):
+    descheduler_subscription = create_subscription(
+        subscription_name=DESCHEDULER_OPERATOR_DEPLOYMENT_NAME,
+        package_name="cluster-kube-descheduler-operator",
+        namespace_name=created_descheduler_namespace.name,
+        catalogsource_name=descheduler_catalog_source.name,
+    )
+    yield descheduler_subscription
+    descheduler_subscription.clean_up()
+
+
+@pytest.fixture(scope="module")
+def generated_descheduler_icsp(
+    tmp_path_factory,
+    generated_pulled_secret,
+    nightly_art_image_url,
+):
+    return create_folder_and_icsp_file(
+        path_factory=tmp_path_factory,
+        operator_name=DESCHEDULER_OPERATOR_DEPLOYMENT_NAME,
+        image=nightly_art_image_url,
+        pull_secret=generated_pulled_secret,
     )
 
-    with cluster_resource(Subscription)(
-        name=descheduler_sub_name,
-        namespace=descheduler_ns.name,
-        source=PRODUCTION_CATALOG_SOURCE,
-        source_namespace=raw_package_manifest.metadata.namespace,
-        channel=raw_package_manifest.status.defaultChannel,
-    ):
-        Deployment(
-            name=DESCHEDULER_OPERATOR_DEPLOYMENT_NAME, namespace=descheduler_ns.name
-        ).wait_for_replicas()
-        yield
+
+@pytest.fixture(scope="module")
+def updated_icsp_descheduler(
+    admin_client,
+    generated_descheduler_icsp,
+):
+    LOGGER.info(f"Creating descheduler ICSP from {generated_descheduler_icsp} path...")
+    create_icsp_from_file(icsp_file_path=generated_descheduler_icsp)
+    yield
+    delete_existing_icsp(admin_client=admin_client, name="ocp-release-nightly-0")
 
 
 @pytest.fixture(scope="module")
-def installed_descheduler(admin_client, descheduler_ns, installed_descheduler_sub):
-    descheduler_deployment_name = "cluster"
-    with KubeDescheduler(
-        name=descheduler_deployment_name,
-        namespace=descheduler_ns.name,
+def descheduler_catalog_source(admin_client, nightly_art_image_url):
+    catalog_source = create_catalog_source(
+        catalog_name=DESCHEDULER_CATALOG_SOURCE,
+        image=nightly_art_image_url,
+        display_name="Descheduler Index Image",
+    )
+    wait_for_catalogsource_ready(
+        admin_client=admin_client,
+        catalog_name=DESCHEDULER_CATALOG_SOURCE,
+    )
+    yield catalog_source
+    catalog_source.clean_up()
+
+
+@pytest.fixture(scope="module")
+def subscription_with_descheduler_install_plan(created_descheduler_subscription):
+    return get_install_plan_from_subscription(
+        subscription=created_descheduler_subscription
+    )
+
+
+@pytest.fixture(scope="module")
+def descheduler_install_plan_installed(
+    admin_client,
+    created_descheduler_namespace,
+    created_descheduler_subscription,
+    subscription_with_descheduler_install_plan,
+):
+    wait_for_operator_install(
+        admin_client=admin_client,
+        install_plan_name=subscription_with_descheduler_install_plan,
+        namespace_name=created_descheduler_namespace.name,
+        subscription_name=created_descheduler_subscription.name,
+    )
+
+
+@pytest.fixture(scope="module")
+def installed_descheduler_operator(
+    disabled_default_sources_in_operatorhub_scope_module,
+    updated_icsp_descheduler,
+    descheduler_catalog_source,
+    created_descheduler_namespace,
+    created_descheduler_operator_group,
+    created_descheduler_subscription,
+    descheduler_install_plan_installed,
+):
+    deployment = cluster_resource(Deployment)(
+        name=DESCHEDULER_OPERATOR_DEPLOYMENT_NAME,
+        namespace=created_descheduler_namespace.name,
+    )
+    deployment.wait()
+    deployment.wait_for_replicas()
+    yield deployment
+
+
+@pytest.fixture(scope="module")
+def descheduler_deployment(created_descheduler_namespace):
+    return cluster_resource(Deployment)(
+        name=DESCHEDULER_DEPLOYMENT_NAME,
+        namespace=created_descheduler_namespace.name,
+    )
+
+
+@pytest.fixture(scope="module")
+def installed_descheduler(
+    created_descheduler_namespace,
+    installed_descheduler_operator,
+    descheduler_deployment,
+):
+    with cluster_resource(KubeDescheduler)(
+        name="cluster",
+        namespace=created_descheduler_namespace.name,
         profiles=["DevPreviewLongLifecycle"],
         descheduling_interval=DESCHEDULING_INTERVAL_120SEC,
+        mode="Automatic",
     ) as kd:
-        Deployment(
-            name=descheduler_deployment_name, namespace=descheduler_ns.name
-        ).wait_for_replicas()
+        descheduler_deployment.wait()
+        descheduler_deployment.wait_for_replicas()
         yield kd
 
 
@@ -140,12 +234,12 @@ def downscaled_descheduler_operator_deployment(installed_descheduler):
 
 
 @pytest.fixture(scope="class")
-def downscaled_descheduler_cluster_deployment(admin_client, installed_descheduler):
+def downscaled_descheduler_cluster_deployment(installed_descheduler):
     LOGGER.info(
-        f"Scale down descheduler {installed_descheduler.name} deployment to stop its work"
+        f"Scale down descheduler {DESCHEDULER_DEPLOYMENT_NAME} deployment to stop its work"
     )
     with scale_deployment_replicas(
-        deployment_name=installed_descheduler.name,
+        deployment_name=DESCHEDULER_DEPLOYMENT_NAME,
         namespace=installed_descheduler.namespace,
         replica_count=0,
     ):
@@ -299,11 +393,13 @@ def completed_migrations(admin_client, namespace):
 @pytest.fixture(scope="class")
 def updated_profile_strategy_static_low_node_utilization_for_node_drain(
     installed_descheduler,
+    descheduler_deployment,
     downscaled_descheduler_operator_deployment,
     static_strategy_low_node_utilization_for_node_drain,
 ):
     with install_profile_strategies(
         installed_descheduler=installed_descheduler,
+        descheduler_deployment=descheduler_deployment,
         strategies=static_strategy_low_node_utilization_for_node_drain,
     ):
         yield
@@ -312,11 +408,13 @@ def updated_profile_strategy_static_low_node_utilization_for_node_drain(
 @pytest.fixture(scope="class")
 def updated_profile_strategy_static_low_node_utilization_for_utilization_imbalance(
     installed_descheduler,
+    descheduler_deployment,
     downscaled_descheduler_operator_deployment,
     static_strategy_low_node_utilization_for_utilization_imbalance,
 ):
     with install_profile_strategies(
         installed_descheduler=installed_descheduler,
+        descheduler_deployment=descheduler_deployment,
         strategies=static_strategy_low_node_utilization_for_utilization_imbalance,
     ):
         yield

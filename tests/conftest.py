@@ -53,6 +53,7 @@ from ocp_resources.storage_profile import StorageProfile
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import get_client
+from ocp_utilities.utils import run_command
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
@@ -71,6 +72,7 @@ from utilities.constants import (
     DEFAULT_HCO_CONDITIONS,
     HCO_SUBSCRIPTION,
     HOSTPATH_CSI_BASIC,
+    ICSP_FILTER_BY_OS_LINUX_AMD64,
     INTEL,
     KMP_ENABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
@@ -135,6 +137,7 @@ from utilities.network import (
     wait_for_ovs_daemonset_resource,
     wait_for_ovs_status,
 )
+from utilities.operator import disable_default_sources_in_operatorhub
 from utilities.ssp import get_data_import_crons, get_ssp_resource
 from utilities.storage import (
     create_or_update_data_source,
@@ -177,6 +180,10 @@ CNV_NOT_INSTALLED = "CNV not yet installed."
 UPGRADE_Z_STREAM = "z-stream"
 
 AMD_CPU_MODELS = ["Opteron_G1", "Opteron_G2"]
+
+NIGHTLY_ART_IMAGE = (
+    "quay.io/openshift-release-dev/ocp-release-nightly:iib-int-index-art-operators"
+)
 
 
 def login_to_account(api_address, user, password=None):
@@ -2606,3 +2613,35 @@ def common_vm_preference_param_dict(request):
         "firmware": request.param.get("firmware"),
         "machine": request.param.get("machine"),
     }
+
+
+@pytest.fixture(scope="session")
+def nightly_art_image_url(openshift_current_version, generated_pulled_secret):
+    ocp_version = packaging.version.parse(
+        version=openshift_current_version.split("-")[0]
+    )
+    nightly_image = f"{NIGHTLY_ART_IMAGE}-{ocp_version.major}.{ocp_version.minor}"
+
+    LOGGER.info(f"Checking image {nightly_image} information.")
+    command_success, out, err = run_command(
+        command=[
+            "oc",
+            "image",
+            "info",
+            nightly_image,
+            f"--registry-config={generated_pulled_secret}",
+            f"--{ICSP_FILTER_BY_OS_LINUX_AMD64}",
+        ],
+        verify_stderr=False,
+    )
+    assert (
+        command_success
+    ), f"Could not find the nightly art operators image. out: {out}. err: {err}"
+
+    return nightly_image
+
+
+@pytest.fixture(scope="module")
+def disabled_default_sources_in_operatorhub_scope_module(admin_client):
+    with disable_default_sources_in_operatorhub(admin_client=admin_client):
+        yield

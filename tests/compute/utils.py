@@ -82,7 +82,7 @@ def start_and_fetch_processid_on_linux_vm(vm, process_name, args="", use_nohup=F
     run_ssh_commands(
         host=vm.ssh_exec,
         commands=shlex.split(
-            f"{nohup_cmd} {process_name} {args} </dev/null &>/dev/null &"
+            f"killall -9 {process_name}; {nohup_cmd} {process_name} {args} </dev/null &>/dev/null &"
         ),
     )
     return fetch_pid_from_linux_vm(vm=vm, process_name=process_name)

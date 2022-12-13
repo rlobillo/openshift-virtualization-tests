@@ -538,6 +538,7 @@ TLS_CUSTOM_POLICY = "custom"
 IMAGE_CRON_STR = "image-cron"
 TLS_SECURITY_PROFILE = "tlsSecurityProfile"
 KUBELET_READY_CONDITION = {"KubeletReady": "True"}
+ICSP_FILTER_BY_OS_LINUX_AMD64 = "filter-by-os=linux/amd64"
 
 
 class StorageClassNames:

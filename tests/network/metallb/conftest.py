@@ -1,11 +1,8 @@
 import logging
 
-import packaging.version
 import pytest
 from ocp_resources.metallb import MetalLB
-from ocp_utilities.utils import run_command
 
-from utilities.constants import FILTER_BY_OS_OPTION
 from utilities.infra import create_ns
 from utilities.operator import (
     create_catalog_source,
@@ -15,7 +12,6 @@ from utilities.operator import (
     create_operator_group,
     create_subscription,
     delete_existing_icsp,
-    disable_default_sources_in_operatorhub,
     get_install_plan_from_subscription,
     wait_for_catalogsource_ready,
     wait_for_operator_install,
@@ -23,38 +19,8 @@ from utilities.operator import (
 
 
 LOGGER = logging.getLogger(__name__)
-NIGHTLY_ART_IMAGE = (
-    "quay.io/openshift-release-dev/ocp-release-nightly:iib-int-index-art-operators"
-)
 METALLB_CATALOG_SOURCE = "metallb-catalog"
 METALLB_OPERATOR = "metallb-operator"
-
-
-@pytest.fixture(scope="module")
-def nightly_art_image_url(openshift_current_version, generated_pulled_secret):
-
-    ocp_version = packaging.version.parse(
-        version=openshift_current_version.split("-")[0]
-    )
-    nightly_image = f"{NIGHTLY_ART_IMAGE}-{ocp_version.major}.{ocp_version.minor}"
-
-    LOGGER.info(f"Checking image {nightly_image} information.")
-    command_success, out, err = run_command(
-        command=[
-            "oc",
-            "image",
-            "info",
-            nightly_image,
-            f"--registry-config={generated_pulled_secret}",
-            f"--{FILTER_BY_OS_OPTION}",
-        ],
-        verify_stderr=False,
-    )
-    assert (
-        command_success
-    ), f"Could not find the MetalLB (art operators) image.\n out: {out}\n. err: {err}"
-
-    return nightly_image
 
 
 @pytest.fixture(scope="module")
@@ -148,12 +114,6 @@ def metallb_install_plan_installed(
         namespace_name=created_metallb_namespace.name,
         subscription_name=created_metallb_subscription.name,
     )
-
-
-@pytest.fixture(scope="module")
-def disabled_default_sources_in_operatorhub_scope_module(admin_client):
-    with disable_default_sources_in_operatorhub(admin_client=admin_client):
-        yield
 
 
 @pytest.fixture(scope="module")
