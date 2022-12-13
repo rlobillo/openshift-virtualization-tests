@@ -20,6 +20,7 @@ from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.data_collector import collect_resources_yaml_instance
+from ocp_utilities.infra import cluster_resource
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
@@ -39,8 +40,26 @@ from utilities.data_collector import collect_mcp_information, get_data_collector
 LOGGER = logging.getLogger(__name__)
 
 
-def create_icsp_command(image, source_url, folder_name, pull_secret=None):
-    base_command = f"oc adm catalog mirror {image} {source_url} --manifests-only --to-manifests {folder_name} "
+def create_icsp_command(
+    image, source_url, folder_name, pull_secret=None, filter_options=""
+):
+    """
+        Create ImageContentSourcePolicy command.
+
+    Args:
+        image (str): name of image to be mirrored.
+        source_url (str): source url of image registry to which contents mirror.
+        folder_name (str): local path to store manifests.
+        pull_secret (str): Path to your registry credentials, default set to None(until passed)
+        filter_options (str): when filter passed it will choose image from multiple variants.
+
+    Returns:
+        str: base command to create icsp in the cluster.
+    """
+    base_command = (
+        f"oc adm catalog mirror {image} {source_url} --manifests-only "
+        f"--to-manifests {folder_name} {filter_options}"
+    )
     if pull_secret:
         base_command = f"{base_command} --registry-config={pull_secret}"
     return base_command
@@ -169,7 +188,7 @@ def wait_for_machine_config_pool_updating_condition(machine_config_pools_list):
 
 
 def get_machine_config_pool_by_name(mcp_name):
-    mcp = utilities.infra.cluster_resource(MachineConfigPool)(name=mcp_name)
+    mcp = cluster_resource(MachineConfigPool)(name=mcp_name)
     if mcp.exists:
         return mcp
     raise ResourceNotFoundError(f"OperatorHub {mcp_name} not found")
@@ -177,7 +196,7 @@ def get_machine_config_pool_by_name(mcp_name):
 
 def get_operator_hub():
     operator_hub_name = "cluster"
-    operator_hub = utilities.infra.cluster_resource(OperatorHub)(name=operator_hub_name)
+    operator_hub = cluster_resource(OperatorHub)(name=operator_hub_name)
     if operator_hub.exists:
         return operator_hub
     raise ResourceNotFoundError(f"OperatorHub {operator_hub_name} not found")
@@ -201,7 +220,7 @@ def disable_default_sources_in_operatorhub(admin_client):
 
 def get_catalog_source(catalog_name):
     market_place_namespace = py_config["marketplace_namespace"]
-    catalog_source = utilities.infra.cluster_resource(CatalogSource)(
+    catalog_source = cluster_resource(CatalogSource)(
         namespace=market_place_namespace, name=catalog_name
     )
     if catalog_source.exists:
@@ -234,16 +253,16 @@ def create_catalog_source(
     display_name="OpenShift Virtualization Index Image",
 ):
     LOGGER.info(f"Create catalog source {catalog_name}")
-    catalog_source = utilities.infra.cluster_resource(CatalogSource)(
+    with cluster_resource(CatalogSource)(
         name=catalog_name,
         namespace=py_config["marketplace_namespace"],
         display_name=display_name,
         source_type="grpc",
         image=image,
         publisher="Red Hat",
-    )
-    catalog_source.deploy(wait=True)
-    return catalog_source
+        teardown=False,
+    ) as catalog_source:
+        return catalog_source
 
 
 def wait_for_catalogsource_ready(admin_client, catalog_name):
@@ -259,7 +278,7 @@ def wait_for_catalogsource_ready(admin_client, catalog_name):
             _pod.name
             for _pod in utilities.infra.get_pods(
                 dyn_client=admin_client,
-                namespace=utilities.infra.cluster_resource(Namespace)(
+                namespace=cluster_resource(Namespace)(
                     name=py_config["marketplace_namespace"]
                 ),
                 label=f"olm.catalogSource={catalog_name}",
@@ -286,17 +305,28 @@ def wait_for_catalogsource_ready(admin_client, catalog_name):
         raise
 
 
-def create_operator_group(operator_group_name, namespace_name):
+def create_operator_group(operator_group_name, namespace_name, target_namespaces=None):
+    """
+        Create specified Operator group.
+
+    Args:
+        operator_group_name (str): name of the operator group
+        namespace_name (str): Namespace name in which operator group be created.
+        target_namespaces (list): List of namespace names for which operator group can be a member. Default None.
+
+    Returns:
+        OperatorGroup: Operator group object.
+    """
     LOGGER.info(
         f"Create operatorgroup {operator_group_name} in namespace {namespace_name}"
     )
-    operator_group = utilities.infra.cluster_resource(OperatorGroup)(
+    with cluster_resource(OperatorGroup)(
         name=operator_group_name,
         namespace=namespace_name,
-        target_namespaces=[namespace_name],
-    )
-    operator_group.deploy(wait=True)
-    return operator_group
+        target_namespaces=target_namespaces,
+        teardown=False,
+    ) as operator_group:
+        return operator_group
 
 
 def create_subscription(
@@ -313,7 +343,7 @@ def create_subscription(
     LOGGER.info(
         f"Create subscription {subscription_name} on namespace {namespace_name}"
     )
-    subscription = utilities.infra.cluster_resource(Subscription)(
+    with cluster_resource(Subscription)(
         name=subscription_name,
         package_name=package_name,
         namespace=namespace_name,
@@ -321,9 +351,9 @@ def create_subscription(
         install_plan_approval=install_plan_approval,
         source=catalogsource_name,
         source_namespace=py_config["marketplace_namespace"],
-    )
-    subscription.deploy(wait=True)
-    return subscription
+        teardown=False,
+    ) as subscription:
+        return subscription
 
 
 def approve_install_plan(install_plan):
@@ -334,9 +364,6 @@ def approve_install_plan(install_plan):
 
 
 def get_install_plan_from_subscription(subscription):
-    """
-    ### unused_code: ignore ###
-    """
     LOGGER.info(
         f"Wait for install plan to be created in subscription {subscription.name}."
     )
@@ -361,10 +388,7 @@ def get_install_plan_from_subscription(subscription):
 def wait_for_operator_install(
     admin_client, install_plan_name, namespace_name, subscription_name
 ):
-    """
-    ### unused_code: ignore ###
-    """
-    install_plan = utilities.infra.cluster_resource(InstallPlan)(
+    install_plan = cluster_resource(InstallPlan)(
         client=admin_client,
         name=install_plan_name,
         namespace=namespace_name,
@@ -380,7 +404,7 @@ def wait_for_operator_install(
 
 
 def wait_for_csv_successful_state(admin_client, namespace_name, subscription_name):
-    subscription = utilities.infra.cluster_resource(Subscription)(
+    subscription = cluster_resource(Subscription)(
         name=subscription_name, namespace=namespace_name
     )
     if subscription.exists:

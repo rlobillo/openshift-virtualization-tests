@@ -125,10 +125,12 @@ def created_cnv_namespace(admin_client):
 
 
 @pytest.fixture()
-def created_cnv_operator_group(admin_client, created_cnv_namespace):
+def created_cnv_operator_group(created_cnv_namespace):
+    cnv_namespace_name = created_cnv_namespace.name
     return create_operator_group(
-        namespace_name=created_cnv_namespace.name,
+        namespace_name=cnv_namespace_name,
         operator_group_name="openshift-cnv-group",
+        target_namespaces=[cnv_namespace_name],
     )
 
 
