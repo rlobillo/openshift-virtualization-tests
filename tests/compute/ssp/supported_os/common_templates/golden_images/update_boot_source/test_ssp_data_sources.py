@@ -38,7 +38,7 @@ TESTS_AUTO_UPDATE_BOOT_SOURCE_NAME = [*py_config["auto_update_data_source_matrix
     0
 ]
 DUMMY_PVC_NAME = "dummy"
-DATA_VOLUME_NOT_FOUND_ERROR = "DataVolume not found"
+PVC_NOT_FOUND_ERROR = "PVC not found"
 DATA_SOURCE_MANAGED_BY_CDI_LABEL = (
     f"{DataSource.ApiGroup.CDI_KUBEVIRT_IO}/dataImportCron"
 )
@@ -441,7 +441,7 @@ def test_opt_in_data_source_reconciles_after_update(
         pytest.param(
             "win2k19",
             True,
-            DATA_VOLUME_NOT_FOUND_ERROR,
+            PVC_NOT_FOUND_ERROR,
             marks=(pytest.mark.polarion("CNV-8099")),
         ),
     ],
@@ -487,11 +487,11 @@ def test_opt_out_data_source_update(
     disabled_common_boot_image_import_feature_gate_scope_function,
     golden_images_data_sources_scope_function,
 ):
-    LOGGER.info("Verify DataSources are updated to not reference auto-update DVs")
+    LOGGER.info("Verify DataSources are updated to not reference auto-update PVCs")
     for data_source in golden_images_data_sources_scope_function:
         wait_for_condition_message_value(
             resource=data_source,
-            expected_message=DATA_VOLUME_NOT_FOUND_ERROR,
+            expected_message=PVC_NOT_FOUND_ERROR,
         )
 
 
