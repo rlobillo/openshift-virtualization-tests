@@ -295,6 +295,15 @@ def get_connection_params(conf_file_name):
 
 
 def get_bug(bug_id):
+    """
+    Get bug instance from bugzilla.
+
+    Args:
+        bug_id (int): Bug ID.
+
+    Returns:
+        Bug: Bugzilla bug instance.
+    """
     bugzilla_connection_params = get_connection_params(conf_file_name="bugzilla.cfg")
     bzapi = bugzilla.Bugzilla(
         url=bugzilla_connection_params["bugzilla_url"],
@@ -837,14 +846,21 @@ def get_related_images_name_and_version(dyn_client, hco_namespace, version):
 
 
 def is_bug_open(bug_id):
+    """
+    Check if bug status is open.
+
+    Args:
+        bug_id (int): Bug ID.
+
+    Returns:
+        Bug: Bugzilla bug instance.
+    """
     bug = get_bug(bug_id=bug_id)
     bug_status = bug.status
-    status_for_logger = f"Bug {bug_id}: {bug.summary} status is {bug_status}"
     if bug_status not in BUG_STATUS_CLOSED:
-        LOGGER.info(status_for_logger)
+        LOGGER.info(f"Bug {bug_id}: {bug.summary} status is {bug_status}")
         return True
 
-    LOGGER.warning(f"{status_for_logger} bug should be removed from the codebase")
     return False
 
 

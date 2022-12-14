@@ -61,24 +61,6 @@ def create_latency_configmap(framework_service_account, cnv_current_version, **k
         yield configmap
 
 
-@contextlib.contextmanager
-def create_checkup_resources(framework_service_account, cnv_current_version, **kwargs):
-    data = compose_configmap_data(
-        framework_service_account=framework_service_account,
-        cnv_current_version=cnv_current_version,
-        *kwargs,
-    )
-    with cluster_resource(ConfigMap)(
-        namespace=framework_service_account.namespace, name=LATENCY_CONFIGMAP, data=data
-    ) as configmap:
-        with create_latency_job(
-            latency_configmap=configmap,
-            service_account=framework_service_account,
-            cnv_current_version=cnv_current_version,
-        ) as job:
-            yield {"job": job, "configmap": configmap}
-
-
 def compose_configmap_data(
     framework_service_account,
     cnv_current_version,

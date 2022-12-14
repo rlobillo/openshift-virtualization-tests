@@ -28,5 +28,6 @@ def all_python_files():
             continue
 
         for filename in files:
-            if filename.endswith(".py") and filename != os.path.split(__file__)[-1]:
-                yield os.path.join(root, filename)
+            file_path = os.path.join(root, filename)
+            if filename.endswith(".py") and file_path != os.path.abspath(__file__):
+                yield file_path

@@ -41,7 +41,7 @@ def test_crds_cluster_readers_role(crds):
             cannot_read.append(crd.name)
 
     # TODO: This block is to be removed when BZ: 2139144 is closed.
-    if is_bug_open(bug_id="2139144"):
+    if is_bug_open(bug_id=2139144):
         for crd in [VM_EXPORT_CRD, VM_CLONE_CRD]:
             if crd in cannot_read:
                 cannot_read.remove(crd)

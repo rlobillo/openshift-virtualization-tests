@@ -938,7 +938,7 @@ def windows_disk_space_parser(fsinfo_list):
 
 def validate_virtctl_guest_agent_data_over_time(vm):
     """
-    Validates that virtctl guest info is available over time. (BZ 1886453)
+    Validates that virtctl guest info is available over time. (BZ 1886453 <skip-bug-check>)
 
     Returns:
         bool: True - if virtctl guest info is available after timeout else False

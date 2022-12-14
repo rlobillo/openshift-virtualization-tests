@@ -44,6 +44,18 @@ def get_parent_branch():
 
 
 def get_bug(bug_id):
+    """
+    Get bug instance from bugzilla.
+
+    Args:
+        bug_id (int): Bug ID.
+
+    Returns:
+        Bug: Bugzilla bug instance.
+    """
+    if not isinstance(bug_id, int):
+        raise ValueError("bug_id ARG must be int")
+
     bugzilla_connection_params = get_connection_params(conf_file_name="bugzilla.cfg")
     bzapi = bugzilla.Bugzilla(
         url=bugzilla_connection_params["bugzilla_url"],
@@ -95,46 +107,47 @@ def main():
     for filename in all_python_files():
         filename_for_key = re.findall(r"cnv-tests/.*", filename)[0]
         with open(filename, "r") as fd:
-            for _bug in get_all_bugs_from_file(file_content=fd.read()):
+            file_content = fd.read()
+
+        for _bug in get_all_bugs_from_file(file_content=file_content):
+            try:
+                bug = get_bug(bug_id=int(_bug))
+            except Fault as exp:
+                bugs_with_errors.setdefault(filename_for_key, []).append(
+                    f"{_bug} [{exp.faultString}]"
+                )
+                continue
+
+            bug_status = bug.status
+            if bug_status in BUG_STATUS_CLOSED:
+                closed_bugs.setdefault(filename_for_key, []).append(
+                    f"{_bug} [{bug_status}]"
+                )
+
+            else:
+                bug_target_release = bug.target_release[0]
                 try:
-                    bug = get_bug(bug_id=_bug)
-                except Fault as exp:
-                    bugs_with_errors.setdefault(filename_for_key, []).append(
-                        f"{_bug} [{exp.faultString}]"
+                    bug_target_release_version = Version(bug_target_release)
+                    expected_target_branch = Version(
+                        KNOWN_BRANCHES[EXPECTED_TARGET_BRANCH]
                     )
+                    if (
+                        expected_target_branch.major != bug_target_release_version.major
+                        and expected_target_branch.minor
+                        != bug_target_release_version.minor
+                    ):
+                        mismatch_bugs_version.setdefault(filename_for_key, []).append(
+                            f"{_bug} [{bug_target_release}]"
+                        )
+
+                except InvalidVersion:
+                    # Continue if target version is not version.
                     continue
 
-                bug_status = bug.status
-                if bug_status in BUG_STATUS_CLOSED:
-                    closed_bugs.setdefault(filename_for_key, []).append(
-                        f"{_bug} [{bug_status}]"
+                if parent_branch not in bug_target_release:
+                    mismatch_bugs_version.setdefault(filename_for_key, []).append(
+                        f"{_bug} [{bug_status}] [{bug_target_release}]"
                     )
-
-                else:
-                    bug_target_release = bug.target_release[0]
-                    try:
-                        bug_target_release_version = Version(bug_target_release)
-                        expected_target_branch = Version(
-                            KNOWN_BRANCHES[EXPECTED_TARGET_BRANCH]
-                        )
-                        if (
-                            expected_target_branch.major
-                            != bug_target_release_version.major
-                            and expected_target_branch.minor
-                            != bug_target_release_version.minor
-                        ):
-                            mismatch_bugs_version.setdefault(
-                                filename_for_key, []
-                            ).append(f"{_bug} [{bug_target_release}]")
-
-                    except InvalidVersion:
-                        # Continue if target version is not version.
-                        continue
-
-                    if parent_branch not in bug_target_release:
-                        mismatch_bugs_version.setdefault(filename_for_key, []).append(
-                            f"{_bug} [{bug_status}] [{bug_target_release}]"
-                        )
 
     if closed_bugs:
         print(
