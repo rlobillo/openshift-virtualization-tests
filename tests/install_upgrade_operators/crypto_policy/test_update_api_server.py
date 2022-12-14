@@ -82,7 +82,7 @@ def test_update_api_server(
             expected_policy=expected_value,
         )
         if error_message:
-            if resource == KubeVirt and is_bug_open(bug_id="2139235"):
+            if resource == KubeVirt and is_bug_open(bug_id=2153527):
                 continue
             error_messages.append(error_message)
     assert not error_messages, (
