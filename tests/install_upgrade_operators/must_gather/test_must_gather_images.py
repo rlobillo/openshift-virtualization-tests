@@ -9,7 +9,7 @@ from tests.install_upgrade_operators.must_gather.utils import (
     VALIDATE_UID_NAME,
     check_list_of_resources,
 )
-from utilities.constants import OPENSHIFT_NAMESPACE
+from utilities.constants import NamespacesNames
 
 
 class TestImageGathering:
@@ -22,12 +22,12 @@ class TestImageGathering:
                 marks=(pytest.mark.polarion("CNV-9234")),
             ),
             pytest.param(
-                f"namespaces/{OPENSHIFT_NAMESPACE}/imagestreams",
+                f"namespaces/{NamespacesNames.OPENSHIFT}/imagestreams",
                 ImageStream,
                 marks=(pytest.mark.polarion("CNV-9235")),
             ),
             pytest.param(
-                f"namespaces/{OPENSHIFT_NAMESPACE}/imagestreamtags",
+                f"namespaces/{NamespacesNames.OPENSHIFT}/imagestreamtags",
                 ImageStreamTag,
                 marks=(pytest.mark.polarion("CNV-9236")),
             ),

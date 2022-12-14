@@ -13,7 +13,7 @@ from ocp_resources.service import Service
 from ocp_utilities.must_gather import run_must_gather
 from openshift.dynamic.client import ResourceField
 
-from utilities.constants import DEFAULT_NAMESPACE
+from utilities.constants import NamespacesNames
 from utilities.infra import ResourceMismatch, cluster_resource
 
 
@@ -74,7 +74,7 @@ def compare_resources(resource_instance, temp_dir, resource_path, checks):
         temp_dir,
         resource_path.format(
             name=resource_instance.name,
-            namespace=resource_instance.namespace or DEFAULT_NAMESPACE,
+            namespace=resource_instance.namespace or NamespacesNames.DEFAULT,
         ),
     )
     compare_resource_values(resource=resource_instance, path=path, checks=checks)

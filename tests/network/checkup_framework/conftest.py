@@ -14,7 +14,7 @@ from tests.network.checkup_framework.utils import (
     create_latency_configmap,
     create_latency_job,
 )
-from utilities.constants import DEFAULT_NAMESPACE, LINUX_BRIDGE, SRIOV, TIMEOUT_10SEC
+from utilities.constants import LINUX_BRIDGE, SRIOV, TIMEOUT_10SEC, NamespacesNames
 from utilities.infra import create_ns, name_prefix
 from utilities.network import network_device, network_nad
 
@@ -34,7 +34,7 @@ BIND = "bind"
 
 @pytest.fixture(scope="session")
 def default_ns(admin_client):
-    yield Namespace(name=DEFAULT_NAMESPACE)
+    yield Namespace(name=NamespacesNames.DEFAULT)
 
 
 @pytest.fixture(scope="module")
@@ -209,7 +209,7 @@ def checkup_sriov_network(sriov_node_policy, namespace, sriov_namespace):
         nad_name="sriov-checkup-nad",
         sriov_resource_name=sriov_node_policy.resource_name,
         namespace=sriov_namespace,
-        sriov_network_namespace=DEFAULT_NAMESPACE,
+        sriov_network_namespace=NamespacesNames.DEFAULT,
     ) as sriov_network:
         yield sriov_network
 

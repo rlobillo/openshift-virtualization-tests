@@ -203,11 +203,6 @@ HCO_CATALOG_SOURCE = "hco-catalogsource"
 TEKTON_TASK_OPERATOR = "tekton-tasks-operator"
 KUBEVIRT_PLUGIN = "kubevirt-plugin"
 
-# Namespace constants
-OPENSHIFT_NAMESPACE = "openshift"
-DEFAULT_NAMESPACE = "default"
-OPENSHIFT_CONFIG_NAMESPACE = "openshift-config"
-
 # CDI related constants
 CDI_SECRETS = [
     "cdi-apiserver-server-cert",
@@ -469,7 +464,12 @@ class StorageClassNames:
     TOPOLVM = "odf-lvm-vg1"
 
 
+# Namespace constants
 class NamespacesNames:
+    OPENSHIFT = "openshift"
+    OPENSHIFT_CONFIG = "openshift-config"
     OPENSHIFT_APISERVER = "openshift-apiserver"
     OPENSHIFT_STORAGE = "openshift-storage"
+    OPENSHIFT_CLUSTER_STORAGE_OPERATOR = "openshift-cluster-storage-operator"
     CHAOS = "chaos"
+    DEFAULT = "default"

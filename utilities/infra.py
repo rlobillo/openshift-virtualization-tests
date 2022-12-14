@@ -58,13 +58,13 @@ from utilities.constants import (
     AUDIT_LOGS_PATH,
     HCO_CATALOG_SOURCE,
     OC_ADM_LOGS_COMMAND,
-    OPENSHIFT_CONFIG_NAMESPACE,
     OPERATOR_NAME_SUFFIX,
     SANITY_TESTS_FAILURE,
     TIMEOUT_1MIN,
     TIMEOUT_2MIN,
     TIMEOUT_6MIN,
     TIMEOUT_10MIN,
+    NamespacesNames,
 )
 from utilities.data_collector import get_data_collector_dict
 from utilities.exceptions import UtilityPodNotFoundError
@@ -1110,11 +1110,11 @@ def get_openshift_pull_secret(client=None):
     secret = Secret(
         client=client or get_admin_client(),
         name=pull_secret_name,
-        namespace=OPENSHIFT_CONFIG_NAMESPACE,
+        namespace=NamespacesNames.OPENSHIFT_CONFIG,
     )
     assert (
         secret.exists
-    ), f"Pull-secret {pull_secret_name} not found in namespace {OPENSHIFT_CONFIG_NAMESPACE}"
+    ), f"Pull-secret {pull_secret_name} not found in namespace {NamespacesNames.OPENSHIFT_CONFIG}"
     return secret
 
 

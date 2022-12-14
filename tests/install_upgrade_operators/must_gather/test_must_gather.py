@@ -38,8 +38,8 @@ from utilities.constants import (
     KUBE_CNI_LINUX_BRIDGE_PLUGIN,
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     KUBEMACPOOL_MAC_RANGE_CONFIG,
-    OPENSHIFT_NAMESPACE,
     VM_CRD,
+    NamespacesNames,
 )
 from utilities.infra import cluster_resource
 
@@ -495,7 +495,10 @@ class TestMustGatherCluster:
     def test_image_stream_tag_resources(
         self, admin_client, collected_cluster_must_gather
     ):
-        resource_path = f"namespaces/{OPENSHIFT_NAMESPACE}/{ImageStreamTag.ApiGroup.IMAGE_OPENSHIFT_IO}/imagestreamtags"
+        resource_path = (
+            f"namespaces/{NamespacesNames.OPENSHIFT}/"
+            f"{ImageStreamTag.ApiGroup.IMAGE_OPENSHIFT_IO}/imagestreamtags"
+        )
         istag_dir = os.path.join(
             collected_cluster_must_gather,
             resource_path,
@@ -503,7 +506,7 @@ class TestMustGatherCluster:
         assert len(os.listdir(istag_dir)) == len(
             list(
                 cluster_resource(ImageStreamTag).get(
-                    dyn_client=admin_client, namespace=OPENSHIFT_NAMESPACE
+                    dyn_client=admin_client, namespace=NamespacesNames.OPENSHIFT
                 )
             )
         )
@@ -513,6 +516,6 @@ class TestMustGatherCluster:
             temp_dir=collected_cluster_must_gather,
             resource_path=f"{resource_path}/" "{name}.yaml",
             checks=VALIDATE_UID_NAME,
-            namespace=OPENSHIFT_NAMESPACE,
+            namespace=NamespacesNames.OPENSHIFT,
             filter_resource="redhat",
         )

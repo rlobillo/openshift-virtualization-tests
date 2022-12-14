@@ -74,7 +74,6 @@ from utilities.constants import (
     MASTER_NODE_LABEL_KEY,
     NODE_TYPE_WORKER_LABEL,
     OC_ADM_LOGS_COMMAND,
-    OPENSHIFT_CONFIG_NAMESPACE,
     OVS_BRIDGE,
     TIMEOUT_4MIN,
     TIMEOUT_5MIN,
@@ -87,6 +86,7 @@ from utilities.constants import (
     WORKER_NODE_LABEL_KEY,
     WORKERS_TYPE,
     Images,
+    NamespacesNames,
     StorageClassNames,
 )
 from utilities.exceptions import CommonNodesCpusNotFoundError
@@ -286,7 +286,7 @@ def unprivileged_secret(admin_client, skip_unprivileged_client):
         crypto_credentials = f"{UNPRIVILEGED_USER}:{enc_password}"
         with cluster_resource(Secret)(
             name=HTTP_SECRET_NAME,
-            namespace=OPENSHIFT_CONFIG_NAMESPACE,
+            namespace=NamespacesNames.OPENSHIFT_CONFIG,
             htpasswd=base64_encode_str(text=crypto_credentials),
         ) as secret:
             yield secret
@@ -737,7 +737,9 @@ def skip_upstream(is_upstream_distribution):
 def leftovers_cleanup(admin_client, kube_system_namespace, identity_provider_config):
     LOGGER.info("Checking for leftover resources")
     secret = Secret(
-        client=admin_client, name=HTTP_SECRET_NAME, namespace=OPENSHIFT_CONFIG_NAMESPACE
+        client=admin_client,
+        name=HTTP_SECRET_NAME,
+        namespace=NamespacesNames.OPENSHIFT_CONFIG,
     )
     ds = DaemonSet(
         client=admin_client, name=UTILITY, namespace=kube_system_namespace.name

@@ -8,7 +8,7 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import py_config
 
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_OS
-from utilities.constants import OPENSHIFT_NAMESPACE
+from utilities.constants import NamespacesNames
 from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
 
@@ -78,7 +78,7 @@ def custom_template_from_base_template(request, namespace, admin_client):
     base_template = next(
         Template.get(
             admin_client,
-            namespace=OPENSHIFT_NAMESPACE,
+            namespace=NamespacesNames.OPENSHIFT,
             name=request.param["base_template_name"],
         )
     )

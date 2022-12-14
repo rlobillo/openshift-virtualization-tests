@@ -10,7 +10,7 @@ from tests.compute.ssp.supported_os.common_templates.custom_namespace.utils impo
     patch_template_labels,
     wait_for_ssp_custom_template_namespace,
 )
-from utilities.constants import OPENSHIFT_NAMESPACE
+from utilities.constants import NamespacesNames
 from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.infra import create_ns
 from utilities.ssp import get_ssp_resource
@@ -101,7 +101,7 @@ def edited_custom_namespace_template(
 def deleted_default_namespace_template(admin_client, first_base_template):
     return delete_template_by_name(
         admin_client=admin_client,
-        namespace_name=OPENSHIFT_NAMESPACE,
+        namespace_name=NamespacesNames.OPENSHIFT,
         template_name=first_base_template.name,
     )
 
@@ -110,7 +110,7 @@ def deleted_default_namespace_template(admin_client, first_base_template):
 def edited_default_namespace_template(admin_client, hco_namespace, first_base_template):
     template = get_template_by_name(
         client=admin_client,
-        namespace_name=OPENSHIFT_NAMESPACE,
+        namespace_name=NamespacesNames.OPENSHIFT,
         name=first_base_template.name,
     )
     yield from patch_template_labels(
@@ -137,7 +137,7 @@ def opted_out_custom_template_namespace(
     ).update()
     wait_for_ssp_custom_template_namespace(
         ssp_resource=ssp_resource_scope_function,
-        namespace=Namespace(name=OPENSHIFT_NAMESPACE),
+        namespace=Namespace(name=NamespacesNames.OPENSHIFT),
     )
 
 

@@ -12,7 +12,7 @@ from tests.compute.ssp.supported_os.common_templates.custom_namespace.utils impo
     wait_for_edited_label_reconciliation,
     wait_for_template_by_name,
 )
-from utilities.constants import OPENSHIFT_NAMESPACE, UNPRIVILEGED_USER
+from utilities.constants import UNPRIVILEGED_USER, NamespacesNames
 
 
 LOGGER = logging.getLogger(__name__)
@@ -146,7 +146,7 @@ class TestCustomNamespace:
         verify_base_templates_exist_in_namespace(
             client=admin_client,
             original_base_templates=base_templates,
-            namespace=Namespace(name=OPENSHIFT_NAMESPACE),
+            namespace=Namespace(name=NamespacesNames.OPENSHIFT),
         )
 
     @pytest.mark.polarion("CNV-8152")
@@ -162,13 +162,13 @@ class TestCustomNamespace:
         try:
             wait_for_template_by_name(
                 client=admin_client,
-                namespace_name=OPENSHIFT_NAMESPACE,
+                namespace_name=NamespacesNames.OPENSHIFT,
                 name=deleted_default_namespace_template.name,
             )
         except TimeoutExpiredError:
             LOGGER.error(
                 f"Template {deleted_default_namespace_template.name} in default namespace "
-                f"{OPENSHIFT_NAMESPACE} not reconciled after deletion."
+                f"{NamespacesNames.OPENSHIFT} not reconciled after deletion."
             )
             raise
 
@@ -189,7 +189,7 @@ class TestCustomNamespace:
         except TimeoutExpiredError:
             LOGGER.error(
                 f"Template {edited_default_namespace_template.name} in default namespace "
-                f"{OPENSHIFT_NAMESPACE} not reconciled after label edit."
+                f"{NamespacesNames.OPENSHIFT} not reconciled after label edit."
             )
             raise
 

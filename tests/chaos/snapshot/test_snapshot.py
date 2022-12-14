@@ -35,7 +35,7 @@ pytestmark = pytest.mark.usefixtures(
             {
                 "pod_prefix": "csi-snapshot-controller",
                 "resource": Deployment,
-                "namespace_name": "openshift-cluster-storage-operator",
+                "namespace_name": NamespacesNames.OPENSHIFT_CLUSTER_STORAGE_OPERATOR,
                 "ratio": 0.5,
                 "interval": TIMEOUT_5SEC,
                 "max_duration": TIMEOUT_5MIN,
