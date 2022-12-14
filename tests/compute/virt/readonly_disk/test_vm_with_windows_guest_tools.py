@@ -7,7 +7,6 @@ from pytest_testconfig import py_config
 from tests.os_params import WINDOWS_10
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
-    get_windows_os_dict,
     migrate_vm_and_verify,
     running_vm,
 )
@@ -37,9 +36,7 @@ class WindowsVMWithGuestTools(VirtualMachineForTestsFromTemplate):
             namespace=namespace,
             client=client,
             data_source=data_source,
-            labels=Template.generate_template_labels(
-                **get_windows_os_dict(windows_version="win-10")["template_labels"]
-            ),
+            labels=Template.generate_template_labels(**WINDOWS_10["template_labels"]),
         )
 
     def to_dict(self):
