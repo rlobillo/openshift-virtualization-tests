@@ -4,6 +4,7 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
 
+from tests.compute.ssp.constants import PVC_NOT_FOUND_ERROR
 from tests.compute.ssp.supported_os.common_templates.golden_images.utils import (
     assert_missing_golden_image_pvc,
 )
@@ -103,13 +104,14 @@ def vm_from_golden_image(
     golden_image_data_source_scope_function,
 ):
     with cluster_resource(DataVolumeTemplatesVirtualMachine)(
-        name="vm-from-golden-image-mismatching-sc",
+        name="vm-from-golden-image",
         namespace=namespace.name,
         client=unprivileged_client,
         labels=Template.generate_template_labels(**FEDORA_LATEST_LABELS),
         data_source=golden_image_data_source_scope_function,
         updated_storage_class_params=request.param.get("updated_storage_class_params"),
         updated_source_pvc_name=request.param.get("updated_source_pvc_name"),
+        use_full_storage_api=request.param.get("use_full_storage_api"),
     ) as vm:
         if request.param.get("start_vm", True):
             running_vm(vm=vm)
@@ -240,3 +242,35 @@ def test_missing_golden_image_pvc(
 
     vm_from_golden_image.wait_for_ready_status(status=True, timeout=TIMEOUT_8MIN)
     wait_for_vm_interfaces(vmi=vm_from_golden_image.vmi)
+
+
+@pytest.mark.parametrize(
+    "golden_image_data_volume_scope_function, vm_from_golden_image",
+    [
+        pytest.param(
+            {
+                "dv_name": FEDORA_LATEST_OS,
+                "image": FEDORA_LATEST["image_path"],
+                "dv_size": FEDORA_LATEST["dv_size"],
+                "storage_class": py_config["default_storage_class"],
+            },
+            {
+                "use_full_storage_api": True,
+                "start_vm": False,
+            },
+            marks=pytest.mark.polarion("CNV-7752"),
+        ),
+    ],
+    indirect=True,
+)
+def test_vm_from_golden_image_missing_default_storage_class(
+    removed_default_storage_classes,
+    vm_from_golden_image,
+):
+    vm_from_golden_image.start()
+    volume_status = vm_from_golden_image.instance.status.volumeSnapshotStatuses[0]
+    status_failing_reason = volume_status.reason
+    assert not volume_status.enabled, "Volume creation succeeded, expected failure"
+    assert (
+        status_failing_reason == PVC_NOT_FOUND_ERROR
+    ), f"Reason for failing creation is: {status_failing_reason}, expected: {PVC_NOT_FOUND_ERROR}"

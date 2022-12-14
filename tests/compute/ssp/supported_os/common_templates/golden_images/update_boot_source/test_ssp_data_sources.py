@@ -11,6 +11,7 @@ from ocp_utilities.infra import cluster_resource
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import py_config
 
+from tests.compute.ssp.constants import PVC_NOT_FOUND_ERROR
 from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_source.constants import (
     CUSTOM_DATA_IMPORT_CRON_NAME,
     CUSTOM_DATA_SOURCE_NAME,
@@ -38,7 +39,6 @@ TESTS_AUTO_UPDATE_BOOT_SOURCE_NAME = [*py_config["auto_update_data_source_matrix
     0
 ]
 DUMMY_PVC_NAME = "dummy"
-PVC_NOT_FOUND_ERROR = "PVC not found"
 DATA_SOURCE_MANAGED_BY_CDI_LABEL = (
     f"{DataSource.ApiGroup.CDI_KUBEVIRT_IO}/dataImportCron"
 )

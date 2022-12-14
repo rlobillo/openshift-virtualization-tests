@@ -19,6 +19,7 @@ HYPERV_FEATURES_LABELS_VM_YAML[
 ] = "synictimer"
 
 VIRTIO = "virtio"
+PVC_NOT_FOUND_ERROR = "PVC not found"
 
 
 class MachineTypesNames:
