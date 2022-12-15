@@ -2146,10 +2146,24 @@ def get_template_by_labels(admin_client, template_labels):
             dyn_client=admin_client,
             singular_name=Template.singular_name,
             namespace="openshift",
-            label_selector=",".join([f"{label}=true" for label in template_labels]),
+            label_selector=",".join(
+                [
+                    f"{label}=true"
+                    for label in template_labels
+                    if OS_FLAVOR_FEDORA not in label
+                ]
+            ),
         ),
     )
-
+    if (
+        f"{Template.ApiGroup.OS_TEMPLATE_KUBEVIRT_IO}/{OS_FLAVOR_FEDORA}"
+        in template_labels
+    ):
+        template = [
+            fedora_template
+            for fedora_template in template
+            if OS_FLAVOR_FEDORA in fedora_template.name
+        ]
     matched_templates = len(template)
     assert (
         matched_templates == 1

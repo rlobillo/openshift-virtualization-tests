@@ -155,7 +155,7 @@ auto_update_data_source_matrix = [
     {"centos-stream8": {"template_os": "centos-stream8"}},
     {"centos-stream9": {"template_os": "centos-stream9"}},
     {"centos7": {"template_os": "centos7.0", "data_import_cron_prefix": "centos-7"}},
-    {"fedora": {"template_os": "fedora36"}},
+    {"fedora": {"template_os": "fedora"}},
     {"rhel8": {"template_os": "rhel8.4"}},
     {"rhel9": {"template_os": "rhel9.0"}},
 ]
@@ -357,7 +357,7 @@ fedora_os_matrix = [
             DV_SIZE_STR: Images.Fedora.DEFAULT_DV_SIZE,
             LATEST_RELEASE_STR: True,
             TEMPLATE_LABELS_STR: {
-                OS_STR: "fedora35",
+                OS_STR: "fedora",
                 WORKLOAD_STR: Template.Workload.SERVER,
                 FLAVOR_STR: Template.Flavor.TINY,
             },
