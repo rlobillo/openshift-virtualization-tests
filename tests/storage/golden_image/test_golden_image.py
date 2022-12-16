@@ -188,4 +188,4 @@ def test_regular_user_can_create_dv_in_ns_given_proper_rolebinding(
         size=RHEL_IMAGE_SIZE,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
-        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_20MIN)
+        dv.wait_for_dv_success(timeout=TIMEOUT_20MIN)

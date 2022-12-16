@@ -245,7 +245,7 @@ def test_upload_after_certs_renewal(
     ) as res:
         check_upload_virtctl_result(result=res)
         dv = DataVolume(namespace=namespace.name, name=dv_name)
-        dv.wait(timeout=TIMEOUT_1MIN)
+        dv.wait_for_dv_success(timeout=TIMEOUT_1MIN)
         with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
             storage_utils.check_disk_count_in_vm(vm=vm)
 
@@ -282,7 +282,7 @@ def test_import_clone_after_certs_renewal(
         source_pvc=data_volume_multi_storage_scope_module.name,
         storage_class=data_volume_multi_storage_scope_module.storage_class,
     ) as cdv:
-        cdv.wait(timeout=TIMEOUT_3MIN)
+        cdv.wait_for_dv_success(timeout=TIMEOUT_3MIN)
         with storage_utils.create_vm_from_dv(dv=cdv, start=True) as vm:
             storage_utils.check_disk_count_in_vm(vm=vm)
 
@@ -310,7 +310,7 @@ def test_upload_after_validate_aggregated_api_cert(
     ) as res:
         check_upload_virtctl_result(result=res)
         dv = DataVolume(namespace=namespace.name, name=dv_name)
-        dv.wait(timeout=TIMEOUT_1MIN)
+        dv.wait_for_dv_success(timeout=TIMEOUT_1MIN)
         with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
             storage_utils.check_disk_count_in_vm(vm=vm)
 

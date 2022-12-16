@@ -455,3 +455,26 @@ def storage_class_with_filesystem_volume_mode(available_storage_classes_names):
 def skip_test_if_no_filesystem_sc(storage_class_with_filesystem_volume_mode):
     if not storage_class_with_filesystem_volume_mode:
         pytest.skip("Skip the test: no Storage class with Filesystem volume mode")
+
+
+# TODO remove once all storage failing tests because of GC are all addressed
+@pytest.fixture(scope="function")
+def disabled_cdi_garbage_collector(
+    skip_upstream,
+    installing_cnv,
+    hyperconverged_resource_scope_function,
+):
+    if installing_cnv:
+        yield
+    else:
+        with ResourceEditorValidateHCOReconcile(
+            patches={
+                hyperconverged_resource_scope_function: hco_cr_jsonpatch_annotations_dict(
+                    component="cdi",
+                    path="dataVolumeTTLSeconds",
+                    value=-1,
+                )
+            },
+            list_resource_reconcile=[CDI],
+        ):
+            yield

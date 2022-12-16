@@ -148,7 +148,7 @@ def test_private_registry_cirros(
         cert_configmap=registry_config_map.name,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
-        dv.wait()
+        dv.wait_for_dv_success()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
             utils.check_disk_count_in_vm(vm=vm_dv)
 
@@ -277,7 +277,7 @@ def test_private_registry_insecured_configmap(
         url=f"{images_private_registry_server}:5000/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
-        dv.wait()
+        dv.wait_for_dv_success()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
             utils.check_disk_count_in_vm(vm=vm_dv)
 
@@ -300,7 +300,7 @@ def test_private_registry_recover_after_missing_configmap(
         cert_configmap=registry_config_map.name,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
-        dv.wait()
+        dv.wait_for_dv_success()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
             utils.check_disk_count_in_vm(vm=vm_dv)
 
@@ -324,7 +324,7 @@ def test_private_registry_with_untrusted_certificate(
         cert_configmap=registry_config_map.name,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
-        dv.wait()
+        dv.wait_for_dv_success()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
             utils.check_disk_count_in_vm(vm=vm_dv)
 
@@ -410,7 +410,7 @@ def test_public_registry_data_volume(
         size=size,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
-        dv.wait()
+        dv.wait_for_dv_success()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
             utils.check_disk_count_in_vm(vm=vm_dv)
 
@@ -451,7 +451,7 @@ def test_public_registry_data_volume_low_capacity(
         url=QUAY_IMAGE,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
-        dv.wait()
+        dv.wait_for_dv_success()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
             utils.check_disk_count_in_vm(vm=vm_dv)
 

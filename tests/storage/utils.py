@@ -399,7 +399,7 @@ def importer_container_status_reason(pod):
 
 
 def verify_snapshot_used_namespace_transfer(cdv, unprivileged_client):
-    cdv.wait()
+    cdv.wait_for_dv_success()
     storage_class = cdv.storage_class
     # Namespace transfer is not possible with WFFC
     if is_snapshot_supported_by_sc(
@@ -526,5 +526,5 @@ def create_cirros_dv(
         access_modes=access_modes,
         volume_mode=volume_mode,
     ) as dv:
-        dv.wait()
+        dv.wait_for_dv_success()
         yield dv

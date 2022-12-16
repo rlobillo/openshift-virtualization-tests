@@ -50,7 +50,7 @@ def cdiconfig_update(
     tmpdir=None,
 ):
     def _create_vm_check_disk_count(dv):
-        dv.wait()
+        dv.wait_for_dv_success()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
             utils.check_disk_count_in_vm(vm=vm_dv)
 
@@ -257,7 +257,7 @@ def test_cdiconfig_changing_storage_class_default(
                     storage_class=StorageClassNames.CEPH_RBD,
                     cert_configmap=configmap.name,
                 ) as dv:
-                    dv.wait()
+                    dv.wait_for_dv_success()
                     with utils.create_vm_from_dv(dv=dv) as vm_dv:
                         utils.check_disk_count_in_vm(vm=vm_dv)
 

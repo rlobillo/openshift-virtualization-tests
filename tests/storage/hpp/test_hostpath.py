@@ -232,7 +232,7 @@ def hpp_pool_deployments_scope_module(admin_client, hco_namespace):
 
 
 def verify_image_location_via_dv_pod_with_pvc(dv, worker_node_name):
-    dv.wait()
+    dv.wait_for_dv_success()
     with cluster_resource(PodWithPVC)(
         namespace=dv.namespace,
         name=f"{dv.name}-pod",
@@ -247,7 +247,7 @@ def verify_image_location_via_dv_pod_with_pvc(dv, worker_node_name):
 
 
 def verify_image_location_via_dv_virt_launcher_pod(dv, worker_node_name):
-    dv.wait()
+    dv.wait_for_dv_success()
     with storage_utils.create_vm_from_dv(dv=dv) as vm:
         running_vm(vm=vm, check_ssh_connectivity=False, wait_for_interfaces=False)
         v_pod = vm.vmi.virt_launcher_pod
@@ -403,7 +403,7 @@ def test_hpp_specify_node_immediate(
         storage_class=[*storage_class_matrix_hpp_matrix__module__][0],
         hostpath_node=worker_node1.name,
     ) as dv:
-        dv.wait(timeout=TIMEOUT_10MIN)
+        dv.wait_for_dv_success(timeout=TIMEOUT_10MIN)
 
 
 @pytest.mark.sno
@@ -592,7 +592,7 @@ def test_hostpath_upload_dv_with_token(
         storage_utils.upload_token_request(
             storage_ns_name=dv.namespace, pvc_name=dv.pvc.name, data=local_name
         )
-        dv.wait()
+        dv.wait_for_dv_success()
         verify_image_location_via_dv_pod_with_pvc(
             dv=dv, worker_node_name=dv.pvc.selected_node
         )
@@ -633,7 +633,7 @@ def test_hostpath_registry_import_dv(
             pod_node_name=importer_pod.instance.spec.nodeName,
             type_="scratch",
         )
-        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
+        dv.wait_for_dv_success(timeout=TIMEOUT_5MIN)
         verify_image_location_via_dv_virt_launcher_pod(
             dv=dv, worker_node_name=dv.pvc.selected_node
         )
@@ -699,7 +699,7 @@ def test_hostpath_clone_dv_without_annotation_wffc(
             pod_node_name=upload_target_pod.instance.spec.nodeName,
             type_="target",
         )
-        target_dv.wait(timeout=TIMEOUT_5MIN)
+        target_dv.wait_for_dv_success(timeout=TIMEOUT_5MIN)
         with cluster_resource(VirtualMachineForTestsFromTemplate)(
             name="fedora-vm",
             namespace=namespace.name,
@@ -739,9 +739,7 @@ def test_hostpath_clone_dv_with_annotation(
         storage_class=storage_class,
         hostpath_node=worker_node1.name,
     ) as source_dv:
-        source_dv.wait_for_status(
-            status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_5MIN
-        )
+        source_dv.wait_for_dv_success(timeout=TIMEOUT_5MIN)
         assert_provision_on_node_annotation(
             pvc=source_dv.pvc, node_name=worker_node1.name, type_="import"
         )
@@ -755,9 +753,7 @@ def test_hostpath_clone_dv_with_annotation(
             source_namespace=source_dv.namespace,
             source_pvc=source_dv.pvc.name,
         ) as target_dv:
-            target_dv.wait_for_status(
-                status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_10MIN
-            )
+            target_dv.wait_for_dv_success(timeout=TIMEOUT_10MIN)
             assert_provision_on_node_annotation(
                 pvc=target_dv.pvc, node_name=worker_node1.name, type_="target"
             )

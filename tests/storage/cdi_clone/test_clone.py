@@ -218,7 +218,7 @@ def test_successful_vm_restart_with_cloned_dv(
         source_pvc=data_volume_multi_storage_scope_function.name,
         storage_class=data_volume_multi_storage_scope_function.storage_class,
     ) as cdv:
-        cdv.wait(timeout=TIMEOUT_10MIN)
+        cdv.wait_for_dv_success(timeout=TIMEOUT_10MIN)
         with utils.create_vm_from_dv(dv=cdv) as vm_dv:
             restart_vm_wait_for_running_vm(vm=vm_dv, wait_for_interfaces=False)
             utils.check_disk_count_in_vm(vm=vm_dv)
@@ -265,7 +265,7 @@ def test_successful_vm_from_cloned_dv_windows(
         source_pvc=data_volume_multi_storage_scope_function.name,
         storage_class=data_volume_multi_storage_scope_function.storage_class,
     ) as cdv:
-        cdv.wait(timeout=WINDOWS_CLONE_TIMEOUT)
+        cdv.wait_for_dv_success(timeout=WINDOWS_CLONE_TIMEOUT)
         assert cdv.pvc.bound(), f"{cdv.name}'s PVC is not bound"
         utils.create_windows_vm_validate_guest_agent_info(
             dv=cdv,
@@ -305,7 +305,7 @@ def test_disk_image_after_clone(
         client=unprivileged_client,
         storage_class=data_volume_multi_storage_scope_function.storage_class,
     ) as cdv:
-        cdv.wait()
+        cdv.wait_for_dv_success()
         utils.create_vm_and_verify_image_permission(dv=cdv)
 
 
@@ -355,7 +355,7 @@ def test_successful_snapshot_clone(
             source_pvc_name=data_volume_snapshot_capable_storage_scope_function.pvc.name,
             snapshot=snapshot,
         )
-        cdv.wait()
+        cdv.wait_for_dv_success()
         if (
             OS_FLAVOR_WINDOWS
             not in data_volume_snapshot_capable_storage_scope_function.url.split("/")[

@@ -359,5 +359,5 @@ def test_disk_image_after_create_vm_with_restricted_clone(
         client=unprivileged_client,
         storage_class=[*storage_class_matrix__module__][0],
     ) as cdv:
-        cdv.wait()
+        cdv.wait_for_dv_success()
         create_vm_and_verify_image_permission(dv=cdv)

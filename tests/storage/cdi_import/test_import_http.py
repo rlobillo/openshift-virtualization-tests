@@ -104,7 +104,10 @@ def dv_with_annotation(skip_upstream, admin_client, namespace, linux_nad):
     indirect=True,
 )
 @pytest.mark.polarion("CNV-675")
-def test_delete_pvc_after_successful_import(data_volume_multi_storage_scope_function):
+def test_delete_pvc_after_successful_import(
+    disabled_cdi_garbage_collector,
+    data_volume_multi_storage_scope_function,
+):
     pvc = data_volume_multi_storage_scope_function.pvc
     pvc_original_timestamp = pvc.instance.metadata.creationTimestamp
     pvc.delete()
@@ -112,9 +115,7 @@ def test_delete_pvc_after_successful_import(data_volume_multi_storage_scope_func
     storage_class = data_volume_multi_storage_scope_function.storage_class
     if sc_volume_binding_mode_is_wffc(sc=storage_class):
         create_dummy_first_consumer_pod(pvc=pvc)
-    data_volume_multi_storage_scope_function.wait_for_status(
-        status=data_volume_multi_storage_scope_function.Status.SUCCEEDED
-    )
+    data_volume_multi_storage_scope_function.wait_for_dv_success()
     with cluster_resource(PodWithPVC)(
         namespace=pvc.namespace,
         name=f"{data_volume_multi_storage_scope_function.name}-pod",
@@ -192,7 +193,7 @@ def test_successful_import_archive(
         size="500Mi",
         storage_class=[*storage_class_matrix__module__][0],
     ) as dv:
-        dv.wait()
+        dv.wait_for_dv_success()
         pvc = dv.pvc
         assert pvc.bound()
         with cluster_resource(PodWithPVC)(
@@ -232,7 +233,7 @@ def test_successful_import_image(
         size=Images.Cirros.DEFAULT_DV_SIZE,
         storage_class=storage_class,
     ) as dv:
-        dv.wait()
+        dv.wait_for_dv_success()
         pvc = dv.pvc
         assert pvc.bound()
         with cluster_resource(PodWithPVC)(
@@ -268,7 +269,7 @@ def test_successful_import_secure_archive(
         size="500Mi",
         storage_class=[*storage_class_matrix__module__][0],
     ) as dv:
-        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
+        dv.wait_for_dv_success(timeout=TIMEOUT_5MIN)
         pvc = dv.pvc
         assert pvc.bound()
         with cluster_resource(PodWithPVC)(
@@ -302,7 +303,7 @@ def test_successful_import_secure_image(
         size="500Mi",
         storage_class=storage_class,
     ) as dv:
-        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
+        dv.wait_for_dv_success(timeout=TIMEOUT_5MIN)
         pvc = dv.pvc
         assert pvc.bound()
         with cluster_resource(PodWithPVC)(
@@ -359,7 +360,7 @@ def test_successful_import_basic_auth(
         secret=internal_http_secret,
         storage_class=storage_class,
     ) as dv:
-        dv.wait()
+        dv.wait_for_dv_success()
         pvc = dv.pvc
         with cluster_resource(PodWithPVC)(
             namespace=pvc.namespace,
@@ -468,7 +469,7 @@ def test_certconfigmap(
         ),
         cert_configmap=internal_http_configmap.name,
     ) as dv:
-        dv.wait()
+        dv.wait_for_dv_success()
         pvc = dv.pvc
         with cluster_resource(PodWithPVC)(
             namespace=pvc.namespace,
@@ -627,9 +628,7 @@ def test_successful_concurrent_blank_disk_import(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-2004")
 def test_blank_disk_import_validate_status(data_volume_multi_storage_scope_function):
-    data_volume_multi_storage_scope_function.wait_for_status(
-        status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_5MIN
-    )
+    data_volume_multi_storage_scope_function.wait_for_dv_success(timeout=TIMEOUT_5MIN)
 
 
 @pytest.mark.sno
@@ -664,7 +663,7 @@ def test_vmi_image_size(
         ),
         cert_configmap=internal_http_configmap.name,
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_4MIN)
+        dv.wait_for_dv_success(timeout=TIMEOUT_4MIN)
         with utils.create_vm_from_dv(dv=dv, image=CIRROS_IMAGE, start=False):
             with cluster_resource(PodWithPVC)(
                 namespace=dv.namespace,
@@ -714,7 +713,7 @@ def test_disk_falloc(
         ),
         cert_configmap=internal_http_configmap.name,
     ) as dv:
-        dv.wait()
+        dv.wait_for_dv_success()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
             with console.Cirros(vm=vm_dv) as vm_console:
                 LOGGER.info("Fill disk space.")
@@ -766,9 +765,7 @@ def test_vm_from_dv_on_different_node(
     nodes = list(
         filter(lambda node: importer_pod.node.name != node.name, schedulable_nodes)
     )
-    data_volume_multi_storage_scope_function.wait_for_status(
-        status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_12MIN
-    )
+    data_volume_multi_storage_scope_function.wait_for_dv_success(timeout=TIMEOUT_12MIN)
     with utils.create_vm_from_dv(
         dv=data_volume_multi_storage_scope_function,
         vm_name=Images.Rhel.RHEL8_2_IMG,

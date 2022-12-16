@@ -116,7 +116,7 @@ def test_upload_https_scratch_space_delete_pvc(
             for sample in sampler:
                 if sample == 200:
                     dv.scratch_pvc.delete()
-                    dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_5MIN)
+                    dv.wait_for_dv_success(timeout=TIMEOUT_5MIN)
                     with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
                         storage_utils.check_disk_count_in_vm(vm=vm_dv)
                     return True

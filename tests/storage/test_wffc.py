@@ -242,7 +242,7 @@ def test_wffc_import_registry_dv(
         storage_class=[*storage_class_matrix_hpp_matrix__module__][0],
         consume_wffc=True,
     ) as dv:
-        dv.wait()
+        dv.wait_for_dv_success()
         with storage_utils.create_vm_from_dv(dv=dv, vm_name=dv_name) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
@@ -273,7 +273,7 @@ def test_wffc_upload_dv_via_token(
         storage_utils.upload_token_request(
             storage_ns_name=namespace.name, pvc_name=dv.pvc.name, data=local_name
         )
-        dv.wait()
+        dv.wait_for_dv_success()
         with storage_utils.create_vm_from_dv(dv=dv, vm_name=dv_name) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
 
@@ -303,7 +303,7 @@ def test_wffc_clone_dv(
         storage_class=data_volume_multi_hpp_storage.storage_class,
         consume_wffc=True,
     ) as cdv:
-        cdv.wait(timeout=TIMEOUT_10MIN)
+        cdv.wait_for_dv_success(timeout=TIMEOUT_10MIN)
         with storage_utils.create_vm_from_dv(dv=cdv, vm_name=cdv.name) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
 

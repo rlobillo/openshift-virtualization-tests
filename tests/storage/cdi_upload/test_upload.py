@@ -179,7 +179,7 @@ def test_successful_upload_with_supported_formats(
         storage_utils.upload_token_request(
             storage_ns_name=namespace.name, pvc_name=dv.pvc.name, data=local_name
         )
-        dv.wait()
+        dv.wait_for_dv_success()
         with storage_utils.create_vm_from_dv(dv=dv) as vm_dv:
             storage_utils.check_disk_count_in_vm(vm=vm_dv)
 

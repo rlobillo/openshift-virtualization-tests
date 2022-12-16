@@ -13,7 +13,7 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import NotFoundError
 
-from utilities.constants import TIMEOUT_1MIN, TIMEOUT_2MIN, TIMEOUT_6MIN, Images
+from utilities.constants import TIMEOUT_1MIN, TIMEOUT_3MIN, TIMEOUT_6MIN, Images
 from utilities.infra import cluster_resource
 
 
@@ -35,9 +35,7 @@ def wait_for_succeeded_dv(namespace, image_sha):
     )
     for sample in samples:
         if sample:
-            sample.wait_for_status(
-                status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_6MIN
-            )
+            sample.wait_for_dv_success(timeout=TIMEOUT_6MIN)
             return sample
 
 
@@ -142,13 +140,13 @@ def test_data_import_cron_garbage_collection(
     second_dv,
 ):
     samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_2MIN, sleep=1, func=lambda: first_dv.exists
+        wait_timeout=TIMEOUT_3MIN, sleep=1, func=lambda: first_dv.pvc.exists
     )
     try:
         for sample in samples:
             if not sample:
                 break
     except TimeoutExpiredError:
-        LOGGER.error(f"Garbage collection failed, {first_dv.name} is not deleted")
+        LOGGER.error(f"Garbage collection failed, {first_dv.pvc.name} is not deleted")
         raise
-    assert second_dv.exists, f"Second DV {second_dv.name} was deleted"
+    assert second_dv.pvc.exists, f"Second PVC {second_dv.pvc.name} was deleted"

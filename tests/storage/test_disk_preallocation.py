@@ -18,10 +18,7 @@ from utilities.hco import (
 )
 
 
-pytestmark = [
-    pytest.mark.post_upgrade,
-    pytest.mark.usefixtures("enable_cdi_garbage_collector"),
-]
+pytestmark = pytest.mark.post_upgrade
 
 
 LOGGER = logging.getLogger(__name__)

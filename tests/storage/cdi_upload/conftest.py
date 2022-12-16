@@ -64,7 +64,7 @@ def uploaded_dv(
     ) as res:
         check_upload_virtctl_result(result=res)
         dv = DataVolume(namespace=namespace.name, name=dv_name)
-        dv.wait(timeout=TIMEOUT_1MIN)
+        dv.wait_for_dv_success(timeout=TIMEOUT_1MIN)
         assert dv.pvc.bound(), f"PVC status is {dv.pvc.status}"
         yield dv
         dv.delete(wait=True)

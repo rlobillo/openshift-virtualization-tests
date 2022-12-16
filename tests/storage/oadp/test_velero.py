@@ -14,10 +14,7 @@ def test_backup_while_dv_create(
     restore_single_ns,
     storage_class_matrix_snapshot_matrix__function__,
 ):
-    imported_dv_in_progress.wait_for_status(
-        status=imported_dv_in_progress.Status.SUCCEEDED,
-        timeout=TIMEOUT_8MIN,
-    )
+    imported_dv_in_progress.wait_for_dv_success(timeout=TIMEOUT_8MIN)
 
 
 @pytest.mark.polarion("CNV-8695")

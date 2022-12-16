@@ -14,7 +14,7 @@ from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
 import tests.storage.utils as storage_utils
-from utilities.constants import CDI_UPLOADPROXY, OS_FLAVOR_CIRROS, Images
+from utilities.constants import CDI_UPLOADPROXY, OS_FLAVOR_CIRROS, TIMEOUT_1MIN, Images
 from utilities.infra import cluster_resource
 from utilities.storage import (
     ErrorMsg,
@@ -173,7 +173,7 @@ def test_virtctl_image_upload_dv(
     ) as res:
         check_upload_virtctl_result(result=res)
         dv = DataVolume(namespace=namespace.name, name=dv_name)
-        dv.wait(timeout=60)
+        dv.wait_for_dv_success(timeout=TIMEOUT_1MIN)
         with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
             storage_utils.check_disk_count_in_vm(vm=vm)
 
@@ -194,6 +194,7 @@ def test_virtctl_image_upload_dv(
     indirect=True,
 )
 def test_virtctl_image_upload_with_exist_dv_image(
+    disabled_cdi_garbage_collector,
     data_volume_multi_storage_scope_function,
     download_image,
     namespace,
@@ -336,7 +337,10 @@ def test_virtctl_image_upload_with_exist_pvc(
 
 @pytest.mark.polarion("CNV-3729")
 def test_virtctl_image_upload_with_exist_pvc_image(
-    download_image, namespace, storage_class_matrix__module__
+    disabled_cdi_garbage_collector,
+    download_image,
+    namespace,
+    storage_class_matrix__module__,
 ):
     """
     Check that virtctl fails gracefully when attempting to upload an image to a PVC that already has disk.img

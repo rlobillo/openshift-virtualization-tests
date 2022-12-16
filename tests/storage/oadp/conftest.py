@@ -107,9 +107,7 @@ def rhel_vm_for_backup(admin_client, rhel_dv_dict):
 
 @pytest.fixture()
 def backup_multiple_ns(admin_client, imported_dv_in_progress, rhel_vm_for_backup):
-    imported_dv_in_progress.wait_for_status(
-        status=DataVolume.Status.SUCCEEDED,
-    )
+    imported_dv_in_progress.wait_for_dv_success()
     with cluster_resource(VeleroBackup)(
         included_namespaces=[
             imported_dv_in_progress.namespace,
@@ -137,10 +135,7 @@ def restore_multiple_ns(admin_client, backup_multiple_ns):
 
 @pytest.fixture()
 def backup_exclude_pvc(imported_dv_in_progress, admin_client, namespace_for_backup):
-    imported_dv_in_progress.wait_for_status(
-        status=DataVolume.Status.SUCCEEDED,
-        timeout=TIMEOUT_5MIN,
-    )
+    imported_dv_in_progress.wait_for_dv_success(timeout=TIMEOUT_5MIN)
     with cluster_resource(VeleroBackup)(
         included_namespaces=[
             namespace_for_backup.name,

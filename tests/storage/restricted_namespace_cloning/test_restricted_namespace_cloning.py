@@ -116,7 +116,7 @@ def test_unprivileged_user_clone_same_namespace_positive(
         client=unprivileged_client,
         storage_class=[*storage_class_matrix__module__][0],
     ) as cdv:
-        cdv.wait()
+        cdv.wait_for_dv_success()
         with utils.create_vm_from_dv(dv=cdv):
             return
 
@@ -219,7 +219,7 @@ def test_user_permissions_positive(
         client=unprivileged_client,
         storage_class=[*storage_class_matrix__module__][0],
     ) as cdv:
-        cdv.wait()
+        cdv.wait_for_dv_success()
         verify_snapshot_used_namespace_transfer(
             cdv=cdv, unprivileged_client=unprivileged_client
         )
