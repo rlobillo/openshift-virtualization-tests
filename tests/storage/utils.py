@@ -37,7 +37,11 @@ from utilities.infra import (
     get_http_image_url,
     get_pod_by_name_prefix,
 )
-from utilities.storage import create_dv, is_snapshot_supported_by_sc
+from utilities.storage import (
+    create_dv,
+    is_snapshot_supported_by_sc,
+    sc_volume_binding_mode_is_wffc,
+)
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
@@ -396,9 +400,11 @@ def importer_container_status_reason(pod):
 
 def verify_snapshot_used_namespace_transfer(cdv, unprivileged_client):
     cdv.wait()
+    storage_class = cdv.storage_class
+    # Namespace transfer is not possible with WFFC
     if is_snapshot_supported_by_sc(
-        sc_name=cdv.storage_class, client=unprivileged_client
-    ):
+        sc_name=storage_class, client=unprivileged_client
+    ) and not sc_volume_binding_mode_is_wffc(sc=storage_class):
         clone_type = f"{NamespacedResource.ApiGroup.CDI_KUBEVIRT_IO}/cloneType"
         clone_type_annotation = cdv.instance["metadata"]["annotations"][clone_type]
         assert (
