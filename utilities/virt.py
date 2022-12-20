@@ -294,6 +294,7 @@ class VirtualMachineForTests(VirtualMachine):
             iothreads_policy (str, optional, default: None): If not None, set to auto/shared
             dedicated_iothread (bool, optional, default: False): If True, set dedicatedIOThread to True
             smm_enabled (None/bool, optional, default: None): If not None, set to True/False
+            pvspinlock_enabled (bool, optional, default: None): If not None, set to True/False
             efi_params (dict, optional)
             diskless_vm (bool, default: False): If True, remove VM disks
             running (bool, default: False): If True, running = True
@@ -555,7 +556,7 @@ class VirtualMachineForTests(VirtualMachine):
         return template_spec
 
     def set_pvspinlock(self, template_spec):
-        if self.pvspinlock_enabled:
+        if self.pvspinlock_enabled is not None:
             template_spec.setdefault("domain", {}).setdefault(
                 "features", {}
             ).setdefault("pvspinlock", {})["enabled"] = self.pvspinlock_enabled
