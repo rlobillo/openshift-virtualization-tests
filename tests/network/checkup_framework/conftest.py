@@ -1,26 +1,34 @@
+import logging
+import random
+
 import pytest
 from ocp_resources.role import Role
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.service_account import ServiceAccount
+from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from ocp_utilities.infra import cluster_resource
 
+from tests.network.checkup_framework.constants import (
+    CHECKUP_NODE_LABEL,
+    CREATE_STR,
+    DELETE_STR,
+    DISCONNECTED_STR,
+    GET_STR,
+    NONEXISTING_CONFIGMAP,
+    UPDATE_STR,
+)
 from tests.network.checkup_framework.utils import (
-    LATENCY_CONFIGMAP,
     assert_successful_checkup,
     create_latency_configmap,
     create_latency_job,
+    wait_for_job_failure,
 )
 from utilities.constants import LINUX_BRIDGE, SRIOV
-from utilities.infra import create_ns, label_nodes
+from utilities.infra import create_ns, get_pods, is_bug_open, label_nodes
 from utilities.network import network_device, network_nad
 
 
-DISCONNECTED = "disconnected"
-CHECKUP_NODE_LABEL = {"checkup_framework": "allow"}
-GET = "get"
-CREATE = "create"
-UPDATE = "update"
-DELETE = "delete"
+LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="session")
@@ -44,17 +52,17 @@ def framework_latency_role(checkup_ns):
         {
             "apiGroups": ["kubevirt.io"],
             "resources": ["virtualmachineinstances"],
-            "verbs": [GET, CREATE, DELETE],
+            "verbs": [GET_STR, CREATE_STR, DELETE_STR],
         },
         {
             "apiGroups": ["subresources.kubevirt.io"],
             "resources": ["virtualmachineinstances/console"],
-            "verbs": [GET],
+            "verbs": [GET_STR],
         },
         {
             "apiGroups": ["k8s.cni.cncf.io"],
             "resources": ["network-attachment-definitions"],
-            "verbs": [GET],
+            "verbs": [GET_STR],
         },
     ]
     with cluster_resource(Role)(
@@ -89,7 +97,7 @@ def framework_configmap_role(checkup_ns):
             {
                 "apiGroups": [""],
                 "resources": ["configmaps"],
-                "verbs": [GET, UPDATE],
+                "verbs": [GET_STR, UPDATE_STR],
             }
         ],
     ) as configmap_role:
@@ -173,6 +181,24 @@ def checkup_sriov_network(sriov_node_policy, checkup_ns, sriov_namespace):
         yield sriov_network
 
 
+@pytest.fixture(scope="module")
+def checkup_sriov_disconnected_network(
+    vlans_list, sriov_node_policy, checkup_ns, sriov_namespace
+):
+    """
+    Create a SR-IOV disconnected network linked to a SR-IOV policy. This is created using a non-configured VLAN tag.
+    """
+    with network_nad(
+        nad_type=SRIOV,
+        nad_name="sriov-checkup-disconnected-nad",
+        sriov_resource_name=sriov_node_policy.resource_name,
+        namespace=sriov_namespace,
+        sriov_network_namespace=checkup_ns.name,
+        vlan=random.choice([vlan for vlan in range(2, 4094) if vlan not in vlans_list]),
+    ) as sriov_network:
+        yield sriov_network
+
+
 @pytest.fixture()
 def network_type(request):
     # This, combining with the lazy_fixture in the test, allows dynamic usage of different networks in the fixtures.
@@ -188,18 +214,20 @@ def default_latency_configmap(
         namespace_name=checkup_ns.name,
         network_attachment_definition_namespace=checkup_ns.name,
         network_attachment_definition_name=network_type.name,
+        configmap_name="default-latency-configmap",
     ) as configmap:
         yield configmap
 
 
 @pytest.fixture()
 def first_latency_job_checkup_ready(
-    unprivileged_client, default_latency_configmap, latency_job
+    unprivileged_client, checkup_ns, default_latency_configmap, latency_job
 ):
     assert_successful_checkup(
         unprivileged_client=unprivileged_client,
         configmap=default_latency_configmap,
         job=latency_job,
+        checkup_ns=checkup_ns,
     )
 
 
@@ -213,9 +241,9 @@ def latency_concurrent_job(
     # To prevent race condition we must first make sure the first job was configured successfully, and only then
     # create the concurrent one.
     with create_latency_job(
+        name="concurrent-checkup-job",
         service_account=framework_service_account,
         cnv_current_version=cnv_current_version,
-        name="concurrent-checkup-job",
         latency_configmap_name=default_latency_configmap.name,
     ) as job:
         yield job
@@ -235,15 +263,43 @@ def latency_disconnected_configmap(
 
 
 @pytest.fixture()
+def latency_disconnected_configmap_sriov(
+    checkup_ns,
+    checkup_sriov_disconnected_network,
+):
+    with create_latency_configmap(
+        namespace_name=checkup_ns.name,
+        network_attachment_definition_namespace=checkup_ns.name,
+        network_attachment_definition_name=checkup_sriov_disconnected_network.name,
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture()
 def latency_nonexistent_configmap_env_job(
     framework_service_account,
     cnv_current_version,
 ):
     with create_latency_job(
-        name="latency-nonexistent-configmap-env-job",
+        name=f"latency-{NONEXISTING_CONFIGMAP}-env-job",
         service_account=framework_service_account,
         cnv_current_version=cnv_current_version,
-        latency_configmap_name="nonexistent-configmap",
+        latency_configmap_name=NONEXISTING_CONFIGMAP,
+    ) as job:
+        yield job
+
+
+@pytest.fixture()
+def latency_no_env_variables_job(
+    framework_service_account,
+    cnv_current_version,
+):
+    with create_latency_job(
+        name="latency-no-env-variables-job",
+        service_account=framework_service_account,
+        cnv_current_version=cnv_current_version,
+        latency_configmap_name=None,
+        env_variables=False,
     ) as job:
         yield job
 
@@ -260,6 +316,51 @@ def latency_same_node_configmap(
         network_attachment_definition_name=network_type.name,
         source_node=worker_node1.hostname,
         target_node=worker_node1.hostname,
+        configmap_name="latency-same-node-configmap",
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture()
+def latency_nonexistent_node_configmap(
+    worker_node1,
+    checkup_ns,
+    network_type,
+):
+    with create_latency_configmap(
+        namespace_name=checkup_ns.name,
+        network_attachment_definition_namespace=checkup_ns.name,
+        network_attachment_definition_name=network_type.name,
+        source_node="non-existent-node",
+        target_node=worker_node1.hostname,
+        configmap_name="latency-nonexistent-node-configmap",
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture()
+def latency_nonexistent_nad_configmap(
+    checkup_ns,
+):
+    with create_latency_configmap(
+        namespace_name=checkup_ns.name,
+        network_attachment_definition_namespace=checkup_ns.name,
+        network_attachment_definition_name="non-existing-nad",
+        configmap_name="latency-nonexistent-nad-configmap",
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture()
+def latency_nonexistent_namespace_configmap(
+    checkup_ns,
+    network_type,
+):
+    with create_latency_configmap(
+        namespace_name=checkup_ns.name,
+        network_attachment_definition_namespace="non-existing-namespace",
+        network_attachment_definition_name=network_type.name,
+        configmap_name="latency-nonexistent-ns-configmap",
     ) as configmap:
         yield configmap
 
@@ -268,18 +369,43 @@ def latency_same_node_configmap(
 def latency_job(
     framework_service_account,
     cnv_current_version,
+    latency_configmap,
 ):
+    configmap_name = latency_configmap.name
     with create_latency_job(
+        name=configmap_name.replace("configmap", "job"),
         service_account=framework_service_account,
         cnv_current_version=cnv_current_version,
-        latency_configmap_name=LATENCY_CONFIGMAP,
+        latency_configmap_name=configmap_name,
     ) as job:
         yield job
 
 
+# TODO: When bug 2159397 is closed, this fixture should be removed and the test
+#  'test_nonexistent_node_configmap_job_failure', should move to be another parameterization in
+#  'test_configmap_error_job_failure'.
+@pytest.fixture()
+def latency_job_teardown(unprivileged_client, checkup_ns, latency_job):
+    yield
+    if is_bug_open(bug_id=2159397):
+        for job_pod in get_pods(
+            dyn_client=unprivileged_client,
+            namespace=checkup_ns,
+            label=f"job-name={latency_job.name}",
+        ):
+            job_pod.clean_up()
+        for vmi in list(
+            VirtualMachineInstance.get(
+                dyn_client=unprivileged_client,
+                namespace=checkup_ns.name,
+            )
+        ):
+            vmi.clean_up()
+
+
 @pytest.fixture()
 def linux_bridge_disconnected_device():
-    bridge_name = f"{DISCONNECTED}-br"
+    bridge_name = f"{DISCONNECTED_STR}-br"
     with network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name=f"{bridge_name}-nncp",
@@ -297,7 +423,29 @@ def disconnected_checkup_nad(
     with network_nad(
         namespace=checkup_ns,
         nad_type=linux_bridge_disconnected_device.bridge_type,
-        nad_name=f"{DISCONNECTED}-checkup-nad",
+        nad_name=f"{DISCONNECTED_STR}-checkup-nad",
         interface_name=linux_bridge_disconnected_device.bridge_name,
     ) as nad:
         yield nad
+
+
+@pytest.fixture()
+def latency_job_success(
+    unprivileged_client, checkup_ns, latency_configmap, latency_job
+):
+    assert_successful_checkup(
+        unprivileged_client=unprivileged_client,
+        configmap=latency_configmap,
+        job=latency_job,
+        checkup_ns=checkup_ns,
+    )
+
+
+@pytest.fixture()
+def latency_job_failure(latency_job):
+    wait_for_job_failure(job=latency_job)
+
+
+@pytest.fixture()
+def latency_concurrent_job_failure(latency_concurrent_job):
+    wait_for_job_failure(job=latency_concurrent_job)

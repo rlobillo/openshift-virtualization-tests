@@ -1,24 +1,39 @@
 import pytest
 
+from tests.network.checkup_framework.constants import NONEXISTING_CONFIGMAP
 from tests.network.checkup_framework.utils import (
     assert_failure_reason_in_configmap,
-    assert_identical_source_and_target_node,
-    assert_successful_checkup,
+    assert_source_and_target_nodes,
     verify_failure_reason_in_log,
-    wait_for_job_failure,
 )
 
 
 pytestmark = pytest.mark.usefixtures("framework_resources")
+CONNECTIVITY_ISSUE_ERROR = (
+    "run: failed to run check: failed due to connectivity issue: \\d+ packets "
+    "transmitted, 0 packets received"
+)
 
 
-@pytest.mark.polarion("CNV-8578")
-def test_disconnected_bridges_job_failures(latency_disconnected_configmap, latency_job):
-    wait_for_job_failure(job=latency_job)
+@pytest.mark.parametrize(
+    "latency_configmap",
+    [
+        pytest.param(
+            pytest.lazy_fixture("latency_disconnected_configmap"),
+            marks=pytest.mark.polarion("CNV-8578"),
+        ),
+        pytest.param(
+            pytest.lazy_fixture("latency_disconnected_configmap_sriov"),
+            marks=pytest.mark.polarion("CNV-9535"),
+        ),
+    ],
+)
+def test_disconnected_network_job_failure(
+    latency_configmap, latency_job, latency_job_failure
+):
     assert_failure_reason_in_configmap(
-        configmap=latency_disconnected_configmap,
-        expected_failure_message="run: failed to run check: failed due to connectivity issue: \\d+ packets "
-        "transmitted, 0 packets received",
+        configmap=latency_configmap,
+        expected_failure_message=CONNECTIVITY_ISSUE_ERROR,
     )
 
 
@@ -31,28 +46,55 @@ def test_disconnected_bridges_job_failures(latency_disconnected_configmap, laten
     indirect=True,
 )
 class TestCheckupLatency:
-    @pytest.mark.polarion("CNV-9404")
+    @pytest.mark.parametrize(
+        "latency_configmap, expected_nodes_identical",
+        [
+            pytest.param(
+                pytest.lazy_fixture("default_latency_configmap"),
+                False,
+                marks=pytest.mark.polarion("CNV-9404"),
+            ),
+            pytest.param(
+                pytest.lazy_fixture("latency_same_node_configmap"),
+                True,
+                marks=pytest.mark.polarion("CNV-8581"),
+            ),
+        ],
+    )
     def test_basic_configmap(
-        self, unprivileged_client, network_type, default_latency_configmap, latency_job
+        self,
+        checkup_ns,
+        network_type,
+        latency_configmap,
+        latency_job,
+        expected_nodes_identical,
+        latency_job_success,
     ):
-        assert_successful_checkup(
-            unprivileged_client=unprivileged_client,
-            configmap=default_latency_configmap,
-            job=latency_job,
+        assert_source_and_target_nodes(
+            configmap=latency_configmap,
+            expected_nodes_identical=expected_nodes_identical,
         )
 
-    @pytest.mark.polarion("CNV-8453")
+    @pytest.mark.parametrize(
+        "latency_configmap",
+        [
+            pytest.param(
+                pytest.lazy_fixture("default_latency_configmap"),
+                marks=pytest.mark.polarion("CNV-8453"),
+            ),
+        ],
+    )
     def test_concurrent_checkup_jobs(
         self,
         unprivileged_client,
-        network_type,
         checkup_ns,
-        default_latency_configmap,
+        network_type,
+        latency_configmap,
         latency_job,
         latency_concurrent_job,
+        latency_concurrent_job_failure,
     ):
         # Make sure the second, concurrent, job failed due to the configMap being already in use:
-        wait_for_job_failure(job=latency_concurrent_job)
         verify_failure_reason_in_log(
             unprivileged_client=unprivileged_client,
             job=latency_concurrent_job,
@@ -60,43 +102,95 @@ class TestCheckupLatency:
             failure_message="configMap is already in use",
         )
 
-    @pytest.mark.polarion("CNV-8535")
-    def test_nonexistent_configmap_job_failure(
+    @pytest.mark.parametrize(
+        "latency_job, failure_message",
+        [
+            pytest.param(
+                pytest.lazy_fixture("latency_nonexistent_configmap_env_job"),
+                f'configmaps "{NONEXISTING_CONFIGMAP}" not found',
+                marks=pytest.mark.polarion("CNV-8535"),
+            ),
+            pytest.param(
+                pytest.lazy_fixture("latency_no_env_variables_job"),
+                'missing required environment variable: "CONFIGMAP_NAMESPACE"',
+                marks=pytest.mark.polarion("CNV-9482"),
+            ),
+        ],
+    )
+    def test_job_failure(
         self,
         unprivileged_client,
-        network_type,
         checkup_ns,
+        network_type,
         default_latency_configmap,
-        latency_nonexistent_configmap_env_job,
+        latency_job,
+        failure_message,
+        latency_job_failure,
     ):
-        env_variables = latency_nonexistent_configmap_env_job.instance.spec.template.spec.containers[
-            0
-        ].env
-        configmap_name = [
-            variable["value"]
-            for variable in env_variables
-            if variable["name"] == "CONFIGMAP_NAME"
-        ][0]
-        wait_for_job_failure(job=latency_nonexistent_configmap_env_job)
         verify_failure_reason_in_log(
             unprivileged_client=unprivileged_client,
-            job=latency_nonexistent_configmap_env_job,
+            job=latency_job,
             checkup_ns=checkup_ns,
-            failure_message=f'configmaps "{configmap_name}" not found',
+            failure_message=failure_message,
         )
 
-    @pytest.mark.polarion("CNV-8581")
-    def test_same_node_configmap(
+    @pytest.mark.parametrize(
+        "latency_configmap, failure_message",
+        [
+            pytest.param(
+                pytest.lazy_fixture("latency_nonexistent_nad_configmap"),
+                'setup: network-attachment-definitions.k8s.cni.cncf.io "non-existing-nad" not found',
+                marks=pytest.mark.polarion("CNV-9479"),
+            ),
+            pytest.param(
+                pytest.lazy_fixture("latency_nonexistent_namespace_configmap"),
+                'test-checkup-framework-sa" cannot get resource '
+                '"network-attachment-definitions" in API group "k8s.cni.cncf.io" in the namespace '
+                '"non-existing-namespace"',
+                marks=pytest.mark.polarion("CNV-9481"),
+            ),
+        ],
+    )
+    def test_configmap_error_job_failure(
         self,
         unprivileged_client,
-        network_type,
         checkup_ns,
-        latency_same_node_configmap,
+        network_type,
+        latency_configmap,
         latency_job,
+        failure_message,
+        latency_job_failure,
     ):
-        assert_successful_checkup(
+        verify_failure_reason_in_log(
             unprivileged_client=unprivileged_client,
-            configmap=latency_same_node_configmap,
             job=latency_job,
+            checkup_ns=checkup_ns,
+            failure_message=failure_message,
         )
-        assert_identical_source_and_target_node(configmap=latency_same_node_configmap)
+
+    @pytest.mark.parametrize(
+        "latency_configmap",
+        [
+            pytest.param(
+                pytest.lazy_fixture("latency_nonexistent_node_configmap"),
+                marks=pytest.mark.polarion("CNV-9476"),
+            ),
+        ],
+    )
+    def test_nonexistent_node_configmap_job_failure(
+        self,
+        unprivileged_client,
+        checkup_ns,
+        network_type,
+        latency_configmap,
+        latency_job,
+        latency_job_teardown,
+        latency_job_failure,
+    ):
+        verify_failure_reason_in_log(
+            unprivileged_client=unprivileged_client,
+            job=latency_job,
+            checkup_ns=checkup_ns,
+            failure_message="setup: failed to wait for VMI 'test-checkup-framework/latency-check-source' IP address "
+            "to appear on status: timed out waiting for the condition",
+        )

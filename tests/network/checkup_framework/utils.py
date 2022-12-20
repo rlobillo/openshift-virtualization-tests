@@ -8,43 +8,51 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
-from utilities.constants import TIMEOUT_4MIN, TIMEOUT_5MIN
-from utilities.infra import get_pods
+from utilities.constants import TIMEOUT_4MIN, TIMEOUT_5SEC, TIMEOUT_11MIN
+from utilities.infra import get_pods, is_jira_open
 
 
 LOGGER = logging.getLogger(__name__)
-CHECKUP_FRAMEWORK_NAMESPACE = "kiagnose"
 MAX_DESIRED_LATENCY_MILLISECONDS = "15"
-LATENCY_CONFIGMAP = "latency-configmap"
 
 
 @contextlib.contextmanager
 def create_latency_job(
-    service_account, cnv_current_version, latency_configmap_name, name=None
+    service_account,
+    cnv_current_version,
+    latency_configmap_name,
+    name,
+    env_variables=True,
 ):
+    containers = [
+        {
+            "name": "framework",
+            "image": (
+                f"{py_config['cnv_registry_sources']['osbs']['source_map']}/"
+                f"container-native-virtualization-vm-network-latency-checkup:v{cnv_current_version}"
+            ),
+            "imagePullPolicy": "Always",
+            "env": [],
+        }
+    ]
+    if env_variables:
+        containers[0]["env"] = [
+            {
+                "name": "CONFIGMAP_NAMESPACE",
+                "value": service_account.namespace,
+            },
+            {
+                "name": "CONFIGMAP_NAME",
+                "value": latency_configmap_name,
+            },
+        ]
     with cluster_resource(Job)(
         name=name or "latency-job",
         namespace=service_account.namespace,
         service_account=service_account.name,
         restart_policy="Never",
         backoff_limit=0,
-        containers=[
-            {
-                "name": "framework",
-                "image": (
-                    f"{py_config['cnv_registry_sources']['osbs']['source_map']}/"
-                    f"container-native-virtualization-vm-network-latency-checkup:v{cnv_current_version}"
-                ),
-                "imagePullPolicy": "Always",
-                "env": [
-                    {
-                        "name": "CONFIGMAP_NAMESPACE",
-                        "value": service_account.namespace,
-                    },
-                    {"name": "CONFIGMAP_NAME", "value": latency_configmap_name},
-                ],
-            }
-        ],
+        containers=containers,
     ) as job:
         yield job
 
@@ -55,22 +63,21 @@ def create_latency_configmap(
     network_attachment_definition_name,
     namespace_name,
     max_desired_latency_milliseconds=MAX_DESIRED_LATENCY_MILLISECONDS,
-    sample_duration_seconds="5",
-    timeout=f"{TIMEOUT_5MIN}m",
     source_node=None,
     target_node=None,
+    configmap_name="latency-configmap",
 ):
     data = compose_configmap_data(
-        timeout=timeout,
+        timeout="5m",
         network_attachment_definition_namespace=network_attachment_definition_namespace,
         network_attachment_definition_name=network_attachment_definition_name,
         max_desired_latency_milliseconds=max_desired_latency_milliseconds,
-        sample_duration_seconds=sample_duration_seconds,
+        sample_duration_seconds=f"{TIMEOUT_5SEC}",
         source_node=source_node,
         target_node=target_node,
     )
     with cluster_resource(ConfigMap)(
-        namespace=namespace_name, name=LATENCY_CONFIGMAP, data=data
+        namespace=namespace_name, name=configmap_name, data=data
     ) as configmap:
         yield configmap
 
@@ -115,7 +122,7 @@ def compose_configmap_data(
     return data_dict
 
 
-def assert_successful_checkup(unprivileged_client, configmap, job):
+def assert_successful_checkup(unprivileged_client, configmap, job, checkup_ns):
     try:
         job.wait_for_condition(
             condition=job.Condition.COMPLETE, status=job.Condition.Status.TRUE
@@ -142,19 +149,24 @@ def assert_successful_checkup(unprivileged_client, configmap, job):
         pod_last_log_line = get_pod_last_log_line(
             unprivileged_client=unprivileged_client,
             job=job,
-            checkup_ns=configmap.namespace,
+            checkup_ns=checkup_ns,
         )
         LOGGER.error(
-            f"Couldn't run checkup. Framework job failed. status - {job.instance.status}. \n Error massage - last "
-            f"line from the pod log: {pod_last_log_line}"
+            f"Couldn't run checkup. Framework job {job.name} failed. status - {job.instance.status}. \n Error massage "
+            f"- last line from the pod log: {pod_last_log_line}"
         )
         raise
 
 
 def wait_for_job_failure(job):
+    if job.name == "latency-nonexistent-node-job" and is_jira_open(jira_id="CNV-23728"):
+        timeout = TIMEOUT_11MIN
+    else:
+        timeout = TIMEOUT_4MIN
+    job_status = "not available"
     try:
         job_status = TimeoutSampler(
-            wait_timeout=TIMEOUT_4MIN,
+            wait_timeout=timeout,
             sleep=1,
             func=lambda: job.instance.status.conditions[0],
         )
@@ -164,6 +176,12 @@ def wait_for_job_failure(job):
                 and sample["status"] == job.Condition.Status.TRUE
             ):
                 return
+            if (
+                sample["type"] == job.Status.SUCCEEDED
+                and sample["status"] == job.Condition.Status.TRUE
+            ):
+                LOGGER.error(f"Job {job.name} has succeeded and should have failed.")
+                raise
     except TimeoutExpiredError:
         LOGGER.error(
             f"Job {job.name} current status is {job_status} and not {job.Status.FAILED} as expected."
@@ -189,14 +207,20 @@ def verify_failure_reason_in_log(unprivileged_client, job, checkup_ns, failure_m
     ), f"Error message expected: {failure_message}. Error message received: {pod_last_log_line}."
 
 
-def assert_identical_source_and_target_node(configmap):
+def assert_source_and_target_nodes(configmap, expected_nodes_identical):
     configmap_instance_data = configmap.instance.data
     source_node = configmap_instance_data["status.result.sourceNode"]
     target_node = configmap_instance_data["status.result.targetNode"]
-    assert source_node == target_node, (
-        "Target and source nodes are not identical: "
-        f"Source node: {source_node}, Target node: {target_node}"
-    )
+    if expected_nodes_identical:
+        assert source_node == target_node, (
+            "Target and source nodes are not identical: "
+            f"Source node: {source_node}, Target node: {target_node}"
+        )
+    else:
+        assert source_node != target_node, (
+            "Target and source nodes should be different, but are identical: "
+            f"Source node: {source_node}, Target node: {target_node}"
+        )
 
 
 def assert_failure_reason_in_configmap(configmap, expected_failure_message):
