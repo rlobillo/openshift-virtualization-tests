@@ -22,6 +22,7 @@ RUN dnf -y install epel-release \
     libxslt-devel \
     libxml2-devel \
     openssl-devel \
+    sshpass \
     && dnf clean all
 
 COPY / cnv-tests/
