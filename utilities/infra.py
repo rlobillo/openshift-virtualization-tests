@@ -919,7 +919,7 @@ def get_hco_mismatch_statuses(hco_status_conditions, expected_hco_status):
 
 
 def is_jira_open(jira_id):
-    return get_jira_status(jira=jira_id) not in JIRA_STATUS_CLOSED
+    return get_jira_status(jira=jira_id).lower() not in JIRA_STATUS_CLOSED
 
 
 def get_hyperconverged_resource(client, hco_ns_name):
