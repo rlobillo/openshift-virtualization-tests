@@ -300,15 +300,18 @@ def skip_if_os_version_below_rhel9(rhel_os_matrix__class__):
 
 @pytest.fixture()
 def skip_efi_if_win_ver_below_11_or_2022(windows_os_matrix__class__):
-    os_ver = [*windows_os_matrix__class__][0]
-    parsed_os_ver = version.parse(version=os_ver)
-    os_type = windows_os_matrix__class__[os_ver]["template_labels"]["workload"]
+    current_win_name = [*windows_os_matrix__class__][0]
+    os_ver_str = windows_os_matrix__class__[current_win_name]["os_version"]
+    parsed_os_ver = version.parse(version=os_ver_str)
+    os_type = windows_os_matrix__class__[current_win_name]["template_labels"][
+        "workload"
+    ]
 
-    if os_type == Template.Workload.DESKTOP and parsed_os_ver < version.parse("win-11"):
+    if os_type == Template.Workload.DESKTOP and parsed_os_ver < version.parse("11"):
         pytest.skip("EFI is enabled by default only on desktop Windows 11 and above")
     if os_type == Template.Workload.SERVER and version.parse(
-        "win-2000"
-    ) < parsed_os_ver < version.parse("win-2022"):
+        "2000"
+    ) < parsed_os_ver < version.parse("2022"):
         pytest.skip("EFI is enabled by default only on Windows Server 2022 and above")
 
 

@@ -1,3 +1,4 @@
+# TODO add 'reenlightenment' once jira CNV-20418 is done
 HYPERV_FEATURES_LABELS_DOM_XML = [
     "relaxed",
     "vapic",
@@ -7,7 +8,6 @@ HYPERV_FEATURES_LABELS_DOM_XML = [
     "stimer",  # synictimer in VM yaml
     "frequencies",
     "ipi",
-    "reenlightenment",
     "reset",
     "runtime",
     "tlbflush",

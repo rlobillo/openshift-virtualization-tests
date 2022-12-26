@@ -119,8 +119,8 @@ def check_windows_vm_hvinfo(vm):
         return failed_recommendations
 
     def _check_hyperv_privileges():
+        # TODO add 'AccessReenlightenmentControls' once jira CNV-20418 is done
         hyperv_windows_privileges_list = [
-            "AccessReenlightenmentControls",
             "AccessVpRunTimeRegs",
             "AccessSynicRegs",
             "AccessSyntheticTimerRegs",
