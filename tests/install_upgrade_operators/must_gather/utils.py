@@ -3,7 +3,6 @@ import difflib
 import glob
 import logging
 import os
-import re
 from collections import defaultdict
 
 import pytest
@@ -21,6 +20,7 @@ LOGGER = logging.getLogger(__name__)
 MUST_GATHER_VM_NAME_PREFIX = "must-gather-vm"
 VM_FILE_SUFFIX = ["bridge.txt", "ip.txt", "ruletables.txt", "dumpxml.xml"]
 VALIDATE_UID_NAME = (("metadata", "uid"), ("metadata", "name"))
+
 
 # TODO: this is a workaround for an openshift bug
 # An issue was opened in openshift for this:
@@ -123,35 +123,6 @@ class NodeResourceException(Exception):
         )
 
 
-def remove_veth_ifaces(raw_str):
-    raw_ifaces = re.split(r"(^\d+:|\n\d+:)", raw_str)
-    # re.split can produce unnecessary empty strings so delete them:
-    raw_ifaces = list(filter(None, raw_ifaces))
-    clean_ifaces = [
-        f"{num}{iface}"
-        for num, iface in zip(raw_ifaces[::2], raw_ifaces[1::2])
-        if "veth" not in iface
-    ]
-    return "".join(clean_ifaces)
-
-
-def clean_ip_data(raw_str):
-    """
-    Remove data that can cause diffs we want to ignore:
-    - veth interfaces can come and go any time and their names are random
-    - properties 'dynamic' and 'noprefixroute' sometimes appear in different order
-    - line with 'valid_lft' and 'preferred_lft' info shows different times when not set to 'forever'
-    - inet6 info is inconsistent. try again with it when dual-stack is supported
-    """
-    clean_str = remove_veth_ifaces(raw_str=raw_str)
-    clean_str = re.sub("dynamic|noprefixroute", "", clean_str).rstrip(" \n")
-    return [
-        line
-        for line in clean_str.splitlines(keepends=True)
-        if "valid_lft" not in line and "inet6" not in line
-    ]
-
-
 def nft_chains(raw_str):
     return [
         line for line in raw_str.splitlines(keepends=True) if line.startswith("\tchain")
@@ -166,13 +137,10 @@ def compare_node_data(file_content, cmd_output, compare_method):
                 cmd_output.splitlines(keepends=True),
             )
         )
-    elif compare_method == "ip_compare":
-        diff = list(
-            difflib.ndiff(
-                clean_ip_data(raw_str=file_content),
-                clean_ip_data(raw_str=cmd_output),
-            )
-        )
+    elif compare_method == "not_empty":
+        if len(file_content) == 0:
+            raise NodeResourceException("File is Empty")
+        return
     elif compare_method == "nft_compare":
         diff = list(
             difflib.ndiff(
