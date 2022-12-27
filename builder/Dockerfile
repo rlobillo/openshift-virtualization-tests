@@ -21,6 +21,7 @@ RUN dnf -y install epel-release \
     libxml2-devel \
     openssl-devel \
     sshpass \
+    jq \
     && dnf clean all
 
 COPY / cnv-tests/
@@ -28,6 +29,10 @@ WORKDIR cnv-tests
 
 RUN python3 -m pip install pip --upgrade \
     && python3 -m pip install poetry \
+    && poetry config cache-dir /cnv-tests \
+    && poetry config virtualenvs.in-project true \
+    && poetry config --list \
+    && poetry env remove --all \
     && poetry install \
     && poetry export --without-hashes -n \
     && if [[ -n "${OPENSHIFT_PYTHON_WRAPPER_COMMIT}" ]]; then poetry run pip install git+https://github.com/RedHatQE/openshift-python-wrapper.git@$OPENSHIFT_PYTHON_WRAPPER_COMMIT -U; fi \
