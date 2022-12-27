@@ -9,10 +9,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 def assert_missing_golden_image_pvc(vm, pvc_name):
-    def _verify_missing_pvc_in_vm_conditions(_conditions, _expected_message):
-        if _conditions:
+    def _verify_missing_pvc_in_vm_conditions(_vm, _expected_message):
+        conditions = _vm.instance.status.conditions
+        if conditions:
             return any(
-                [_expected_message in condition["message"] for condition in _conditions]
+                [_expected_message in condition["message"] for condition in conditions]
             )
 
     expected_message = "VMI does not exist"
@@ -23,7 +24,7 @@ def assert_missing_golden_image_pvc(vm, pvc_name):
             wait_timeout=TIMEOUT_2MIN,
             sleep=5,
             func=_verify_missing_pvc_in_vm_conditions,
-            _conditions=vm.instance.status.conditions,
+            _vm=vm,
             _expected_message=expected_message,
         ):
             if sample:
