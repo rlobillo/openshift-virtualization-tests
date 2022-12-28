@@ -4,6 +4,7 @@ import re
 import pytest
 from ocp_resources.data_import_cron import DataImportCron
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from openshift.dynamic.exceptions import UnprocessibleEntityError
@@ -26,7 +27,11 @@ from utilities.ssp import (
     matrix_auto_boot_data_import_cron_prefixes,
     wait_for_deleted_data_import_crons,
 )
-from utilities.storage import DATA_IMPORT_CRON_SUFFIX, wait_for_dvs_import_completed
+from utilities.storage import (
+    DATA_IMPORT_CRON_SUFFIX,
+    RESOURCE_MANAGED_BY_DATA_IMPORT_CRON_LABEL,
+    wait_for_dvs_import_completed,
+)
 from utilities.virt import running_vm
 
 
@@ -171,14 +176,20 @@ def vm_from_custom_data_import_cron(
 
 
 @pytest.fixture()
-def deleted_auto_update_dvs(
+def deleted_auto_update_drives(
     admin_client,
     golden_images_namespace,
 ):
-    for dv in DataVolume.get(
-        dyn_client=admin_client, namespace=golden_images_namespace.name
-    ):
-        dv.clean_up()
+    """Delete all PVCs and DVs managed by DataImportCron CRs."""
+    get_params_dict = {
+        "dyn_client": admin_client,
+        "namespace": golden_images_namespace.name,
+        "label_selector": RESOURCE_MANAGED_BY_DATA_IMPORT_CRON_LABEL,
+    }
+
+    for _resource in (DataVolume, PersistentVolumeClaim):
+        for _rcs in _resource.get(**get_params_dict):
+            _rcs.clean_up()
 
 
 @pytest.mark.polarion("CNV-7531")
@@ -252,7 +263,7 @@ def test_opt_out_custom_data_import_cron_via_hco_not_deleted(
 def test_data_import_cron_using_default_storage_class(
     disabled_common_boot_image_import_feature_gate_scope_function,
     updated_default_storage_class_scope_function,
-    deleted_auto_update_dvs,
+    deleted_auto_update_drives,
     enabled_common_boot_image_import_feature_gate_scope_function,
     golden_images_data_volumes_scope_function,
     golden_images_persistent_volume_claims_scope_function,
