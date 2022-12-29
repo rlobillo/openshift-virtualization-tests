@@ -192,7 +192,10 @@ def test_vm_with_existing_dv(
 )
 @pytest.mark.polarion("CNV-5529")
 def test_vm_dv_with_different_sc(
-    golden_image_data_volume_scope_function, vm_from_golden_image
+    skip_test_if_no_csi_basic_sc,
+    skip_test_if_no_nfs_sc,
+    golden_image_data_volume_scope_function,
+    vm_from_golden_image,
 ):
     # VM cloned PVC storage class is different from the original golden image storage class
     # Using NFS and HPP, as Block <> Filesystem is not supported.

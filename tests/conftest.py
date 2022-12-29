@@ -69,6 +69,7 @@ from utilities.constants import (
     CPU_MODEL_LABEL_PREFIX,
     DEFAULT_HCO_CONDITIONS,
     HCO_SUBSCRIPTION,
+    HOSTPATH_CSI_BASIC,
     INTEL,
     KMP_ENABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
@@ -1513,6 +1514,30 @@ def skip_test_if_no_ocs_sc(ocs_storage_class):
 
 
 @pytest.fixture(scope="session")
+def skip_test_if_no_nfs_sc(cluster_storage_classes_names):
+    """
+    Skip test if no NFS storage class available
+    """
+    if StorageClassNames.NFS not in cluster_storage_classes_names:
+        pytest.skip(
+            f"Skipping test, {StorageClassNames.NFS} storage class is not deployed,"
+            f"deployed storage classes: {cluster_storage_classes_names}"
+        )
+
+
+@pytest.fixture(scope="session")
+def skip_test_if_no_csi_basic_sc(cluster_storage_classes_names):
+    """
+    Skip test if no CSI basic storage class available
+    """
+    if HOSTPATH_CSI_BASIC not in cluster_storage_classes_names:
+        pytest.skip(
+            f"Skipping test, {HOSTPATH_CSI_BASIC} basic storage class is not deployed,"
+            f"deployed storage classes: {cluster_storage_classes_names}"
+        )
+
+
+@pytest.fixture(scope="session")
 def hyperconverged_ovs_annotations_enabled_scope_session(
     admin_client,
     hco_namespace,
@@ -1542,6 +1567,11 @@ def hyperconverged_ovs_annotations_enabled_scope_session(
 @pytest.fixture(scope="session")
 def cluster_storage_classes(admin_client):
     return list(StorageClass.get(dyn_client=admin_client))
+
+
+@pytest.fixture(scope="session")
+def cluster_storage_classes_names(cluster_storage_classes):
+    return [sc.name for sc in cluster_storage_classes]
 
 
 @pytest.fixture()
@@ -1628,7 +1658,7 @@ def cnv_pods(admin_client, hco_namespace):
 def cluster_sanity_scope_session(
     request,
     nodes,
-    cluster_storage_classes,
+    cluster_storage_classes_names,
     admin_client,
     hco_namespace,
     junitxml_plugin,
@@ -1643,7 +1673,7 @@ def cluster_sanity_scope_session(
         cluster_sanity(
             request=request,
             admin_client=admin_client,
-            cluster_storage_classes=cluster_storage_classes,
+            cluster_storage_classes_names=cluster_storage_classes_names,
             nodes=nodes,
             hco_namespace=hco_namespace,
             junitxml_property=junitxml_plugin,
@@ -1656,7 +1686,7 @@ def cluster_sanity_scope_session(
 def cluster_sanity_scope_module(
     request,
     nodes,
-    cluster_storage_classes,
+    cluster_storage_classes_names,
     admin_client,
     hco_namespace,
     junitxml_plugin,
@@ -1671,7 +1701,7 @@ def cluster_sanity_scope_module(
         cluster_sanity(
             request=request,
             admin_client=admin_client,
-            cluster_storage_classes=cluster_storage_classes,
+            cluster_storage_classes_names=cluster_storage_classes_names,
             nodes=nodes,
             hco_namespace=hco_namespace,
             junitxml_property=junitxml_plugin,

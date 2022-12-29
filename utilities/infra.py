@@ -611,7 +611,7 @@ class ExecCommandOnPod:
 def cluster_sanity(
     request,
     admin_client,
-    cluster_storage_classes,
+    cluster_storage_classes_names,
     nodes,
     hco_namespace,
     hco_status_conditions,
@@ -623,9 +623,8 @@ def cluster_sanity(
         return
 
     def _storage_sanity_check():
-        sc_names = [sc.name for sc in cluster_storage_classes]
         config_sc = list([[*csc][0] for csc in py_config["storage_class_matrix"]])
-        exists_sc = [scn for scn in config_sc if scn in sc_names]
+        exists_sc = [scn for scn in config_sc if scn in cluster_storage_classes_names]
         if sorted(config_sc) != sorted(exists_sc):
             raise ClusterSanityError(
                 err_str=f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}\n"
