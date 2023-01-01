@@ -12,7 +12,11 @@ from utilities.infra import (
 
 
 @pytest.fixture
-def utility_daemonset_for_hpp_test(is_upstream_distribution, generated_pulled_secret):
+def utility_daemonset_for_hpp_test(
+    is_upstream_distribution,
+    generated_pulled_secret,
+    cnv_tests_utilities_service_account,
+):
     """
     Deploy utility daemonset into the kube-system namespace.
     This daemonset deploys a pod on every node with hostNetwork and the main usage is to run commands on the hosts.
@@ -20,6 +24,7 @@ def utility_daemonset_for_hpp_test(is_upstream_distribution, generated_pulled_se
     ds_yaml_file = get_daemonset_yaml_file_with_image_hash(
         is_upstream_distribution=is_upstream_distribution,
         generated_pulled_secret=generated_pulled_secret,
+        service_account=cnv_tests_utilities_service_account,
     )
     ds_yaml = yaml.safe_load(ds_yaml_file.read())
     utility_pods_for_hpp_test = "utility-pods-for-hpp-test"
