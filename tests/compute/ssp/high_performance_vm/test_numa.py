@@ -105,7 +105,7 @@ def test_numa(vm_numa):
 
     assert (
         pod_limits == pod_requests
-    ), f"NUMA Pod has mismatch in resources lmits and requests. Limits {pod_limits}, requests {pod_requests}"
+    ), f"NUMA Pod has mismatch in resources limits and requests. Limits {pod_limits}, requests {pod_requests}"
     assert (
         numa_pod.status.qosClass == "Guaranteed"
     ), f"QOS Class in not Guaranteed. NUMA pod QOS Class {numa_pod.status.qosClass}"
