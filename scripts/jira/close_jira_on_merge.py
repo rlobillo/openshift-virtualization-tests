@@ -32,11 +32,10 @@ if __name__ == "__main__":
     jira_connection = get_jira_connection()
     _jira_ids = get_jira_id_from_commit_msg()
     for _id in _jira_ids:
+        change_url = os.getenv("GERRIT_CHANGE_URL")
+        print(f"Closing Jira ticket {_id}, {change_url} is merged.")
         jira_connection.transition_issue(
             issue=_id,
             transition="closed",
-            comment=(
-                f"Closed by PR: https://code.engineering.redhat.com/gerrit/c/cnv-tests/+/"
-                f"{os.getenv('GERRIT_CHANGE_NUMBER')}"
-            ),
+            comment=f"Closed by PR: {change_url}",
         )
