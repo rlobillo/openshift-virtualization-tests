@@ -327,9 +327,7 @@ def create_cluster_monitoring_process(
 def terminate_process(process):
     if process.is_alive():
         LOGGER.info(f"Terminating process: {process.name}")
-        process.terminate()
-        process.join()
-        process.close()
+        process.kill()
 
 
 @contextmanager
