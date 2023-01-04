@@ -2155,9 +2155,10 @@ def get_template_by_labels(admin_client, template_labels):
             ),
         ),
     )
-    if (
+    if any(
         f"{Template.ApiGroup.OS_TEMPLATE_KUBEVIRT_IO}/{OS_FLAVOR_FEDORA}"
-        in template_labels
+        in template_label
+        for template_label in template_labels
     ):
         template = [
             fedora_template
