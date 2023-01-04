@@ -23,6 +23,7 @@ from tests.compute.ssp.supported_os.common_templates.utils import (
     validate_os_info_vmi_vs_linux_os,
 )
 from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_5MIN, Images
+from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import running_vm
 
 
@@ -212,6 +213,9 @@ def test_vm_with_uploaded_golden_image_opt_out(
     running_vm(vm=vm_without_boot_source)
 
 
+@pytest.mark.bugzilla(
+    2165083, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+)
 @pytest.mark.polarion("CNV-8031")
 def test_vm_with_uploaded_golden_image_opt_in(
     disabled_common_boot_image_import_feature_gate_scope_function,

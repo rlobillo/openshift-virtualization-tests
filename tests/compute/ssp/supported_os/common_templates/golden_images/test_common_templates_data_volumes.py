@@ -10,7 +10,7 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.utils import 
 )
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
 from utilities.constants import HOSTPATH_CSI_BASIC, TIMEOUT_8MIN, StorageClassNames
-from utilities.infra import cluster_resource
+from utilities.infra import BUG_STATUS_CLOSED, cluster_resource
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     running_vm,
@@ -217,7 +217,12 @@ def test_vm_dv_with_different_sc(
                 "updated_source_pvc_name": NON_EXISTING_DV_NAME,
                 "start_vm": False,
             },
-            marks=pytest.mark.polarion("CNV-5528"),
+            marks=(
+                pytest.mark.polarion("CNV-5528"),
+                pytest.mark.bugzilla(
+                    2165083, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
+                ),
+            ),
         ),
     ],
     indirect=True,
