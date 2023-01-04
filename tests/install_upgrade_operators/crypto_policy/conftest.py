@@ -80,6 +80,8 @@ def services_to_check_connectivity(hco_namespace):
     for service_name in [
         "virt-api",
         "ssp-operator-service",
+        "ssp-operator-metrics",
+        "virt-template-validator",
         "kubemacpool-service",
         "cdi-api",
     ]:
