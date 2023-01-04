@@ -2,6 +2,7 @@ import os
 import re
 import shlex
 import subprocess
+import sys
 
 from jira import JIRA
 
@@ -20,7 +21,7 @@ def get_jira_id_from_commit_msg():
     jira_ids = []
     data = subprocess.check_output(shlex.split("git log HEAD^-1"))
     data = data.decode("utf-8")
-    match = re.findall("closes jira ticket: *(.*)", data, re.IGNORECASE)
+    match = re.findall("closes jira (?:ticket|issue)s?: *(.*)", data, re.IGNORECASE)
     if match:
         jira_ids = match[0].split(",")
         jira_ids = [_id.strip() for _id in jira_ids]
@@ -29,13 +30,20 @@ def get_jira_id_from_commit_msg():
 
 
 if __name__ == "__main__":
-    jira_connection = get_jira_connection()
+    change_url = os.getenv("GERRIT_CHANGE_URL")
+    if change_url is None:
+        sys.exit("GERRIT_CHANGE_URL environment variable is not set")
+
+    print(f"Change {change_url} was merged, looking for Jira linked issues")
     _jira_ids = get_jira_id_from_commit_msg()
-    for _id in _jira_ids:
-        change_url = os.getenv("GERRIT_CHANGE_URL")
-        print(f"Closing Jira ticket {_id}, {change_url} is merged.")
-        jira_connection.transition_issue(
-            issue=_id,
-            transition="closed",
-            comment=f"Closed by PR: {change_url}",
-        )
+    if len(_jira_ids) == 0:
+        print("No linked issues found in commit message.")
+    else:
+        jira_connection = get_jira_connection()
+        for jira_issue_id in _jira_ids:
+            print(f"Closing Jira ticket {jira_issue_id}")
+            jira_connection.transition_issue(
+                issue=jira_issue_id,
+                transition="closed",
+                comment=f"Closed by PR: {change_url}",
+            )
