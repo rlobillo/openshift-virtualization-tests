@@ -458,7 +458,7 @@ class StorageClassNames:
     CEPH_RBD = "ocs-storagecluster-ceph-rbd"
     HOSTPATH = "hostpath-provisioner"
     NFS = "nfs"
-    TOPOLVM = "odf-lvm-vg1"
+    TOPOLVM = "lvms-vg1"
 
 
 # Namespace constants
