@@ -34,6 +34,8 @@ def test_compare_csv_permissions(csv_permissions_from_yaml, csv_permissions):
     ), f"Found unexpected differences in CNV CSV permissions compare to saved permissions in {get_yaml_file_path()}"
 
 
+# FIXME: SSP: https://issues.redhat.com/browse/CNV-24031
+# FIXME: Network: https://issues.redhat.com/browse/CNV-24032
 @pytest.mark.polarion("CNV-9548")
 def test_global_csv_permissions(csv_permissions):
     errors = {}
