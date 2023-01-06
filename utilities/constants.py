@@ -452,6 +452,7 @@ PRODUCTION_CATALOG_SOURCE = "redhat-operators"
 CLUSTER_RESOURCE_NAME = "cluster"
 TLS_OLD_POLICY = "old"
 TLS_CUSTOM_POLICY = "custom"
+IMAGE_CRON_STR = "image-cron"
 
 
 class StorageClassNames:

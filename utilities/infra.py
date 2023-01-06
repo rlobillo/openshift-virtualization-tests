@@ -57,6 +57,7 @@ import utilities.virt
 from utilities.constants import (
     AUDIT_LOGS_PATH,
     HCO_CATALOG_SOURCE,
+    IMAGE_CRON_STR,
     OC_ADM_LOGS_COMMAND,
     OPERATOR_NAME_SUFFIX,
     SANITY_TESTS_FAILURE,
@@ -337,7 +338,12 @@ def wait_for_pods_deletion(pods):
         pod.wait_deleted()
 
 
-def wait_for_pods_running(admin_client, namespace, number_of_consecutive_checks=1):
+def wait_for_pods_running(
+    admin_client,
+    namespace,
+    number_of_consecutive_checks=1,
+    filter_pods_by_name=None,
+):
     """
     Waits for all pods in a given namespace to reach Running/Completed state. To avoid catching all pods in running
     state too soon, use number_of_consecutive_checks with appropriate values.
@@ -346,22 +352,45 @@ def wait_for_pods_running(admin_client, namespace, number_of_consecutive_checks=
          admin_client(DynamicClient): Dynamic client
          namespace(Namespace): A namespace object
          number_of_consecutive_checks(int): Number of times to check for all pods in running state
+         filter_pods_by_name(str): string to filter pod names by
+
     Raises:
         TimeoutExpiredError: Raises TimeoutExpiredError if any of the pods in the given namespace are not in Running
          state
     """
 
-    def _get_not_running_pods():
+    def _get_pod_container_error_status(_pod):
+        pod_instance_status = _pod.instance.status
+        # Check the containerStatuses and if any containers is in waiting state, return that information:
+
+        for container_status in pod_instance_status.get("containerStatuses", []):
+            waiting_container = container_status.get("state", {}).get("waiting")
+            if waiting_container:
+                return (
+                    waiting_container["reason"]
+                    if waiting_container.get("reason")
+                    else waiting_container
+                )
+
+    def _get_not_running_pods(_filter_pods_by_name):
         pods = list(Pod.get(dyn_client=admin_client, namespace=namespace.name))
         pods_not_running = []
         for pod in pods:
+            pod_instance = pod.instance
+            if _filter_pods_by_name and _filter_pods_by_name in pod.name:
+                LOGGER.warning(f"Ignoring pod: {pod.name} for pod state validations.")
+                continue
+            container_status_error = _get_pod_container_error_status(_pod=pod)
+            if container_status_error:
+                pods_not_running.append({pod.name: container_status_error})
             try:
                 # Waits for all pods in a given namespace to be in final healthy state(running/completed).
-                # We also need to keep track of pods marked for deletion as not running. This would ensure any pod that
-                # was spinned up in place of pod marked for deletion, reaches healthy state before end of this check
-                if pod.instance.metadata.get(
+                # We also need to keep track of pods marked for deletion as not running. This would ensure any
+                # pod that was spinned up in place of pod marked for deletion, reaches healthy state before end
+                # of this check
+                if pod_instance.metadata.get(
                     "deletionTimestamp"
-                ) or pod.instance.status.phase not in (
+                ) or pod_instance.status.phase not in (
                     pod.Status.RUNNING,
                     pod.Status.SUCCEEDED,
                 ):
@@ -374,9 +403,10 @@ def wait_for_pods_running(admin_client, namespace, number_of_consecutive_checks=
         return pods_not_running
 
     samples = TimeoutSampler(
-        wait_timeout=120,
+        wait_timeout=TIMEOUT_2MIN,
         sleep=1,
         func=_get_not_running_pods,
+        _filter_pods_by_name=filter_pods_by_name,
     )
     sample = None
     try:
@@ -388,16 +418,13 @@ def wait_for_pods_running(admin_client, namespace, number_of_consecutive_checks=
                     return True
             else:
                 current_check = 0
-    except TimeoutExpiredError as exp:
-        raise_multiple_exceptions(
-            exceptions=[
-                ClusterSanityError(
-                    err_str=f"timeout waiting for all pods in namespace {namespace.name} to reach "
-                    f"running state, following pods are in not running state: {sample}"
-                ),
-                exp,
-            ]
-        )
+    except TimeoutExpiredError:
+        if sample:
+            LOGGER.error(
+                f"timeout waiting for all pods in namespace {namespace.name} to reach "
+                f"running state, following pods are in not running state: {sample}"
+            )
+            raise
 
 
 def get_daemonset_by_name(admin_client, daemonset_name, namespace_name):
@@ -668,7 +695,18 @@ def cluster_sanity(
             )
             assert_nodes_ready(nodes=nodes)
             assert_nodes_schedulable(nodes=nodes)
-            wait_for_pods_running(admin_client=admin_client, namespace=hco_namespace)
+
+            try:
+                wait_for_pods_running(
+                    admin_client=admin_client,
+                    namespace=hco_namespace,
+                    filter_pods_by_name=IMAGE_CRON_STR,
+                )
+            except TimeoutExpiredError as timeout_error:
+                LOGGER.error(timeout_error)
+                raise ClusterSanityError(
+                    err_str=f"Timed out waiting for all pods in namespace {hco_namespace.name} to get to running state."
+                )
 
         # Check hco.status.conditions only if --cluster-sanity-skip-hco-check not passed to pytest.
         if request.session.config.getoption(skip_hco_status_condition_check):

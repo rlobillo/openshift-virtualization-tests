@@ -18,6 +18,7 @@ from utilities.constants import (
     CDI_DEPLOYMENT,
     CDI_UPLOADPROXY,
     HCO_SUBSCRIPTION,
+    IMAGE_CRON_STR,
     KUBE_CNI_LINUX_BRIDGE_PLUGIN,
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     TIMEOUT_5MIN,
@@ -202,14 +203,22 @@ def cdi_deployment_nodeselector_list(admin_client, hco_namespace):
 
 @pytest.fixture()
 def hco_pods_per_nodes(admin_client, hco_namespace):
-    return get_pod_per_nodes(admin_client=admin_client, hco_namespace=hco_namespace)
+    return get_pod_per_nodes(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        filter_pods_by_name=IMAGE_CRON_STR,
+    )
 
 
 @pytest.fixture()
 def hco_pods_per_nodes_after_altering_placement(
     admin_client, hco_namespace, alter_np_configuration
 ):
-    return get_pod_per_nodes(admin_client=admin_client, hco_namespace=hco_namespace)
+    return get_pod_per_nodes(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        filter_pods_by_name=IMAGE_CRON_STR,
+    )
 
 
 @pytest.fixture(scope="class")
@@ -377,4 +386,8 @@ def subscription_pods_per_nodes_after_altering_placement(
     admin_client,
     hco_namespace,
 ):
-    return get_pod_per_nodes(admin_client=admin_client, hco_namespace=hco_namespace)
+    return get_pod_per_nodes(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        filter_pods_by_name=IMAGE_CRON_STR,
+    )

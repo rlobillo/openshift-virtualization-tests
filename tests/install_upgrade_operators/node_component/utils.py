@@ -16,6 +16,7 @@ from utilities.constants import (
     CLUSTER_NETWORK_ADDONS_OPERATOR,
     HCO_OPERATOR,
     HCO_WEBHOOK,
+    IMAGE_CRON_STR,
     KUBE_CNI_LINUX_BRIDGE_PLUGIN,
     KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     MASTER_NODE_LABEL_KEY,
@@ -177,7 +178,9 @@ def find_components_on_node(component_list, node_name, admin_client, hco_namespa
         list, list: list of matched components, list of unmatched components for a given node
     """
     pods_on_node = get_pod_per_nodes(
-        admin_client=admin_client, hco_namespace=hco_namespace
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        filter_pods_by_name=IMAGE_CRON_STR,
     )
     found_components = []
     missing_components = []
@@ -339,24 +342,28 @@ def verify_components_exist_only_on_selected_node(
     )
 
 
-def get_pod_per_nodes(admin_client, hco_namespace):
+def get_pod_per_nodes(admin_client, hco_namespace, filter_pods_by_name=None):
     """
     This function creates a dictionary, with nodes as keys and associated list of pod apps as values
 
     Args:
         admin_client(DynamicClient): DynamicClient object
         hco_namespace(Namespace): Namespace object
+        filter_pods_by_name(str): string to filter pod names by
 
     Returns:
         dict: a dictionary, with nodes as keys and associated list of pod apps as values
     """
 
-    def _get_pods_per_nodes():
+    def _get_pods_per_nodes(_filter_pods_by_name):
         pods_per_nodes = defaultdict(list)
         for pod in cluster_resource(Pod).get(
             dyn_client=admin_client,
             namespace=hco_namespace.name,
         ):
+            if _filter_pods_by_name and _filter_pods_by_name in pod.name:
+                LOGGER.warning(f"Ignoring pod: {pod.name} for placement")
+                continue
             try:
                 # field_selector="status.phase==Running" is not always reliable
                 # to filter out terminating pods, see: https://github.com/kubernetes/kubectl/issues/450
@@ -374,6 +381,7 @@ def get_pod_per_nodes(admin_client, hco_namespace):
         wait_timeout=TIMEOUT_5MIN,
         sleep=30,
         func=_get_pods_per_nodes,
+        _filter_pods_by_name=filter_pods_by_name,
         exceptions_dict={NotFoundError: []},
     )
     try:

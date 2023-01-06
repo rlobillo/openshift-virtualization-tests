@@ -17,6 +17,7 @@ from utilities.constants import (
     ENABLE_COMMON_BOOT_IMAGE_IMPORT_FEATURE_GATE,
     EXPECTED_STATUS_CONDITIONS,
     HCO_SUBSCRIPTION,
+    IMAGE_CRON_STR,
     TIMEOUT_2MIN,
     TIMEOUT_4MIN,
     TIMEOUT_10MIN,
@@ -241,6 +242,7 @@ def wait_for_hco_post_update_stable_state(admin_client, hco_namespace):
         admin_client=admin_client,
         namespace=hco_namespace,
         number_of_consecutive_checks=3,
+        filter_pods_by_name=IMAGE_CRON_STR,
     )
 
 

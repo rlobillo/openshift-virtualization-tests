@@ -55,7 +55,7 @@ def test_no_new_cnv_pods_added(cnv_pods, cnv_jobs):
         pod.name
         for pod in cnv_pods
         if list(filter(pod.name.startswith, all_pods)) == []
-        and pod.name not in cnv_jobs
+        and list(filter(pod.name.startswith, cnv_jobs)) == []
     ]
     assert not new_pods, f"New cnv pod: {new_pods}, has been added."
 
