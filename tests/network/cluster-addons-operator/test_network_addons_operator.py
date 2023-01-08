@@ -161,7 +161,7 @@ def net_add_op_bridge_device(worker_node1):
     with utilities.network.network_device(
         interface_type=LINUX_BRIDGE,
         nncp_name="test-network-operator",
-        interface_name="br1test",
+        interface_name="net-add-br",
         node_selector=worker_node1.hostname,
     ) as br_dev:
         yield br_dev

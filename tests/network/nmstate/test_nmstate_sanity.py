@@ -25,7 +25,7 @@ CAT_RESOLV_CONF_CMD = f"cat {DNS_CONF_FILE}"
 
 LOGGER = logging.getLogger(__name__)
 IP_LIST = [{"ip": "1.1.1.1", "prefix-length": 24}]
-BRIDGE_NAME = "br1test"
+BRIDGE_NAME = "nm-sanity-br"
 NNCP_CONFIGURING_STATUS = (
     LinuxBridgeNodeNetworkConfigurationPolicy.Conditions.Reason.CONFIGURATION_PROGRESSING
 )

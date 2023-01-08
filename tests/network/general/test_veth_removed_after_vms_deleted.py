@@ -16,8 +16,8 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
-BR1TEST = "br1test"
-BR2TEST = "br2test"
+BR1TEST = "veth-br1"
+BR2TEST = "veth-br2"
 
 pytestmark = pytest.mark.sno
 

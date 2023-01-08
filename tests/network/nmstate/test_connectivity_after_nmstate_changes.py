@@ -24,7 +24,7 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
-BRIDGE_NAME = "br1test"
+BRIDGE_NAME = "br-nmstate"
 
 
 def restart_nmstate_handler(admin_client, nmstate_ds, nmstate_namespace):
