@@ -34,6 +34,10 @@ from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
+from ocp_resources.virtual_machine_restore import VirtualMachineRestore
+from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
+from ocp_resources.volume_snapshot import VolumeSnapshot
+from ocp_resources.volume_snapshot_class import VolumeSnapshotClass
 from ocp_utilities.data_collector import (
     collect_pods_data,
     collect_resources_yaml_instance,
@@ -94,6 +98,10 @@ RESOURCES_TO_COLLECT_INFO = [
     VirtualMachine,
     VirtualMachineInstance,
     VirtualMachineInstanceMigration,
+    VirtualMachineSnapshot,
+    VirtualMachineRestore,
+    VolumeSnapshot,
+    VolumeSnapshotClass,
     NetworkAttachmentDefinition,
     NodeNetworkConfigurationPolicy,
     NodeNetworkState,
