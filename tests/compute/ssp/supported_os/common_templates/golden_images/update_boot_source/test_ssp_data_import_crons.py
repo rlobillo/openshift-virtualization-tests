@@ -87,7 +87,7 @@ def wait_for_existing_auto_update_data_import_crons(admin_client, namespace):
         raise
 
 
-def wait_for_created_dv_from_data_import_cron(admin_client, custom_data_source):
+def wait_for_created_pvc_from_data_import_cron(admin_client, custom_data_source):
     try:
         for sample in TimeoutSampler(
             wait_timeout=TIMEOUT_5MIN,
@@ -98,7 +98,7 @@ def wait_for_created_dv_from_data_import_cron(admin_client, custom_data_source):
         ):
             if sample:
                 return list(
-                    DataVolume.get(
+                    PersistentVolumeClaim.get(
                         dyn_client=admin_client,
                         name=custom_data_source.instance.spec.source.pvc.name,
                         namespace=custom_data_source.namespace,
@@ -106,7 +106,7 @@ def wait_for_created_dv_from_data_import_cron(admin_client, custom_data_source):
                 )
     except TimeoutExpiredError:
         LOGGER.error(
-            f"DV was not created under {custom_data_source.namespace} namespace, "
+            f"PVC was not created under {custom_data_source.namespace} namespace, "
             f"dataSource conditions: {custom_data_source.instance.status.conditions}"
         )
         raise
@@ -371,9 +371,9 @@ def test_custom_data_import_cron_image_updated_via_hco(
     updated_data_import_cron,
 ):
     LOGGER.info(
-        "Verify custom DV is created after DataImportCron update with a valid registry URL."
+        "Verify custom PVC is created after DataImportCron update with a valid registry URL."
     )
-    wait_for_created_dv_from_data_import_cron(
+    wait_for_created_pvc_from_data_import_cron(
         admin_client=admin_client, custom_data_source=custom_data_source_scope_function
     )
 
