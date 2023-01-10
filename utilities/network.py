@@ -1025,6 +1025,7 @@ def enable_hyperconverged_ovs_annotations(
             hyperconverged_resource: {"metadata": {"annotations": {DEPLOY_OVS: "true"}}}
         },
         list_resource_reconcile=[NetworkAddonsConfig],
+        wait_for_reconcile_post_update=True,
     ):
         wait_for_ovs_status(network_addons_config=network_addons_config, status=True)
         ovs_daemonset = wait_for_ovs_daemonset_resource(
