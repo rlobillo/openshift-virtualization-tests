@@ -5,7 +5,7 @@ from benedict import benedict
 from ocp_resources.cluster_operator import ClusterOperator
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.kubevirt import KubeVirt
-from ocp_resources.resource import Resource
+from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import cluster_resource
 from packaging.version import Version
@@ -27,7 +27,7 @@ from utilities.constants import (
     TIMEOUT_15MIN,
     TLS_SECURITY_PROFILE,
 )
-from utilities.hco import ResourceEditorValidateHCOReconcile
+from utilities.hco import ResourceEditorValidateHCOReconcile, wait_for_hco_conditions
 from utilities.infra import ExecCommandOnPod, is_bug_open
 
 
@@ -55,6 +55,33 @@ def get_resource_crypto_policy(admin_client, resource, name, key_name, namespace
     return benedict(
         resource_obj.instance.to_dict()["spec"], keypath_separator=KEY_PATH_SEPARATOR
     ).get(key_name)
+
+
+def get_resources_crypto_policy_dict(
+    admin_client, resources_dict, resources=MANAGED_CRS_LIST
+):
+    """
+    This function collects crypto policy corresponding to each resources in the list
+    'resources'
+
+    Args:
+        admin_client (DynamiClient): OCP Client to use.
+        resources_dict (dict): Dict containing resource name, key_name, namespace
+        resources (list): List of resource objects whose TLS policies are required
+
+    Returns:
+        dict: crypto policy settings value for each resource in 'resources'
+    """
+    return {
+        resource: get_resource_crypto_policy(
+            admin_client=admin_client,
+            resource=resource,
+            namespace=resources_dict[resource].get(RESOURCE_NAMESPACE_STR),
+            name=resources_dict[resource][RESOURCE_NAME_STR],
+            key_name=resources_dict[resource][KEY_NAME_STR],
+        )
+        for resource in resources
+    }
 
 
 def wait_for_crypto_policy_update(
@@ -305,3 +332,22 @@ def set_hco_crypto_policy(hco_resource, tls_spec):
         list_resource_reconcile=MANAGED_CRS_LIST,
     ):
         yield
+
+
+@contextmanager
+def update_apiserver_crypto_policy(
+    admin_client,
+    hco_namespace,
+    apiserver,
+    tls_spec,
+):
+    with ResourceEditor(
+        patches={apiserver: {"spec": {TLS_SECURITY_PROFILE: tls_spec}}},
+    ):
+        yield
+    wait_for_cluster_operator_stabilize(admin_client=admin_client)
+    wait_for_hco_conditions(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        list_dependent_crs_to_check=MANAGED_CRS_LIST,
+    )

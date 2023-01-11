@@ -5,7 +5,6 @@ from ocp_resources.api_server import APIServer
 from ocp_resources.cdi import CDI
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
-from ocp_resources.resource import ResourceEditor
 from ocp_resources.service import Service
 from ocp_resources.ssp import SSP
 from ocp_utilities.infra import cluster_resource
@@ -15,14 +14,13 @@ from tests.install_upgrade_operators.constants import KEY_PATH_SEPARATOR
 from tests.install_upgrade_operators.crypto_policy.constants import (
     CRYPTO_POLICY_SPEC_DICT,
     KEY_NAME_STR,
-    MANAGED_CRS_LIST,
     RESOURCE_NAME_STR,
     RESOURCE_NAMESPACE_STR,
     RESOURCE_TYPE_STR,
 )
 from tests.install_upgrade_operators.crypto_policy.utils import (
     get_resource_crypto_policy,
-    wait_for_cluster_operator_stabilize,
+    update_apiserver_crypto_policy,
 )
 from utilities.constants import (
     CDI_KUBEVIRT_HYPERCONVERGED,
@@ -31,7 +29,6 @@ from utilities.constants import (
     SSP_KUBEVIRT_HYPERCONVERGED,
     TLS_SECURITY_PROFILE,
 )
-from utilities.hco import wait_for_hco_conditions
 from utilities.infra import MissingResourceException
 
 
@@ -96,16 +93,13 @@ def updated_api_server_crypto_policy(
     assert (
         tls_security_spec
     ), f"{cnv_crypto_policy_matrix__function__} needs to be added to {CRYPTO_POLICY_SPEC_DICT}"
-    with ResourceEditor(
-        patches={api_server: {"spec": {TLS_SECURITY_PROFILE: tls_security_spec}}},
-    ):
-        yield
-    wait_for_cluster_operator_stabilize(admin_client=admin_client)
-    wait_for_hco_conditions(
+    with update_apiserver_crypto_policy(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
-        list_dependent_crs_to_check=MANAGED_CRS_LIST,
-    )
+        apiserver=api_server,
+        tls_spec=tls_security_spec,
+    ):
+        yield
 
 
 @pytest.fixture(scope="session")
