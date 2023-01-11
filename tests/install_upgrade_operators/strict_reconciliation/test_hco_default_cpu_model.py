@@ -78,6 +78,7 @@ def hco_with_default_cpu_model_set(
             }
         },
         list_resource_reconcile=[KubeVirt, HyperConverged],
+        wait_for_reconcile_post_update=True,
     ):
         yield nodes_common_cpu_model
 
