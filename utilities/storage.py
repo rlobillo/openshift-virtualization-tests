@@ -596,6 +596,7 @@ class PodWithPVC(Pod):
                         "seccompProfile": {"type": "RuntimeDefault"},
                         "runAsNonRoot": True,
                         "runAsUser": 1000,
+                        "fsGroup": 2000,
                     },
                     "containers": [
                         {
