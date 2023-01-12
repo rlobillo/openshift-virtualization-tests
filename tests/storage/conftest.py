@@ -18,12 +18,14 @@ from ocp_resources.route import Route
 from ocp_resources.secret import Secret
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutSampler
+from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
 from tests.storage.constants import HPP_STORAGE_CLASSES
 from tests.storage.utils import (
     HttpService,
+    check_snapshot_indication,
     get_hpp_daemonset,
     get_storage_class_with_specified_volume_mode,
     hpp_cr_suffix,
@@ -33,6 +35,7 @@ from utilities.constants import (
     CDI_OPERATOR,
     CDI_UPLOADPROXY,
     CNV_TESTS_CONTAINER,
+    OS_FLAVOR_CIRROS,
     Images,
 )
 from utilities.hco import (
@@ -47,10 +50,13 @@ from utilities.infra import (
 )
 from utilities.storage import (
     HttpDeployment,
+    create_cirros_dv_for_snapshot_dict,
     data_volume,
     downloaded_image,
     sc_volume_binding_mode_is_wffc,
+    write_file,
 )
+from utilities.virt import VirtualMachineForTests
 
 
 LOGGER = logging.getLogger(__name__)
@@ -478,3 +484,89 @@ def disabled_cdi_garbage_collector(
             list_resource_reconcile=[CDI],
         ):
             yield
+
+
+@pytest.fixture()
+def cirros_dv_for_snapshot_dict(
+    namespace,
+    cirros_vm_name,
+    storage_class_matrix_snapshot_matrix__module__,
+):
+    yield create_cirros_dv_for_snapshot_dict(
+        name=cirros_vm_name,
+        namespace=namespace.name,
+        storage_class=[*storage_class_matrix_snapshot_matrix__module__][0],
+    )
+
+
+@pytest.fixture()
+def cirros_vm_for_snapshot(
+    admin_client,
+    namespace,
+    cirros_vm_name,
+    cirros_dv_for_snapshot_dict,
+):
+    """
+    Create a VM with a DV that supports snapshots
+    """
+    dv_metadata = cirros_dv_for_snapshot_dict["metadata"]
+    with cluster_resource(VirtualMachineForTests)(
+        client=admin_client,
+        name=cirros_vm_name,
+        namespace=dv_metadata["namespace"],
+        os_flavor=OS_FLAVOR_CIRROS,
+        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
+        data_volume_template={
+            "metadata": dv_metadata,
+            "spec": cirros_dv_for_snapshot_dict["spec"],
+        },
+    ) as vm:
+        yield vm
+
+
+@pytest.fixture()
+def snapshots_with_content(
+    request,
+    namespace,
+    admin_client,
+    cirros_vm_for_snapshot,
+):
+    """
+    Creates a requested number of snapshots with content
+    The default behavior of the fixture is creating an offline
+    snapshot unless {online_vm = True} declared in the test
+    """
+    vm_snapshots = []
+    is_online_test = request.param.get("online_vm", False)
+    for idx in range(request.param["number_of_snapshots"]):
+        # write_file check if the vm is running and if not, start the vm
+        # after the file have been written the function stops the vm
+        index = idx + 1
+        before_snap_index = f"before-snap-{index}"
+        write_file(
+            vm=cirros_vm_for_snapshot,
+            filename=f"{before_snap_index}.txt",
+            content=before_snap_index,
+        )
+        if is_online_test:
+            cirros_vm_for_snapshot.start(wait=True)
+        with cluster_resource(VirtualMachineSnapshot)(
+            name=f"snapshot-{cirros_vm_for_snapshot.name}-number-{index}",
+            namespace=cirros_vm_for_snapshot.namespace,
+            vm_name=cirros_vm_for_snapshot.name,
+            client=admin_client,
+            teardown=False,
+        ) as vm_snapshot:
+            vm_snapshots.append(vm_snapshot)
+            vm_snapshot.wait_snapshot_done()
+            after_snap_index = f"after-snap-{index}"
+            write_file(
+                vm=cirros_vm_for_snapshot,
+                filename=f"{after_snap_index}.txt",
+                content=after_snap_index,
+            )
+    check_snapshot_indication(snapshot=vm_snapshot, is_online=is_online_test)
+    yield vm_snapshots
+
+    for vm_snapshot in vm_snapshots:
+        vm_snapshot.clean_up()

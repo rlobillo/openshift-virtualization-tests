@@ -15,108 +15,10 @@ from ocp_utilities.utils import run_ssh_commands
 from tests.storage.snapshots.constants import WINDOWS_DIRECTORY_PATH
 from tests.storage.snapshots.utils import assert_directory_existence
 from tests.storage.utils import create_windows19_vm, set_permissions
-from utilities.constants import (
-    OS_FLAVOR_CIRROS,
-    TIMEOUT_10MIN,
-    UNPRIVILEGED_USER,
-    Images,
-)
-from utilities.storage import create_cirros_dv_for_snapshot_dict, write_file
-from utilities.virt import VirtualMachineForTests
+from utilities.constants import TIMEOUT_10MIN, UNPRIVILEGED_USER
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-def check_snapshot_indication(snapshot, is_online):
-    snapshot_indications = snapshot.instance.status.indications
-    if is_online:
-        assert "Online" in snapshot_indications
-    else:
-        assert not snapshot_indications
-
-
-@pytest.fixture()
-def cirros_dv_for_snapshot_dict(
-    namespace,
-    cirros_vm_name,
-    storage_class_matrix_snapshot_matrix__module__,
-):
-    yield create_cirros_dv_for_snapshot_dict(
-        name=cirros_vm_name,
-        namespace=namespace.name,
-        storage_class=[*storage_class_matrix_snapshot_matrix__module__][0],
-    )
-
-
-@pytest.fixture()
-def cirros_vm_for_snapshot(
-    admin_client,
-    namespace,
-    cirros_vm_name,
-    cirros_dv_for_snapshot_dict,
-):
-    """
-    Create a VM with a DV that supports snapshots
-    """
-    dv_metadata = cirros_dv_for_snapshot_dict["metadata"]
-    with cluster_resource(VirtualMachineForTests)(
-        client=admin_client,
-        name=cirros_vm_name,
-        namespace=dv_metadata["namespace"],
-        os_flavor=OS_FLAVOR_CIRROS,
-        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-        data_volume_template={
-            "metadata": dv_metadata,
-            "spec": cirros_dv_for_snapshot_dict["spec"],
-        },
-    ) as vm:
-        yield vm
-
-
-@pytest.fixture()
-def snapshots_with_content(
-    request,
-    namespace,
-    admin_client,
-    cirros_vm_for_snapshot,
-):
-    """
-    Creates a requested number of snapshots with content
-    The default behavior of the fixture is creating an offline
-    snapshot unless {online_vm = True} declared in the test
-    """
-    vm_snapshots = []
-    is_online_test = request.param.get("online_vm", False)
-    for idx in range(request.param["number_of_snapshots"]):
-        # write_file check if the vm is running and if not, start the vm
-        # after the file have been written the function stops the vm
-        write_file(
-            vm=cirros_vm_for_snapshot,
-            filename=f"before-snap-{idx+1}.txt",
-            content=f"before-snap-{idx+1}",
-        )
-        if is_online_test:
-            cirros_vm_for_snapshot.start(wait=True)
-        with cluster_resource(VirtualMachineSnapshot)(
-            name=f"snapshot-{cirros_vm_for_snapshot.name}-number-{idx + 1}",
-            namespace=cirros_vm_for_snapshot.namespace,
-            vm_name=cirros_vm_for_snapshot.name,
-            client=admin_client,
-            teardown=False,
-        ) as vm_snapshot:
-            vm_snapshots.append(vm_snapshot)
-            vm_snapshot.wait_snapshot_done()
-            write_file(
-                vm=cirros_vm_for_snapshot,
-                filename=f"after-snap-{idx+1}.txt",
-                content=f"after-snap-{idx+1}",
-            )
-    check_snapshot_indication(snapshot=vm_snapshot, is_online=is_online_test)
-    yield vm_snapshots
-
-    for vm_snapshot in vm_snapshots:
-        vm_snapshot.clean_up()
 
 
 @pytest.fixture()

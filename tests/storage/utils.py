@@ -532,3 +532,14 @@ def create_cirros_dv(
     ) as dv:
         dv.wait_for_dv_success()
         yield dv
+
+
+def check_snapshot_indication(snapshot, is_online):
+    snapshot_indications = snapshot.instance.status.indications
+    online = "Online"
+    if is_online:
+        assert online in snapshot_indications, f"No Snapshot indication '{online}'"
+    else:
+        assert (
+            not snapshot_indications
+        ), f"Snapshot should not have indications, current indications: {snapshot_indications}"
