@@ -18,6 +18,7 @@ from tests.install_upgrade_operators.utils import (
 from utilities.constants import (
     BASE_EXCEPTIONS_DICT,
     HCO_OPERATOR,
+    IMAGE_CRON_STR,
     OPERATOR_NAME_SUFFIX,
     TIMEOUT_10MIN,
     TIMEOUT_20MIN,
@@ -219,6 +220,10 @@ def assert_only_expected_pods_exist(
         pod.name: pod.instance.spec.containers[0].image
         for pod in current_cnv_pods
         if pod.instance.spec.containers[0].image not in expected_images
+        and not (
+            IMAGE_CRON_STR in pod.name
+            or pod.instance.status.phase in pod.Status.SUCCEEDED
+        )
     }
 
     assert not mismatching_pods, (
