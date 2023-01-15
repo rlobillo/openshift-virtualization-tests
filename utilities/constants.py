@@ -265,6 +265,7 @@ CLOUD_INIT_NO_CLOUD = "cloudInitNoCloud"
 # Kubemacpool constants
 KMP_VM_ASSIGNMENT_LABEL = "mutatevirtualmachines.kubemacpool.io"
 KMP_ENABLED_LABEL = "allocate"
+KMP_DISABLED_LABEL = "ignore"
 
 # SSH constants
 CNV_SSH_KEY_PATH = os.path.join(os.getcwd(), "utilities/cnv-qe-jenkins.key")

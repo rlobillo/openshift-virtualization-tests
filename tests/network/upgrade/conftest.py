@@ -17,7 +17,11 @@ from tests.network.utils import (
     ServiceMeshMemberRollForTests,
 )
 from utilities import console
-from utilities.constants import LINUX_BRIDGE
+from utilities.constants import (
+    KMP_DISABLED_LABEL,
+    KMP_VM_ASSIGNMENT_LABEL,
+    LINUX_BRIDGE,
+)
 from utilities.infra import cluster_resource, create_ns, get_pod_by_name_prefix
 from utilities.network import cloud_init, network_nad
 from utilities.virt import (
@@ -190,4 +194,12 @@ def service_mesh_vm_for_upgrade_with_console_ready(
     wait_for_console(
         vm=vm_cirros_with_service_mesh_annotation_for_upgrade,
         console_impl=console.Cirros,
+    )
+
+
+@pytest.fixture(scope="session")
+def namespace_with_disabled_kmp():
+    yield from create_ns(
+        name="kmp-disabled-ns",
+        labels={KMP_VM_ASSIGNMENT_LABEL: KMP_DISABLED_LABEL},
     )

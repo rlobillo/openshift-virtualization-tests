@@ -6,6 +6,7 @@ import pytest
 
 from tests.network.upgrade.utils import (
     assert_bridge_and_vms_on_same_node,
+    assert_label_in_namespace,
     assert_nmstate_bridge_creation,
     assert_node_is_marked_by_bridge,
 )
@@ -16,7 +17,7 @@ from tests.upgrade_params import (
 )
 from utilities.constants import (
     DEPENDENCY_SCOPE_SESSION,
-    KMP_ENABLED_LABEL,
+    KMP_DISABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
 )
 from utilities.network import (
@@ -94,14 +95,17 @@ class TestUpgradeNetwork:
     @pytest.mark.polarion("CNV-5944")
     @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
-        name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_kubemacpool_enabled_ns_before_upgrade"
+        name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_kubemacpool_disabled_ns_before_upgrade"
     )
-    def test_kubemacpool_enabled_ns_before_upgrade(
+    def test_kubemacpool_disabled_ns_before_upgrade(
         self,
-        kmp_vm_label,
+        namespace_with_disabled_kmp,
     ):
-        # KubeMacPool is enabled in namespace.
-        assert kmp_vm_label.get(KMP_VM_ASSIGNMENT_LABEL) == KMP_ENABLED_LABEL
+        assert_label_in_namespace(
+            labeled_namespace=namespace_with_disabled_kmp,
+            label_key=KMP_VM_ASSIGNMENT_LABEL,
+            expected_label_value=KMP_DISABLED_LABEL,
+        )
 
     @pytest.mark.polarion("CNV-2745")
     @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
@@ -287,16 +291,19 @@ class TestUpgradeNetwork:
     @pytest.mark.dependency(
         depends=[
             IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
-            f"{DEPENDENCIES_NODE_ID_PREFIX}::test_kubemacpool_enabled_ns_before_upgrade",
+            f"{DEPENDENCIES_NODE_ID_PREFIX}::test_kubemacpool_disabled_ns_before_upgrade",
         ],
         scope=DEPENDENCY_SCOPE_SESSION,
     )
-    def test_kubemacpool_enabled_ns_after_upgrade(
+    def test_kubemacpool_disabled_ns_after_upgrade(
         self,
-        kmp_vm_label,
+        namespace_with_disabled_kmp,
     ):
-        # KubeMacPool is still enabled in namespace.
-        assert kmp_vm_label.get(KMP_VM_ASSIGNMENT_LABEL) == KMP_ENABLED_LABEL
+        assert_label_in_namespace(
+            labeled_namespace=namespace_with_disabled_kmp,
+            label_key=KMP_VM_ASSIGNMENT_LABEL,
+            expected_label_value=KMP_DISABLED_LABEL,
+        )
 
     @pytest.mark.sno
     @pytest.mark.polarion("CNV-5532")
