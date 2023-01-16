@@ -24,7 +24,6 @@ from utilities.constants import (
     CDI_SECRETS,
     OS_FLAVOR_CIRROS,
     TIMEOUT_1MIN,
-    TIMEOUT_2MIN,
     TIMEOUT_3MIN,
     TIMEOUT_10MIN,
     TIMEOUT_20SEC,
@@ -174,6 +173,7 @@ def test_dv_delete_from_vm(
     This will trigger the import process so that cert code will be exercised one more time.
     """
     dv = DataVolume(namespace=namespace.name, name="cnv-3686-dv")
+    dv.to_dict()
     storage_class = [*storage_class_matrix__module__][0]
     dv_template = {
         "metadata": {
@@ -213,12 +213,12 @@ def test_dv_delete_from_vm(
     ) as vm:
         if sc_volume_binding_mode_is_wffc(sc=storage_class):
             create_dummy_first_consumer_pod(dv=dv)
-        dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_2MIN)
+        dv.wait_for_dv_success()
         dv.delete()
         create_dummy_first_consumer_pod(dv=dv)
         # DV re-creation is triggered by VM
         running_vm(vm=vm, wait_for_interfaces=False)
-        dv.wait_for_status(status=DataVolume.Status.SUCCEEDED)
+        dv.wait_for_dv_success()
         storage_utils.check_disk_count_in_vm(vm=vm)
 
 
