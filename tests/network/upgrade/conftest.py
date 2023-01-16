@@ -1,6 +1,7 @@
 import shlex
 
 import pytest
+from ocp_resources.pod import Pod
 from ocp_resources.service_account import ServiceAccount
 
 from tests.network.constants import (
@@ -17,7 +18,7 @@ from tests.network.utils import (
 )
 from utilities import console
 from utilities.constants import LINUX_BRIDGE
-from utilities.infra import cluster_resource, create_ns
+from utilities.infra import cluster_resource, create_ns, get_pod_by_name_prefix
 from utilities.network import cloud_init, network_nad
 from utilities.virt import (
     VirtualMachineForTests,
@@ -135,14 +136,24 @@ def httpbin_service_mesh_service_account_for_upgrade(
 
 @pytest.fixture(scope="session")
 def httpbin_service_mesh_service_for_upgrade(
+    admin_client,
     httpbin_service_mesh_deployment_for_upgrade,
     httpbin_service_mesh_service_account_for_upgrade,
 ):
+    deployment_namespace = httpbin_service_mesh_deployment_for_upgrade.namespace
     with ServiceMeshDeploymentService(
-        namespace=httpbin_service_mesh_deployment_for_upgrade.namespace,
+        namespace=deployment_namespace,
         app_name=httpbin_service_mesh_deployment_for_upgrade.app_name,
         port=httpbin_service_mesh_deployment_for_upgrade.service_port,
     ) as sv:
+        # TODO: Once Jira issue CNV-24274 is closed, and we have the health-check of the pod working accurately,
+        #   the next function call (6 lines) can be removed.
+        get_pod_by_name_prefix(
+            dyn_client=admin_client,
+            pod_prefix=sv.app_name,
+            namespace=deployment_namespace,
+            get_all=True,
+        )[0].wait_for_status(status=Pod.Status.RUNNING)
         yield sv
 
 
