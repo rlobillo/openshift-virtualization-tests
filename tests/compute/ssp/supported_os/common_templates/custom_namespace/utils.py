@@ -5,7 +5,7 @@ from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.constants import TIMEOUT_1MIN, TIMEOUT_3MIN
+from utilities.constants import TIMEOUT_1MIN, TIMEOUT_2MIN, TIMEOUT_3MIN
 from utilities.hco import wait_for_hco_conditions
 from utilities.ssp import wait_for_ssp_conditions
 from utilities.virt import VirtualMachineForTestsFromTemplate, get_base_templates_list
@@ -165,3 +165,10 @@ def diskless_vm_from_template(client, name, namespace, base_template_labels):
     yield vm
     if vm.exists:
         vm.clean_up()
+
+
+def remove_templates(templates_list):
+    for template in templates_list:
+        template.delete()
+    for template in templates_list:
+        template.wait_deleted(timeout=TIMEOUT_2MIN)

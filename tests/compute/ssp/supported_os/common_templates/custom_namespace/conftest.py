@@ -2,12 +2,14 @@ import pytest
 from ocp_resources.cdi import CDI
 from ocp_resources.namespace import Namespace
 from ocp_resources.ssp import SSP
+from ocp_resources.template import Template
 
 from tests.compute.ssp.supported_os.common_templates.custom_namespace.utils import (
     delete_template_by_name,
     diskless_vm_from_template,
     get_template_by_name,
     patch_template_labels,
+    remove_templates,
     wait_for_ssp_custom_template_namespace,
 )
 from utilities.constants import NamespacesNames
@@ -49,14 +51,21 @@ def opt_in_custom_template_namespace(
         wait_for_reconcile_post_update=True,
     ):
         yield
+    # Templates should be removed after reverting changes in HCO
+    remove_templates(
+        templates_list=list(
+            Template.get(
+                dyn_client=admin_client,
+                namespace=custom_vm_template_namespace.name,
+                singular_name=Template.singular_name,
+            )
+        )
+    )
 
 
 @pytest.fixture()
 def deleted_base_templates(base_templates):
-    for template in base_templates:
-        template.delete()
-    for template in base_templates:
-        template.wait_deleted()
+    remove_templates(templates_list=base_templates)
 
 
 @pytest.fixture()
