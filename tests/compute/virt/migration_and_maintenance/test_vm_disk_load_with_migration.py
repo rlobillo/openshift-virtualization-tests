@@ -23,20 +23,20 @@ def vm_with_fio(
     cluster_cpu_model_scope_function,
     unprivileged_client,
     namespace,
-    golden_image_data_source_scope_function,
+    data_volume_scope_function,
 ):
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
-        data_source=golden_image_data_source_scope_function,
+        existing_data_volume=data_volume_scope_function,
     ) as vm_with_fio:
         running_vm(vm=vm_with_fio)
         yield vm_with_fio
 
 
 @pytest.fixture()
-def run_fio_in_vm(vm_with_fio):
+def running_fio_in_vm(vm_with_fio):
     # Random write/read -  create a 1G file, and perform 4KB reads and writes using a 75%/25%
     LOGGER.info("Running fio in VM")
     fio_cmd = [
@@ -86,7 +86,7 @@ def get_disk_usage(ssh_exec):
 
 
 @pytest.mark.parametrize(
-    "golden_image_data_volume_scope_function, vm_with_fio",
+    "data_volume_scope_function, vm_with_fio",
     [
         pytest.param(
             {
@@ -107,12 +107,10 @@ def get_disk_usage(ssh_exec):
 )
 def test_fedora_vm_load_migration(
     skip_upstream,
+    skip_when_one_node,
     skip_rwo_default_access_mode,
-    unprivileged_client,
-    namespace,
-    golden_image_data_volume_scope_function,
     vm_with_fio,
-    run_fio_in_vm,
+    running_fio_in_vm,
 ):
     LOGGER.info("Test migrate VM with disk load")
     migrate_vm_and_verify(vm=vm_with_fio, check_ssh_connectivity=True)
