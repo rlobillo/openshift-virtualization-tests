@@ -1,12 +1,15 @@
-FROM quay.io/centos/centos:stream9
+FROM quay.io/centos/centos:stream9 AS builder
 
-ENV CNV_TESTS_CONTAINER=Yes \
-    PATH="$PATH:/mnt/host"
+ARG OPENSHIFT_PYTHON_WRAPPER_COMMIT=''
+ARG OPENSHIFT_PYTHON_UTILITIES_COMMIT=''
+ARG POETRY_HOME='/usr/local'
 
-ARG OPENSHIFT_PYTHON_WRAPPER_COMMIT
-ARG OPENSHIFT_PYTHON_UTILITIES_COMMIT
+ENV LANG=C.UTF-8 \
+    CNV_TESTS_CONTAINER=Yes \
+    PATH="${POETRY_HOME}/bin:/mnt/host:${PATH}"
 
-RUN dnf -y install epel-release \
+RUN dnf update -y \
+    && dnf -y install epel-release \
     && dnf -y install \
     systemd-container \
     python3-pip \
@@ -20,22 +23,58 @@ RUN dnf -y install epel-release \
     libxslt-devel \
     libxml2-devel \
     openssl-devel \
-    sshpass \
-    jq \
-    && dnf clean all
+    && dnf clean all && rm -rf /var/cache/yum
 
 COPY / cnv-tests/
 WORKDIR cnv-tests
 
-RUN python3 -m pip install pip --upgrade \
-    && python3 -m pip install poetry \
-    && poetry config cache-dir /cnv-tests \
-    && poetry config virtualenvs.in-project true \
-    && poetry config --list \
-    && poetry env remove --all \
-    && poetry install \
-    && poetry export --without-hashes -n \
-    && if [[ -n "${OPENSHIFT_PYTHON_WRAPPER_COMMIT}" ]]; then poetry run pip install git+https://github.com/RedHatQE/openshift-python-wrapper.git@$OPENSHIFT_PYTHON_WRAPPER_COMMIT -U; fi \
-    && if [[ -n "${OPENSHIFT_PYTHON_UTILITIES_COMMIT}" ]]; then poetry run pip install git+https://github.com/RedHatQE/openshift-python-utilities.git@$OPENSHIFT_PYTHON_UTILITIES_COMMIT -U; fi
+# TODO: We should pin poetry to a specific version as recommended by the docs for CI usage.
 
-CMD poetry run pytest --tc=server_url:"$HTTP_IMAGE_SERVER" --collect-only
+RUN python3 -m pip install pip --upgrade \
+    && python3 -m venv ${POETRY_HOME} \
+    && ${POETRY_HOME}/bin/pip install pip --upgrade \
+    && ${POETRY_HOME}/bin/pip install poetry \
+    && ${POETRY_HOME}/bin/poetry --version \
+    && ${POETRY_HOME}/bin/poetry config cache-dir /cnv-tests \
+    && ${POETRY_HOME}/bin/poetry config virtualenvs.in-project true \
+    && ${POETRY_HOME}/bin/poetry config --list \
+    && ${POETRY_HOME}/bin/poetry env remove --all \
+    && ${POETRY_HOME}/bin/poetry install \
+    && ${POETRY_HOME}/bin/poetry export --without-hashes -n \
+    && if [[ -n "${OPENSHIFT_PYTHON_WRAPPER_COMMIT}" ]];   then ${POETRY_HOME}/bin/poetry run pip install git+https://github.com/RedHatQE/openshift-python-wrapper.git@$OPENSHIFT_PYTHON_WRAPPER_COMMIT -U; fi \
+    && if [[ -n "${OPENSHIFT_PYTHON_UTILITIES_COMMIT}" ]]; then ${POETRY_HOME}/bin/poetry run pip install git+https://github.com/RedHatQE/openshift-python-utilities.git@$OPENSHIFT_PYTHON_UTILITIES_COMMIT -U; fi \
+    && rm -rf /cnv-tests/cache \
+    && rm -rf /cnv-tests/artifacts
+
+RUN find /cnv-tests/ -type d -name "__pycache__" -print0 | xargs -0 rm -rfv
+
+# The following is the runner section, which we start again from a clean CentOS9 image
+# and only adding the required bits to allow us to run the tests.
+FROM quay.io/centos/centos:stream9 AS runner
+
+ARG POETRY_HOME='/usr/local'
+
+ENV LANG=C.UTF-8 \
+    CNV_TESTS_CONTAINER=Yes \
+    PATH="${POETRY_HOME}/bin:/cnv-tests/.venv/bin:/mnt/host:${PATH}" \
+    POETRY_HOME=/usr/local
+
+WORKDIR /cnv-tests
+
+COPY --from=builder /cnv-tests/ /cnv-tests/
+COPY --from=builder /root/.config/pypoetry/ /root/.config/pypoetry/
+COPY --from=builder ${POETRY_HOME} ${POETRY_HOME}
+
+##TODO: We can remove wget, and use curl instead, this will require to change some tests
+RUN dnf update -y \
+    && dnf install -y procps-ng python3 git sshpass jq wget \
+    && dnf clean all \
+    && rm -rf /var/cache/yum \
+    && rm -rf /var/lib/dnf \
+    && rm -rf /cnv-tests/cache \
+    && rm -rf /root/.cache \
+    && truncate -s0 /var/log/*.log \
+    && echo "export PATH=${PATH}" | tee /etc/profile.d/poetry.sh \
+    && chmod 0644 /etc/profile.d/poetry.sh
+
+CMD ${POETRY_HOME}/bin/poetry run pytest --tc=server_url:"${HTTP_IMAGE_SERVER}" --collect-only
