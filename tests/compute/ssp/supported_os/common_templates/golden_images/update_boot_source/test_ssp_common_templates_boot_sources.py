@@ -22,7 +22,7 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.utils import 
 from tests.compute.ssp.supported_os.common_templates.utils import (
     validate_os_info_vmi_vs_linux_os,
 )
-from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_5MIN, TIMEOUT_10MIN, Images
+from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_5MIN, Images
 from utilities.virt import running_vm
 
 
@@ -157,7 +157,7 @@ def rhel9_dv(
         bind_immediate_annotation=True,
         api_name="storage",
     ) as dv:
-        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_10MIN)
+        dv.wait_for_dv_success()
         yield dv
 
 

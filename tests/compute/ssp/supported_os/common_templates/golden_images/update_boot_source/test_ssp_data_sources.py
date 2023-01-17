@@ -22,13 +22,7 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_s
     wait_for_condition_message_value,
 )
 from tests.compute.ssp.utils import get_parameters_from_template
-from utilities.constants import (
-    DATA_SOURCE_NAME,
-    TIMEOUT_5MIN,
-    TIMEOUT_10MIN,
-    TIMEOUT_20MIN,
-    Images,
-)
+from utilities.constants import DATA_SOURCE_NAME, TIMEOUT_5MIN, TIMEOUT_10MIN, Images
 from utilities.exceptions import ResourceValueError
 from utilities.infra import get_http_image_url
 
@@ -61,7 +55,7 @@ def dv_for_data_source(name, data_source, admin_client):
         bind_immediate_annotation=True,
         api_name="storage",
     ) as dv:
-        dv.wait_for_status(status=dv.Status.SUCCEEDED, timeout=TIMEOUT_20MIN)
+        dv.wait_for_dv_success()
         wait_for_condition_message_value(
             resource=data_source,
             expected_message=DATA_SOURCE_READY_FOR_CONSUMPTION_MESSAGE,
