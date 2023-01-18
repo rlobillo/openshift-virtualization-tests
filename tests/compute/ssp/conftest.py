@@ -38,14 +38,17 @@ def downloaded_latest_libosinfo_db(
 
 @pytest.fixture(scope="module")
 def latest_osinfo_db_file_name(osinfo_repo):
-    sorted_osinfo_repo = f"{osinfo_repo}/?C=M;O=D"
+    sorted_osinfo_repo = f"{osinfo_repo}/?C=M;O=A"
     soup_page = BeautifulSoup(
         markup=requests.get(sorted_osinfo_repo).text, features="html.parser"
     )
-    full_link = soup_page.find(
-        "a", {"href": re.compile(r"osinfo-db-[0-9]*.tar.xz")}
-    ).get("href")
-    return full_link
+    full_link = soup_page.findAll(
+        name="a", attrs={"href": re.compile(r"osinfo-db-[0-9]*.tar.xz")}
+    )
+
+    assert full_link, "No osinfo-db file was found."
+
+    return full_link[-1].get("href")
 
 
 @pytest.fixture(scope="module")
