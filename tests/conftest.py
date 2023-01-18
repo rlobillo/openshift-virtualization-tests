@@ -2538,7 +2538,7 @@ def fips_enabled_cluster(workers_utility_pods):
 
 
 @pytest.fixture(scope="class")
-def instance_type_for_test(namespace, common_instance_type_param_dict):
+def instance_type_for_test_scope_class(namespace, common_instance_type_param_dict):
     instance_type_param_dict = copy.deepcopy(common_instance_type_param_dict)
     instance_type_param_dict["namespace"] = namespace.name
     return cluster_resource(VirtualMachineInstanceTypeForTest)(

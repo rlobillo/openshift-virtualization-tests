@@ -8,9 +8,9 @@ from utilities.virt import VirtualMachineForTests, running_vm
 
 @pytest.fixture(scope="class")
 def rhel_vm_with_instance_type_and_preference(
-    namespace, admin_client, instance_type_for_test, vm_preference_for_test
+    namespace, admin_client, instance_type_for_test_scope_class, vm_preference_for_test
 ):
-    with instance_type_for_test as vm_instance_type, vm_preference_for_test as vm_preference:
+    with instance_type_for_test_scope_class as vm_instance_type, vm_preference_for_test as vm_preference:
         with cluster_resource(VirtualMachineForTests)(
             client=admin_client,
             name="rhel-vm-with-instance-type",

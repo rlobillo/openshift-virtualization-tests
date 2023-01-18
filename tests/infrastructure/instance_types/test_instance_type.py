@@ -52,8 +52,8 @@ class TestInstanceTypes:
         indirect=True,
     )
     @pytest.mark.polarion("CNV-9082")
-    def test_create_instance_type(self, instance_type_for_test):
-        with instance_type_for_test as instance_type:
+    def test_create_instance_type(self, instance_type_for_test_scope_class):
+        with instance_type_for_test_scope_class as instance_type:
             assert instance_type.exists
 
     @pytest.mark.parametrize(
@@ -75,12 +75,12 @@ class TestInstanceTypes:
         indirect=True,
     )
     @pytest.mark.polarion("CNV-9083")
-    def test_create_instance_type_negative(self, instance_type_for_test):
+    def test_create_instance_type_negative(self, instance_type_for_test_scope_class):
         with pytest.raises(UnprocessibleEntityError, match=r".*FieldValueRequired.*"):
-            instance_type_for_test.deploy()
+            instance_type_for_test_scope_class.deploy()
             assert (
-                not instance_type_for_test.exists
-            ), f"flavor: {instance_type_for_test.name} was created"
+                not instance_type_for_test_scope_class.exists
+            ), f"flavor: {instance_type_for_test_scope_class.name} was created"
 
 
 class TestClusterInstanceTypes:
@@ -133,8 +133,10 @@ class TestClusterInstanceTypes:
         indirect=True,
     )
     @pytest.mark.polarion("CNV-9103")
-    def test_create_cluster_instance_type(self, cluster_instance_type_for_test):
-        with cluster_instance_type_for_test as cluster_instance_type:
+    def test_create_cluster_instance_type(
+        self, cluster_instance_type_for_test_scope_class
+    ):
+        with cluster_instance_type_for_test_scope_class as cluster_instance_type:
             assert cluster_instance_type.exists
 
     @pytest.mark.parametrize(
@@ -157,10 +159,10 @@ class TestClusterInstanceTypes:
     )
     @pytest.mark.polarion("CNV-9104")
     def test_create_cluster_instance_type_negative(
-        self, cluster_instance_type_for_test
+        self, cluster_instance_type_for_test_scope_class
     ):
         with pytest.raises(UnprocessibleEntityError, match=r".*FieldValueRequired.*"):
-            cluster_instance_type_for_test.deploy()
+            cluster_instance_type_for_test_scope_class.deploy()
             assert (
-                not cluster_instance_type_for_test.exists
-            ), f"flavor: {cluster_instance_type_for_test.name} was created"
+                not cluster_instance_type_for_test_scope_class.exists
+            ), f"flavor: {cluster_instance_type_for_test_scope_class.name} was created"

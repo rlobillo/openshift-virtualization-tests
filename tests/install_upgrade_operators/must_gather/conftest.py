@@ -426,8 +426,8 @@ def gathered_instancetypes(
 
 
 @pytest.fixture(scope="class")
-def must_gather_instance_type(instance_type_for_test):
-    with instance_type_for_test as instance:
+def must_gather_instance_type(instance_type_for_test_scope_class):
+    with instance_type_for_test_scope_class as instance:
         yield instance
 
 

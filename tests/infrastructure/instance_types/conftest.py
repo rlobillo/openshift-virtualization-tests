@@ -8,7 +8,7 @@ from tests.infrastructure.instance_types.utils import (
 
 
 @pytest.fixture(scope="class")
-def cluster_instance_type_for_test(common_instance_type_param_dict):
+def cluster_instance_type_for_test_scope_class(common_instance_type_param_dict):
     return cluster_resource(VirtualMachineClusterInstanceTypeForTest)(
         **common_instance_type_param_dict
     )
