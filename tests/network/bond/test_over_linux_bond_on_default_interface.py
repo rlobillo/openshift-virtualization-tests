@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 SLEEP = 5
 
 
-pytestmark = pytest.mark.usefixtures("workers_type")
+pytestmark = pytest.mark.usefixtures("workers_type", "skip_if_ovn_cluster")
 
 
 @pytest.fixture(scope="class")
