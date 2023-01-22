@@ -489,40 +489,47 @@ def masters(nodes):
 
 
 @pytest.fixture(scope="session")
-def cnv_tests_utilities_namespace(admin_client):
-    yield from create_ns(
-        admin_client=admin_client,
-        labels={
-            "pod-security.kubernetes.io/enforce": "privileged",
-            "security.openshift.io/scc.podSecurityLabelSync": "false",
-        },
-        name="cnv-tests-utilities",
-    )
+def cnv_tests_utilities_namespace(admin_client, installing_cnv):
+    if installing_cnv:
+        yield
+    else:
+        yield from create_ns(
+            admin_client=admin_client,
+            labels={
+                "pod-security.kubernetes.io/enforce": "privileged",
+                "security.openshift.io/scc.podSecurityLabelSync": "false",
+            },
+            name="cnv-tests-utilities",
+        )
 
 
 @pytest.fixture(scope="session")
-def cnv_tests_utilities_service_account(cnv_tests_utilities_namespace):
-    scc_name = "privileged"
-    with cluster_resource(ServiceAccount)(
-        name=CNV_TEST_SERVICE_ACCOUNT,
-        namespace=cnv_tests_utilities_namespace.name,
-    ) as service_account:
-        output = check_output(
-            shlex.split(
-                f"oc adm policy add-scc-to-user {scc_name} system:serviceaccount:"
-                f"{cnv_tests_utilities_namespace.name}:{service_account.name}"
+def cnv_tests_utilities_service_account(cnv_tests_utilities_namespace, installing_cnv):
+    if installing_cnv:
+        yield
+    else:
+        scc_name = "privileged"
+        with cluster_resource(ServiceAccount)(
+            name=CNV_TEST_SERVICE_ACCOUNT,
+            namespace=cnv_tests_utilities_namespace.name,
+        ) as service_account:
+            output = check_output(
+                shlex.split(
+                    f"oc adm policy add-scc-to-user {scc_name} system:serviceaccount:"
+                    f"{cnv_tests_utilities_namespace.name}:{service_account.name}"
+                )
             )
-        )
-        if f'added: "{service_account.name}"' not in str(output):
-            raise AssertionError(
-                f"Unable to add {service_account.name} to {scc_name} scc"
-            )
-        yield service_account
+            if f'added: "{service_account.name}"' not in str(output):
+                raise AssertionError(
+                    f"Unable to add {service_account.name} to {scc_name} scc"
+                )
+            yield service_account
 
 
 @pytest.fixture(scope="session")
 def utility_daemonset(
     admin_client,
+    installing_cnv,
     is_upstream_distribution,
     generated_pulled_secret,
     cnv_tests_utilities_namespace,
@@ -534,14 +541,17 @@ def utility_daemonset(
     This daemonset deploys a pod on every node with hostNetwork and the main usage is to run commands on the hosts.
     For example to create linux bridge and other components related to the host configuration.
     """
-    modified_ds_yaml_file = get_daemonset_yaml_file_with_image_hash(
-        is_upstream_distribution=is_upstream_distribution,
-        generated_pulled_secret=generated_pulled_secret,
-        service_account=cnv_tests_utilities_service_account,
-    )
-    with cluster_resource(DaemonSet)(yaml_file=modified_ds_yaml_file) as ds:
-        ds.wait_until_deployed()
-        yield ds
+    if installing_cnv:
+        yield
+    else:
+        modified_ds_yaml_file = get_daemonset_yaml_file_with_image_hash(
+            is_upstream_distribution=is_upstream_distribution,
+            generated_pulled_secret=generated_pulled_secret,
+            service_account=cnv_tests_utilities_service_account,
+        )
+        with cluster_resource(DaemonSet)(yaml_file=modified_ds_yaml_file) as ds:
+            ds.wait_until_deployed()
+            yield ds
 
 
 @pytest.fixture(scope="session")
@@ -563,12 +573,14 @@ def generated_pulled_secret(
 
 
 @pytest.fixture(scope="session")
-def workers_utility_pods(admin_client, workers, utility_daemonset):
+def workers_utility_pods(admin_client, workers, utility_daemonset, installing_cnv):
     """
     Get utility pods from worker nodes.
     When the tests start we deploy a pod on every worker node in the cluster using a daemonset.
     These pods have a label of cnv-test=utility and they are privileged pods with hostnetwork=true
     """
+    if installing_cnv:
+        return
     return get_utility_pods_from_nodes(
         nodes=workers,
         admin_client=admin_client,
@@ -577,12 +589,14 @@ def workers_utility_pods(admin_client, workers, utility_daemonset):
 
 
 @pytest.fixture(scope="session")
-def masters_utility_pods(admin_client, masters, utility_daemonset):
+def masters_utility_pods(admin_client, installing_cnv, masters, utility_daemonset):
     """
     Get utility pods from master nodes.
     When the tests start we deploy a pod on every master node in the cluster using a daemonset.
     These pods have a label of cnv-test=utility and they are privileged pods with hostnetwork=true
     """
+    if installing_cnv:
+        return
     return get_utility_pods_from_nodes(
         nodes=masters,
         admin_client=admin_client,
@@ -782,7 +796,9 @@ def leftovers_cleanup(admin_client, kube_system_namespace, identity_provider_con
 
 
 @pytest.fixture(scope="session")
-def workers_type(workers_utility_pods):
+def workers_type(workers_utility_pods, installing_cnv):
+    if installing_cnv:
+        return
     physical = ClusterHosts.Type.PHYSICAL
     virtual = ClusterHosts.Type.VIRTUAL
     for pod in workers_utility_pods:

@@ -39,7 +39,7 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.fixture(scope="module")
 def hyperconverged_directory(tmpdir_factory, is_production_source):
-    if hyperconverged_directory:
+    if is_production_source:
         yield
     else:
         yield tmpdir_factory.mktemp(f"{OPENSHIFT_VIRTUALIZATION}-folder")
