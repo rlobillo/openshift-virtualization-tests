@@ -2414,10 +2414,8 @@ def virtctl_binary(
 
 
 @pytest.fixture(scope="session")
-def oc_binary(
-    is_upstream_distribution, installing_cnv, os_path_environment, bin_directory
-):
-    if installing_cnv or is_upstream_distribution:
+def oc_binary(is_upstream_distribution, os_path_environment, bin_directory):
+    if is_upstream_distribution:
         return
     installed_oc = os.environ.get("CNV_TESTS_OC_BIN")
     if installed_oc:
