@@ -9,6 +9,7 @@ import math
 import multiprocessing
 
 import pytest
+from bitmath import GiB
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
@@ -32,6 +33,7 @@ from utilities.constants import (
     TIMEOUT_20SEC,
     TIMEOUT_30SEC,
     Images,
+    StorageClassNames,
 )
 from utilities.infra import NON_EXIST_URL, cluster_resource, get_http_image_url
 from utilities.storage import (
@@ -650,6 +652,7 @@ def test_vmi_image_size(
     dv_name,
     default_fs_overhead,
 ):
+    m_byte, g_byte = "M", "G"
     assert size >= 1, "This test support only dv size >= 1"
     storage_class = [*storage_class_matrix__module__][0]
     with create_dv(
@@ -680,8 +683,8 @@ def test_vmi_image_size(
                     size *= 1 - default_fs_overhead
                     # In case that size < 1, convert from Gi to Mi
                     if size < 1:
-                        size = size * 1024
-                        unit = "M"
+                        size = GiB(size).to_MiB().value
+                        unit = m_byte
                 pod.wait_for_status(status=pod.Status.RUNNING)
                 actual_size = pod.execute(
                     command=[
@@ -690,6 +693,17 @@ def test_vmi_image_size(
                         "qemu-img info /pvc/disk.img|grep 'virtual size'|awk '{print $3}'|tr -d '\n'",
                     ]
                 )
+
+                # In TOPOLVM storage class,the PV can't have less than 1GB actual size,
+                # even if smaller size is requested.
+                # if the size is smaller than 1GB - we match it to 1GB under those conditions:
+                if (
+                    storage_class == StorageClassNames.TOPOLVM
+                    and unit == m_byte
+                    and size < 1024
+                ):
+                    size, unit = 1, g_byte
+
                 assert unit == actual_size[-1]
                 assert math.floor(size) == float(actual_size[:-1])
 
