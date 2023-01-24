@@ -13,7 +13,7 @@ export OPENSHIFT_PYTHON_WRAPPER_LOG_LEVEL=DEBUG
 
 # Local cluster preparations
 CLUSTER_DIR := local-cluster/_hco
-export KUBEVIRT_PROVIDER ?= k8s-1.23
+export KUBEVIRT_PROVIDER ?= k8s-1.24
 export KUBEVIRT_NUM_NODES ?= 2
 export KUBEVIRT_NUM_SECONDARY_NICS ?= 4
 export KUBEVIRT_WITH_CNAO=true
