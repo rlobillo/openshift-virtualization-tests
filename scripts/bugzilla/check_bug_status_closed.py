@@ -9,7 +9,7 @@ from scripts.utils import all_python_files, get_connection_params, print_status
 
 
 # Needs to be update based on the branch.
-EXPECTED_TARGET_BRANCH = "master"
+EXPECTED_TARGET_BRANCH = "cnv-4.12"
 BUG_STATUS_CLOSED = ("VERIFIED", "CLOSED", "RELEASE_PENDING")
 KNOWN_BRANCHES = {
     EXPECTED_TARGET_BRANCH: "4.12",

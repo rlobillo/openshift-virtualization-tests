@@ -1338,9 +1338,12 @@ def nodes_common_cpu_model(nodes_common_cpu_model_list, nodes_cpu_architecture):
     """
     # Due to BZ 2122283 <skip-bug-check> (targeted to 4.13) need to exclude Opteron_G1 and Opteron_G2
     # CPU models from the common CPUs list
-    if nodes_cpu_architecture == INTEL:
-        for model in AMD_CPU_MODELS:
-            nodes_common_cpu_model_list.remove(model)
+    nodes_common_cpu_model_list = (
+        [model for model in nodes_common_cpu_model_list if model not in AMD_CPU_MODELS]
+        if nodes_cpu_architecture == INTEL
+        else nodes_common_cpu_model_list
+    )
+
     return nodes_common_cpu_model_list[0]
 
 
