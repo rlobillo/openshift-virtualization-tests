@@ -69,11 +69,11 @@ ci-tests: virtctl venv-install
 cluster-down: $(CLUSTER_DOWN)
 	$(CLUSTER_DOWN)
 
-cluster-up: cluster-down $(CLUSTER_UP)
+cluster-up: $(CLUSTER_UP)
 	$(CLUSTER_UP)
 
 cluster-tests: cluster-up tests cluster-down
-cluster-tests-ci: build-container cluster-up ci-tests cluster-down
+cluster-tests-ci: build-container
 
 virtctl:
 	mkdir -p $(BIN_DIR)
