@@ -73,6 +73,7 @@ class Images:
 
     class Fedora:
         FEDORA35_IMG = "Fedora-Cloud-Base-35-1.2.x86_64.qcow2"
+        FEDORA37_IMG = "Fedora-Cloud-Base-37-1.7.x86_64.qcow2"
         DISK_DEMO = "fedora-cloud-registry-disk-demo"
         DIR = f"{BASE_IMAGES_DIR}/fedora-images"
         DEFAULT_DV_SIZE = "10Gi"

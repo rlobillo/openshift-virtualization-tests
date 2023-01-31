@@ -299,6 +299,12 @@ def skip_if_os_version_below_rhel9(rhel_os_matrix__class__):
 
 
 @pytest.fixture()
+def skip_if_os_version_below_fedora37(fedora_os_matrix__class__):
+    if version.parse([*fedora_os_matrix__class__][0]) < version.parse("fedora-37"):
+        pytest.skip("EFI is not enabled by default before FEDORA37")
+
+
+@pytest.fixture()
 def skip_efi_if_win_ver_below_11_or_2022(windows_os_matrix__class__):
     current_win_name = [*windows_os_matrix__class__][0]
     os_ver_str = windows_os_matrix__class__[current_win_name]["os_version"]

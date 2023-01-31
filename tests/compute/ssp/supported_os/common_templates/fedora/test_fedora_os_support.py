@@ -14,6 +14,8 @@ from tests.compute.ssp.supported_os.common_templates import (
     utils as common_templates_utils,
 )
 from tests.compute.utils import (
+    assert_linux_efi,
+    assert_vm_xml_efi,
     validate_libvirt_persistent_domain,
     validate_pause_optional_migrate_unpause_linux_vm,
 )
@@ -195,6 +197,23 @@ class TestCommonTemplatesFedora:
         common_templates_utils.vm_os_version(
             vm=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
         )
+
+    @pytest.mark.sno
+    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
+    @pytest.mark.polarion("CNV-9666")
+    def test_efi_secureboot_enabled_by_default(
+        self,
+        skip_upstream,
+        skip_if_os_version_below_fedora37,
+        namespace,
+        fedora_os_matrix__class__,
+        golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,
+        golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
+    ):
+
+        vm = golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class
+        assert_vm_xml_efi(vm=vm)
+        assert_linux_efi(vm=vm)
 
     @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::create_vm"])
