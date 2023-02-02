@@ -5,18 +5,17 @@ import pytest
 from ocp_resources.metallb import MetalLB
 from ocp_utilities.utils import run_command
 
-from utilities.constants import BREW_REGISTERY_SOURCE, ICSP_FILE
+from utilities.constants import FILTER_BY_OS_OPTION
 from utilities.infra import create_ns
 from utilities.operator import (
     create_catalog_source,
-    create_icsp_command,
+    create_folder_and_icsp_file,
     create_icsp_from_file,
     create_operator,
     create_operator_group,
     create_subscription,
     delete_existing_icsp,
     disable_default_sources_in_operatorhub,
-    generate_icsp_file,
     get_install_plan_from_subscription,
     wait_for_catalogsource_ready,
     wait_for_operator_install,
@@ -29,13 +28,14 @@ NIGHTLY_ART_IMAGE = (
 )
 METALLB_CATALOG_SOURCE = "metallb-catalog"
 METALLB_OPERATOR = "metallb-operator"
-FILTER_BY_OS_OPTION = "filter-by-os=linux/amd64"
 
 
 @pytest.fixture(scope="module")
 def nightly_art_image_url(openshift_current_version, generated_pulled_secret):
 
-    ocp_version = packaging.version.parse(version=openshift_current_version)
+    ocp_version = packaging.version.parse(
+        version=openshift_current_version.split("-")[0]
+    )
     nightly_image = f"{NIGHTLY_ART_IMAGE}-{ocp_version.major}.{ocp_version.minor}"
 
     LOGGER.info(f"Checking image {nightly_image} information.")
@@ -58,27 +58,17 @@ def nightly_art_image_url(openshift_current_version, generated_pulled_secret):
 
 
 @pytest.fixture(scope="module")
-def metallb_directory(tmp_path_factory):
-    yield tmp_path_factory.mktemp(f"{METALLB_OPERATOR}-folder")
-
-
-@pytest.fixture(scope="module")
 def generated_metallb_icsp(
-    metallb_directory,
+    tmp_path_factory,
     generated_pulled_secret,
     nightly_art_image_url,
 ):
-    folder_name = f"{metallb_directory}/{METALLB_OPERATOR}-manifest"
-    LOGGER.info(f"Create MetalLB ICSP file {ICSP_FILE} in {folder_name}")
-    mirror_cmd = create_icsp_command(
+    return create_folder_and_icsp_file(
+        path_factory=tmp_path_factory,
+        operator_name=METALLB_OPERATOR,
         image=nightly_art_image_url,
-        source_url=BREW_REGISTERY_SOURCE,
-        folder_name=folder_name,
         pull_secret=generated_pulled_secret,
-        filter_options=f"--index-{FILTER_BY_OS_OPTION}",
     )
-
-    return generate_icsp_file(folder_name=folder_name, command=mirror_cmd)
 
 
 @pytest.fixture(scope="module")

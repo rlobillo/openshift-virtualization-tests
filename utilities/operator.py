@@ -27,6 +27,8 @@ from pytest_testconfig import config as py_config
 import utilities.infra
 from utilities.constants import (
     BASE_EXCEPTIONS_DICT,
+    BREW_REGISTERY_SOURCE,
+    FILTER_BY_OS_OPTION,
     ICSP_FILE,
     TIMEOUT_5MIN,
     TIMEOUT_10MIN,
@@ -38,6 +40,21 @@ from utilities.data_collector import collect_mcp_information, get_data_collector
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+def create_folder_and_icsp_file(path_factory, operator_name, image, pull_secret):
+    temp_folder_path = path_factory.mktemp(f"{operator_name}-folder")
+    folder_name = f"{temp_folder_path}/{operator_name}-manifest"
+    LOGGER.info(f"Create {operator_name} ICSP file {ICSP_FILE} in {folder_name}")
+    mirror_cmd = create_icsp_command(
+        image=image,
+        source_url=BREW_REGISTERY_SOURCE,
+        folder_name=folder_name,
+        pull_secret=pull_secret,
+        filter_options=f"--index-{FILTER_BY_OS_OPTION}",
+    )
+
+    return generate_icsp_file(folder_name=folder_name, command=mirror_cmd)
 
 
 def create_icsp_command(

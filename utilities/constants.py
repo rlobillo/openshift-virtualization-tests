@@ -242,6 +242,7 @@ PODS_TO_COLLECT_INFO = [
     NMSTATE_HANDLER,
 ]
 WORKERS_TYPE = "WORKERS_TYPE"
+FILTER_BY_OS_OPTION = "filter-by-os=linux/amd64"
 
 
 # GPU/vGPU Common constants
