@@ -11,6 +11,7 @@ from utilities.constants import (
     TIMEOUT_10SEC,
     TIMEOUT_30SEC,
     NamespacesNames,
+    StorageClassNames,
 )
 
 
@@ -45,18 +46,6 @@ pytestmark = pytest.mark.usefixtures(
             },
             marks=pytest.mark.polarion("CNV-5454"),
             id="virt_launcher",
-        ),
-        pytest.param(
-            {
-                "pod_prefix": "rook-ceph-operator",
-                "resource": Deployment,
-                "namespace_name": NamespacesNames.OPENSHIFT_STORAGE,
-                "ratio": 1,
-                "interval": TIMEOUT_5SEC,
-                "max_duration": TIMEOUT_5MIN,
-            },
-            marks=pytest.mark.polarion("CNV-7257"),
-            id="rook-ceph-operator",
         ),
     ],
     indirect=True,
@@ -114,6 +103,99 @@ def test_io_stress_migration_target_node(
     """
     verify_vmi_was_migrated(
         vm=vm_with_nginx_service_and_node_selector,
+        initial_node=tainted_node_for_vm_nginx_migration,
+    )
+    chaos_worker_background_process.join()
+    nginx_monitoring_process.join()
+    assert (
+        nginx_monitoring_process.exitcode == 0
+    ), "The NGINX server running inside the VM failed to remain responsive during the sampling duration"
+    assert (
+        chaos_worker_background_process.exitcode == 0
+    ), "Background process execution failed"
+
+
+@pytest.mark.parametrize(
+    "chaos_dv_rhel9, pod_deleting_process",
+    [
+        pytest.param(
+            {"storage_class": StorageClassNames.CEPH_RBD},
+            {
+                "pod_prefix": "rook-ceph-operator",
+                "resource": Deployment,
+                "namespace_name": NamespacesNames.OPENSHIFT_STORAGE,
+                "ratio": 1,
+                "interval": TIMEOUT_5SEC,
+                "max_duration": TIMEOUT_5MIN,
+            },
+            marks=pytest.mark.polarion("CNV-7257"),
+            id="rook-ceph-operator",
+        ),
+        pytest.param(
+            {"storage_class": StorageClassNames.CEPH_RBD},
+            {
+                "pod_prefix": "ocs-operator",
+                "resource": Deployment,
+                "namespace_name": NamespacesNames.OPENSHIFT_STORAGE,
+                "ratio": 1,
+                "interval": TIMEOUT_5SEC,
+                "max_duration": TIMEOUT_5MIN,
+            },
+            marks=pytest.mark.polarion("CNV-7754"),
+            id="ocs-operator",
+        ),
+    ],
+    indirect=True,
+)
+def test_pod_delete_storage_migration(
+    chaos_dv_rhel9,
+    chaos_vm_rhel9_with_dv_started,
+    pod_deleting_process,
+    tainted_node_for_vm_chaos_rhel9_with_dv_migration,
+):
+    """
+    This scenario verifies that the migration of a vm with a dv
+    is completed while we disrupt different storage resources
+    """
+    assert verify_vmi_was_migrated(
+        vm=chaos_vm_rhel9_with_dv_started,
+        initial_node=tainted_node_for_vm_chaos_rhel9_with_dv_migration,
+    ), "The VMI has not been migrated to a different node."
+
+
+@pytest.mark.chaos
+@pytest.mark.polarion("CNV-7251")
+@pytest.mark.parametrize(
+    "nginx_monitoring_process, chaos_worker_background_process",
+    [
+        pytest.param(
+            {
+                "curl_timeout": TIMEOUT_10SEC,
+                "sampling_duration": TIMEOUT_2MIN,
+                "sampling_interval": TIMEOUT_5SEC,
+            },
+            {
+                "max_duration": TIMEOUT_2MIN,
+                "background_command": f"{STRESS_NG}  --io 5 -t 120s",
+                "process_name": STRESS_NG,
+            },
+        ),
+    ],
+    indirect=True,
+)
+def test_io_stress_migration_source_node(
+    vm_with_nginx_service,
+    vm_node_with_chaos_label,
+    nginx_monitoring_process,
+    chaos_worker_background_process,
+    tainted_node_for_vm_nginx_migration,
+):
+    """
+    This experiment generates I/O load on the source node of a VM migration. The expected result is for the VM to
+    eventually be successfully migrated.
+    """
+    verify_vmi_was_migrated(
+        vm=vm_with_nginx_service,
         initial_node=tainted_node_for_vm_nginx_migration,
     )
     chaos_worker_background_process.join()

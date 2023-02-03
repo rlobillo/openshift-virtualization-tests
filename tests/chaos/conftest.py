@@ -38,7 +38,7 @@ from utilities.infra import (
     scale_deployment_replicas,
     wait_for_node_status,
 )
-from utilities.virt import VirtualMachineForTests, running_vm, taint_node_no_schedule
+from utilities.virt import VirtualMachineForTests, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -81,23 +81,6 @@ def chaos_vm_rhel9(admin_client, chaos_namespace):
 
 
 @pytest.fixture()
-def chaos_vm_rhel9_with_dv(admin_client, chaos_namespace, chaos_dv_rhel9):
-    chaos_dv_rhel9.to_dict()
-    yield cluster_resource(VirtualMachineForTests)(
-        client=admin_client,
-        name="vm-chaos",
-        namespace=chaos_namespace.name,
-        os_flavor=OS_FLAVOR_RHEL,
-        memory_requests=Images.Rhel.DEFAULT_MEMORY_SIZE,
-        data_volume_template={
-            "metadata": chaos_dv_rhel9.res["metadata"],
-            "spec": chaos_dv_rhel9.res["spec"],
-        },
-        running=True,
-    )
-
-
-@pytest.fixture()
 def chaos_dv_rhel9(request, admin_client, chaos_namespace, rhel9_http_image_url):
     yield cluster_resource(DataVolume)(
         source="http",
@@ -112,18 +95,27 @@ def chaos_dv_rhel9(request, admin_client, chaos_namespace, rhel9_http_image_url)
 
 
 @pytest.fixture()
-def tainted_node_for_vm_chaos_rhel9_migration(chaos_vm_rhel9):
-    yield from taint_node_for_migration(initial_node=chaos_vm_rhel9.vmi.node)
+def chaos_vm_rhel9_with_dv(admin_client, chaos_namespace, chaos_dv_rhel9):
+    chaos_dv_rhel9.to_dict()
+    yield cluster_resource(VirtualMachineForTests)(
+        client=admin_client,
+        name="vm-chaos",
+        namespace=chaos_namespace.name,
+        os_flavor=OS_FLAVOR_RHEL,
+        memory_requests=Images.Rhel.DEFAULT_MEMORY_SIZE,
+        data_volume_template={
+            "metadata": chaos_dv_rhel9.res["metadata"],
+            "spec": chaos_dv_rhel9.res["spec"],
+        },
+        eviction=True,
+    )
 
 
 @pytest.fixture()
-def tainted_node_for_vm_nginx_migration(vm_with_nginx_service):
-    yield from taint_node_for_migration(initial_node=vm_with_nginx_service.vmi.node)
-
-
-def taint_node_for_migration(initial_node):
-    with taint_node_no_schedule(node=initial_node):
-        yield initial_node
+def chaos_vm_rhel9_with_dv_started(chaos_dv_rhel9, chaos_vm_rhel9_with_dv):
+    chaos_vm_rhel9_with_dv.deploy()
+    chaos_vm_rhel9_with_dv.start(wait=True, timeout=TIMEOUT_10MIN)
+    yield chaos_vm_rhel9_with_dv
 
 
 @pytest.fixture()
@@ -342,3 +334,8 @@ def label_migration_target_node_for_chaos(workers, vm_with_nginx_service):
         nodes=[target_node],
         labels={**CHAOS_LABEL, **HOST_LABEL},
     )
+
+
+@pytest.fixture()
+def vm_node_with_chaos_label(vm_with_nginx_service):
+    yield from label_nodes(nodes=[vm_with_nginx_service.vmi.node], labels=CHAOS_LABEL)

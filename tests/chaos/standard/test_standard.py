@@ -114,6 +114,7 @@ def test_ceph_storage_outage(
 
     # Create a vm with a dv while storage is unavailable.
     chaos_vm_rhel9_with_dv.deploy()
+    chaos_vm_rhel9_with_dv.start(wait=False)
 
     # Verify that dv and vm are not ready while chaos is being injected.
     chaos_dv_rhel9.wait_for_status(status=Resource.Status.PENDING)
@@ -126,11 +127,8 @@ def test_ceph_storage_outage(
         replica_count=downscaled_storage_provisioner_deployment["initial_replicas"]
     )
     downscaled_storage_provisioner_deployment["deployment"].wait_for_replicas()
-    running_vm(
-        vm=chaos_vm_rhel9_with_dv,
-        wait_for_interfaces=False,
-        check_ssh_connectivity=False,
-    )
+    chaos_dv_rhel9.wait_for_dv_success(failure_timeout=TIMEOUT_5MIN)
+    chaos_vm_rhel9_with_dv.wait_for_ready_status(status=True)
 
 
 @pytest.mark.parametrize(
