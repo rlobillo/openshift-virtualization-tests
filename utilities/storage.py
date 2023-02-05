@@ -817,26 +817,6 @@ def create_or_update_data_source(admin_client, dv):
             yield data_source
 
 
-def wait_for_dvs_import_completed(dvs_list):
-    def _dvs_import_completed():
-        return all(map(lambda dv: dv.status == DataVolume.Status.SUCCEEDED, dvs_list))
-
-    LOGGER.info("Wait for DVs import to end.")
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_60MIN,
-        sleep=10,
-        func=_dvs_import_completed,
-    )
-    try:
-        for sample in samples:
-            if sample:
-                return
-    except TimeoutExpiredError:
-        dv_status = {dv.name: dv.status for dv in dvs_list}
-        LOGGER.error(f"dvs were not imported within timeout: status={dv_status}")
-        raise
-
-
 class HppCsiStorageClass(StorageClass):
     class Name:
         # Without explicit storage pool, used with the Legacy HPP CR

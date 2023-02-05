@@ -144,7 +144,6 @@ from utilities.storage import (
     get_storage_class_dict_from_matrix,
     is_snapshot_supported_by_sc,
     sc_is_hpp_with_immediate_volume_binding,
-    wait_for_dvs_import_completed,
 )
 from utilities.virt import (
     Prometheus,
@@ -2149,7 +2148,8 @@ def dvs_for_upgrade(admin_client, worker_node1, rhel_latest_os_params):
         )
         dv.create()
         dvs_list.append(dv)
-    wait_for_dvs_import_completed(dvs_list=dvs_list)
+    for dv in dvs_list:
+        dv.wait_for_dv_success()
 
     yield dvs_list
 

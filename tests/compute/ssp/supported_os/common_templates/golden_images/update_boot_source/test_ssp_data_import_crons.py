@@ -30,7 +30,6 @@ from utilities.ssp import (
 from utilities.storage import (
     DATA_IMPORT_CRON_SUFFIX,
     RESOURCE_MANAGED_BY_DATA_IMPORT_CRON_LABEL,
-    wait_for_dvs_import_completed,
 )
 from utilities.virt import running_vm
 
@@ -272,7 +271,9 @@ def test_data_import_cron_using_default_storage_class(
         "Test DataImportCron and DV creation when using default storage class "
         f"{updated_default_storage_class_scope_function.name}"
     )
-    wait_for_dvs_import_completed(dvs_list=golden_images_data_volumes_scope_function)
+    for dv in golden_images_data_volumes_scope_function:
+        dv.wait_for_dv_success()
+
     assert_pvcs_using_default_storage_class(
         pvcs=golden_images_persistent_volume_claims_scope_function,
         sc=updated_default_storage_class_scope_function,
