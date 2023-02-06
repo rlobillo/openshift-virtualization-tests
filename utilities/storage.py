@@ -21,7 +21,7 @@ from ocp_resources.resource import NamespacedResource, ResourceEditor
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.volume_snapshot_class import VolumeSnapshotClass
-from ocp_utilities.infra import cluster_resource
+from ocp_utilities.infra import cluster_resource, get_client
 from ocp_utilities.utils import run_ssh_commands
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
@@ -146,7 +146,7 @@ def create_dv(
         multus_annotation=multus_annotation,
         teardown=teardown,
         preallocation=preallocation,
-        privileged_client=utilities.infra.get_admin_client(),
+        privileged_client=get_client(),
         api_name=api_name,
     ) as dv:
         if sc_volume_binding_mode_is_wffc(sc=storage_class) and consume_wffc:

@@ -18,7 +18,6 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import bugzilla
-import kubernetes
 import netaddr
 import paramiko
 import pytest
@@ -41,15 +40,15 @@ from ocp_resources.resource import ResourceEditor
 from ocp_resources.secret import Secret
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_utilities.data_collector import write_to_file
 from ocp_utilities.exceptions import NodeNotReadyError, NodeUnschedulableError
 from ocp_utilities.infra import (
     assert_nodes_ready,
     assert_nodes_schedulable,
     cluster_resource,
+    get_client,
 )
 from ocp_utilities.utils import run_command
-from openshift.dynamic import DynamicClient
+from ocp_wrapper_data_collector.data_collector import write_to_file
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
@@ -195,10 +194,6 @@ def camelcase_to_mixedcase(camelcase_str):
     # Utility to convert CamelCase to mixedCase
     # Example: Service type may be NodePort but in VM attributes.spec.ports it is nodePort
     return camelcase_str[0].lower() + camelcase_str[1:]
-
-
-def get_admin_client():
-    return DynamicClient(client=kubernetes.config.new_client_from_config())
 
 
 def get_pod_by_name_prefix(dyn_client, pod_prefix, namespace, get_all=False):
@@ -1092,7 +1087,7 @@ def get_and_extract_file_from_cluster(urls, system_os, dest_dir):
 
 def download_file_from_cluster(get_console_spec_links_name, dest_dir):
     console_cli_links = get_console_spec_links(
-        admin_client=get_admin_client(),
+        admin_client=get_client(),
         name=get_console_spec_links_name,
     )
     download_urls = get_all_console_links(
@@ -1148,7 +1143,7 @@ def get_http_image_url(image_directory, image_name):
 def get_openshift_pull_secret(client=None):
     pull_secret_name = "pull-secret"
     secret = Secret(
-        client=client or get_admin_client(),
+        client=client or get_client(),
         name=pull_secret_name,
         namespace=NamespacesNames.OPENSHIFT_CONFIG,
     )

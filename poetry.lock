@@ -642,6 +642,20 @@ urllib3 = "*"
 xmltodict = "*"
 
 [[package]]
+name = "openshift-python-wrapper-data-collector"
+version = "1.0.4"
+description = "Data collector for https://github.com/openshift/openshift-python-wrapper when running with PyTest"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+
+[package.dependencies]
+openshift-python-wrapper = "*"
+pytest = "*"
+pytest-testconfig = "*"
+PyYAML = "*"
+
+[[package]]
 name = "packaging"
 version = "21.3"
 description = "Core utilities for Python packages"
@@ -953,8 +967,8 @@ python-versions = ">=3.6"
 
 [package.dependencies]
 pytest = [
-    {version = ">=5.0", markers = "python_version < \"3.10\""},
     {version = ">=6.2.4", markers = "python_version >= \"3.10\""},
+    {version = ">=5.0", markers = "python_version < \"3.10\""},
 ]
 
 [[package]]
@@ -1371,7 +1385,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "4386c5dacd3b6156762ad65b5ccc1ebcd81337764261a97dd3c69a1cbb42fd98"
+content-hash = "aa543206777a285c0e89c96d91dfdd536b2b7e3060957202e0d0bf42c9e75313"
 
 [metadata.files]
 appnope = [
@@ -1709,6 +1723,9 @@ openshift-python-utilities = [
 ]
 openshift-python-wrapper = [
     {file = "openshift-python-wrapper-4.12.26.tar.gz", hash = "sha256:26ac52972b9ddc2d0e2ba642150a996250d9bac3e3c92bf1cf5c7e83665198d3"},
+]
+openshift-python-wrapper-data-collector = [
+    {file = "openshift-python-wrapper-data-collector-1.0.4.tar.gz", hash = "sha256:fa4b54c8195a592527ed580af3a4bc88014a8d54b0365e0076ac2e1553110406"},
 ]
 packaging = [
     {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},

@@ -10,8 +10,8 @@ from datetime import datetime
 from ocp_resources.node import Node
 from ocp_resources.service import Service
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler, TimeoutWatch
-from ocp_utilities.data_collector import write_to_file
 from ocp_utilities.infra import cluster_resource
+from ocp_wrapper_data_collector.data_collector import write_to_file
 from pytest_testconfig import py_config
 
 from utilities.constants import (

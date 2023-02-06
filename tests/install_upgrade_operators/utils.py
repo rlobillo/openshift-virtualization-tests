@@ -9,8 +9,8 @@ from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.operator_condition import OperatorCondition
 from ocp_resources.resource import Resource
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_utilities.data_collector import collect_resources_yaml_instance
 from ocp_utilities.infra import cluster_resource
+from ocp_wrapper_data_collector.data_collector import collect_resources_yaml_instance
 from openshift.dynamic.exceptions import ConflictError
 from pytest_testconfig import py_config
 

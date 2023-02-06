@@ -8,8 +8,8 @@ from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_utilities.data_collector import collect_resources_yaml_instance
 from ocp_utilities.utils import run_command
+from ocp_wrapper_data_collector.data_collector import collect_resources_yaml_instance
 from pytest_testconfig import py_config
 
 from tests.install_upgrade_operators.product_upgrade.utils import (

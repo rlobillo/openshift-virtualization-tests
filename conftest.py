@@ -38,11 +38,11 @@ from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from ocp_resources.volume_snapshot import VolumeSnapshot
 from ocp_resources.volume_snapshot_class import VolumeSnapshotClass
-from ocp_utilities.data_collector import (
+from ocp_utilities.infra import cluster_resource, get_client
+from ocp_wrapper_data_collector.data_collector import (
     collect_pods_data,
     collect_resources_yaml_instance,
 )
-from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import config as py_config
 
 import utilities.infra
@@ -52,7 +52,6 @@ from utilities.data_collector import (
     set_collector_directory,
     set_data_collector_values,
 )
-from utilities.infra import get_admin_client
 from utilities.logger import setup_logging
 from utilities.pytest_utils import (
     config_default_storage_class,
@@ -574,9 +573,7 @@ def pytest_sessionstart(session):
     if not skip_if_pytest_flags_exists(pytest_config=session.config):
         cluster_storage_classes_names = [
             sc.name
-            for sc in list(
-                cluster_resource(StorageClass).get(dyn_client=get_admin_client())
-            )
+            for sc in list(cluster_resource(StorageClass).get(dyn_client=get_client()))
         ]
         # If TOPOLVM storage class is present in the cluster - add it to the matrix
         # And do not add the HPP storage classes
@@ -625,7 +622,7 @@ def pytest_sessionstart(session):
     # Send --tc=server_url:<url> to override servers URL
     if not skip_if_pytest_flags_exists(pytest_config=session.config):
         server = py_config["server_url"] or get_cnv_qe_server_url(
-            cluster_host_url=utilities.infra.get_admin_client().configuration.host
+            cluster_host_url=get_client().configuration.host
         )
         py_config["servers"] = {
             name: _server.format(server=server)
@@ -680,7 +677,7 @@ def pytest_exception_interact(node, call, report):
             namespace_name = utilities.infra.generate_namespace_name(
                 file_path=node.fspath.strpath.split(f"{os.path.dirname(__file__)}/")[1]
             )
-            dyn_client = utilities.infra.get_admin_client()
+            dyn_client = get_client()
             collect_resources_yaml_instance(
                 namespace_name=namespace_name,
                 resources_to_collect=RESOURCES_TO_COLLECT_INFO,

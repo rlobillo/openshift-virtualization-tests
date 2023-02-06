@@ -5,8 +5,9 @@ def foo_matrix(matrix):
     return matrix
 """
 from ocp_resources.storage_class import StorageClass
+from ocp_utilities.infra import get_client
 
-from utilities.infra import cluster_resource, get_admin_client
+from utilities.infra import cluster_resource
 from utilities.storage import is_snapshot_supported_by_sc
 
 
@@ -15,7 +16,7 @@ def snapshot_matrix(matrix):
     for storage_class in matrix:
         if is_snapshot_supported_by_sc(
             sc_name=[*storage_class][0],
-            client=get_admin_client(),
+            client=get_client(),
         ):
             matrix_to_return.append(storage_class)
     return matrix_to_return
@@ -26,7 +27,7 @@ def without_snapshot_capability_matrix(matrix):
     for storage_class in matrix:
         if not is_snapshot_supported_by_sc(
             sc_name=[*storage_class][0],
-            client=get_admin_client(),
+            client=get_client(),
         ):
             matrix_to_return.append(storage_class)
     return matrix_to_return

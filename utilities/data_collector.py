@@ -4,7 +4,8 @@ import os
 import yaml
 from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.node import Node
-from ocp_utilities.data_collector import (
+from ocp_utilities.infra import get_client
+from ocp_wrapper_data_collector.data_collector import (
     collect_pods_data,
     collect_resources_yaml_instance,
     prepare_pytest_item_data_dir,
@@ -30,7 +31,7 @@ def collect_mcp_information():
     for pod_prefix in MACHINE_CONFIG_PODS_TO_COLLECT:
         pods_to_collect.extend(
             utilities.infra.get_pod_by_name_prefix(
-                dyn_client=utilities.infra.get_admin_client(),
+                dyn_client=get_client(),
                 pod_prefix=pod_prefix,
                 namespace="openshift-machine-config-operator",
                 get_all=True,

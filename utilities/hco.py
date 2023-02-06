@@ -8,6 +8,7 @@ from ocp_resources.namespace import Namespace
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.infra import get_client
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import py_config
 
@@ -63,7 +64,7 @@ class ResourceEditorValidateHCOReconcile(ResourceEditor):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.admin_client = utilities.infra.get_admin_client()
+        self.admin_client = get_client()
         self.hco_namespace = Namespace(client=self.admin_client, name=hco_namespace)
         self.wait_for_reconcile_post_update = wait_for_reconcile_post_update
         self._consecutive_checks_count = consecutive_checks_count

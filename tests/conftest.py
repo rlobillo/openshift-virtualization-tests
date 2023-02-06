@@ -52,6 +52,7 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.storage_profile import StorageProfile
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.infra import get_client
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
@@ -105,7 +106,6 @@ from utilities.infra import (
     download_file_from_cluster,
     generate_namespace_name,
     generate_openshift_pull_secret_file,
-    get_admin_client,
     get_clusterversion,
     get_daemonset_yaml_file_with_image_hash,
     get_http_image_url,
@@ -275,7 +275,7 @@ def admin_client():
     """
     Get DynamicClient
     """
-    return get_admin_client()
+    return get_client()
 
 
 @pytest.fixture(scope="session")

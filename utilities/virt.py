@@ -34,6 +34,7 @@ from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
 from ocp_utilities.exceptions import CommandExecFailed
+from ocp_utilities.infra import get_client
 from pytest_testconfig import config as py_config
 from rrmngmnt import Host, ssh, user
 
@@ -333,7 +334,7 @@ class VirtualMachineForTests(VirtualMachine):
             namespace=namespace,
             client=client,
             teardown=teardown,
-            privileged_client=utilities.infra.get_admin_client(),
+            privileged_client=get_client(),
             dry_run=dry_run,
             node_selector=node_selector,
             node_selector_labels=node_selector_labels,
@@ -1344,9 +1345,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
         template_object = self.template_object or get_template_by_labels(
             admin_client=self.client, template_labels=self.template_labels
         )
-        resources_list = template_object.process(
-            client=utilities.infra.get_admin_client(), **template_kwargs
-        )
+        resources_list = template_object.process(client=get_client(), **template_kwargs)
         for resource in resources_list:
             if (
                 resource["kind"] == VirtualMachine.kind
@@ -1475,7 +1474,7 @@ class ServiceForVirtualMachineForTests(Service):
             return self.instance.spec.clusterIP
 
         vm_node = Node(
-            client=utilities.infra.get_admin_client(),
+            client=get_client(),
             name=self.vmi.instance.status.nodeName,
         )
         if self.service_type == Service.Type.NODE_PORT:
@@ -1523,7 +1522,7 @@ class Prometheus(object):
     ):
         self.namespace = namespace
         self.resource_name = resource_name
-        self.client = client or utilities.infra.get_admin_client()
+        self.client = client or get_client()
         self.api_v1 = "/api/v1"
 
         # get route to prometheus HTTP api
@@ -2121,9 +2120,7 @@ def verify_one_pdb_per_vm(vm):
     pdb_resource_name = "PodDisruptionBudget"
     LOGGER.info(f"Verify one {pdb_resource_name} for VM {vm.name}")
     pdbs_dict = {}
-    for pdb in PodDisruptionBudget.get(
-        dyn_client=utilities.infra.get_admin_client(), namespace=vm.namespace
-    ):
+    for pdb in PodDisruptionBudget.get(dyn_client=get_client(), namespace=vm.namespace):
         if pdb.instance.metadata.ownerReferences[0].name == vm.name:
             pdbs_dict[pdb.name] = pdb.instance.metadata
 
