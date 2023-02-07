@@ -3,8 +3,8 @@ from ocp_resources.datavolume import DataVolume
 from ocp_utilities.infra import cluster_resource
 
 from tests.chaos.snapshot.utils import VirtualMachineSnapshotWithDeadline
-from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_8MIN, TIMEOUT_30MIN, Images
-from utilities.virt import VirtualMachineForTests, running_vm
+from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_8MIN, TIMEOUT_10MIN, Images
+from utilities.virt import VirtualMachineForTests
 
 
 @pytest.fixture()
@@ -14,7 +14,7 @@ def chaos_dv_rhel9_for_snapshot(
     storage_class_matrix_snapshot_matrix__function__,
     rhel9_http_image_url,
 ):
-    dv = cluster_resource(DataVolume)(
+    yield cluster_resource(DataVolume)(
         source="http",
         name="chaos-dv",
         api_name="storage",
@@ -24,9 +24,6 @@ def chaos_dv_rhel9_for_snapshot(
         storage_class=[*storage_class_matrix_snapshot_matrix__function__][0],
         client=admin_client,
     )
-    dv.deploy()
-    dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_30MIN)
-    return dv
 
 
 @pytest.fixture()
@@ -45,7 +42,7 @@ def chaos_vm_rhel9_for_snapshot(
             "spec": chaos_dv_rhel9_for_snapshot.res["spec"],
         },
     ) as vm:
-        running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
+        vm.start(wait=True, timeout=TIMEOUT_10MIN)
         yield vm
 
 
