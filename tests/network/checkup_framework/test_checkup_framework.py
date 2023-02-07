@@ -149,6 +149,12 @@ class TestCheckupLatency:
                 '"non-existing-namespace"',
                 marks=pytest.mark.polarion("CNV-9481"),
             ),
+            pytest.param(
+                pytest.lazy_fixture("latency_nonexistent_node_configmap"),
+                "setup: failed to wait for VMI 'test-checkup-framework/latency-check-source' IP address "
+                "to appear on status: timed out waiting for the condition",
+                marks=pytest.mark.polarion("CNV-9476"),
+            ),
         ],
     )
     def test_configmap_error_job_failure(
@@ -166,31 +172,4 @@ class TestCheckupLatency:
             job=latency_job,
             checkup_ns=checkup_ns,
             failure_message=failure_message,
-        )
-
-    @pytest.mark.parametrize(
-        "latency_configmap",
-        [
-            pytest.param(
-                pytest.lazy_fixture("latency_nonexistent_node_configmap"),
-                marks=pytest.mark.polarion("CNV-9476"),
-            ),
-        ],
-    )
-    def test_nonexistent_node_configmap_job_failure(
-        self,
-        unprivileged_client,
-        checkup_ns,
-        network_type,
-        latency_configmap,
-        latency_job,
-        latency_job_teardown,
-        latency_job_failure,
-    ):
-        verify_failure_reason_in_log(
-            unprivileged_client=unprivileged_client,
-            job=latency_job,
-            checkup_ns=checkup_ns,
-            failure_message="setup: failed to wait for VMI 'test-checkup-framework/latency-check-source' IP address "
-            "to appear on status: timed out waiting for the condition",
         )

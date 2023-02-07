@@ -5,7 +5,6 @@ import pytest
 from ocp_resources.role import Role
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.service_account import ServiceAccount
-from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from ocp_utilities.infra import cluster_resource
 
 from tests.network.checkup_framework.constants import (
@@ -24,7 +23,7 @@ from tests.network.checkup_framework.utils import (
     wait_for_job_failure,
 )
 from utilities.constants import LINUX_BRIDGE, SRIOV
-from utilities.infra import create_ns, get_pods, is_bug_open, label_nodes
+from utilities.infra import create_ns, label_nodes
 from utilities.network import network_device, network_nad
 
 
@@ -379,28 +378,6 @@ def latency_job(
         latency_configmap_name=configmap_name,
     ) as job:
         yield job
-
-
-# TODO: When bug 2159397 is closed, this fixture should be removed and the test
-#  'test_nonexistent_node_configmap_job_failure', should move to be another parameterization in
-#  'test_configmap_error_job_failure'.
-@pytest.fixture()
-def latency_job_teardown(unprivileged_client, checkup_ns, latency_job):
-    yield
-    if is_bug_open(bug_id=2159397):
-        for job_pod in get_pods(
-            dyn_client=unprivileged_client,
-            namespace=checkup_ns,
-            label=f"job-name={latency_job.name}",
-        ):
-            job_pod.clean_up()
-        for vmi in list(
-            VirtualMachineInstance.get(
-                dyn_client=unprivileged_client,
-                namespace=checkup_ns.name,
-            )
-        ):
-            vmi.clean_up()
 
 
 @pytest.fixture()
