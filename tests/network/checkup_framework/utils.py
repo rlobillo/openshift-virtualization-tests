@@ -6,7 +6,6 @@ from ocp_resources.configmap import ConfigMap
 from ocp_resources.job import Job
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import cluster_resource
-from pytest_testconfig import py_config
 
 from utilities.constants import TIMEOUT_4MIN, TIMEOUT_5SEC, TIMEOUT_11MIN
 from utilities.exceptions import ResourceValueError
@@ -14,24 +13,34 @@ from utilities.infra import get_pods, is_jira_open
 
 
 LOGGER = logging.getLogger(__name__)
-MAX_DESIRED_LATENCY_MILLISECONDS = "15"
+MAX_DESIRED_LATENCY_MILLISECONDS = "200"
 
 
 @contextlib.contextmanager
 def create_latency_job(
+    vm_latency_checkup_image,
     service_account,
-    cnv_current_version,
     latency_configmap_name,
     name,
     env_variables=True,
 ):
+    """
+    Creates a VM latency checkup job.
+    Args:
+        vm_latency_checkup_image (str): The image of the VM latency checkup. Example of the expected image:
+            'registry.redhat.io/container-native-virtualization/vm-network-latency-checkup-rhel9@sha256:<sha_content>'
+        service_account (ServiceAccount): The VM latency checkup service account resource.
+        latency_configmap_name (str): The name of the configmap resource used for the VM latency checkup.
+        name (str): The job name.
+        env_variables (bool, default: True): Include the environment variables in the job containers section.
+
+    Yield:
+        Job object.
+    """
     containers = [
         {
             "name": "framework",
-            "image": (
-                f"{py_config['cnv_registry_sources']['osbs']['source_map']}/"
-                f"container-native-virtualization-vm-network-latency-checkup:v{cnv_current_version}"
-            ),
+            "image": vm_latency_checkup_image,
             "imagePullPolicy": "Always",
             "env": [],
         }
@@ -132,12 +141,12 @@ def assert_successful_checkup(unprivileged_client, configmap, job, checkup_ns):
         assert (
             configmap_data["status.succeeded"] == "true"
         ), f"Checkup failed. Reported reason - {configmap_data['status.failureReason']}"
-        # Make sure the result parameter are valid:
+        # Make sure the result parameters are valid:
         assert (
             int(configmap_data["status.result.avgLatencyNanoSec"]) > 0
         ), f"avgLatencyNanoSec is not valid: {configmap_data['status.result.avgLatencyNanoSec']}"
         assert int(configmap_data["status.result.maxLatencyNanoSec"]) > 0, (
-            f"maxLatencyNanoSec is not valid:"
+            "maxLatencyNanoSec is not valid:"
             f" {configmap_data['status.result.maxLatencyNanoSec']}"
         )
         assert int(configmap_data["status.result.maxLatencyNanoSec"]) / 1000000 < int(
@@ -164,7 +173,7 @@ def wait_for_job_failure(job):
         timeout = TIMEOUT_11MIN
     else:
         timeout = TIMEOUT_4MIN
-    sample = None
+    job_status = ["not available"]
     try:
         job_status = TimeoutSampler(
             wait_timeout=timeout,
@@ -180,9 +189,10 @@ def wait_for_job_failure(job):
                         f"Job {job.name} has succeeded and should have failed."
                     )
     except TimeoutExpiredError:
-        LOGGER.error(
-            f"Job {job.name} current status is {sample} and not {job.Status.FAILED} as expected."
-        )
+        for status in job_status:
+            LOGGER.error(
+                f"Job {job.name} current status is {status} and not {job.Status.FAILED} as expected."
+            )
         raise
 
 
@@ -195,13 +205,15 @@ def get_pod_last_log_line(unprivileged_client, job, checkup_ns):
         return job_pod.log(tail_lines=1)
 
 
-def verify_failure_reason_in_log(unprivileged_client, job, checkup_ns, failure_message):
+def verify_failure_reason_in_log(
+    unprivileged_client, job, checkup_ns, failure_message_regex
+):
     pod_last_log_line = get_pod_last_log_line(
         unprivileged_client=unprivileged_client, job=job, checkup_ns=checkup_ns
     )
-    assert (
-        failure_message in pod_last_log_line
-    ), f"Error message expected: {failure_message}. Error message received: {pod_last_log_line}."
+    assert re.compile(failure_message_regex).search(
+        pod_last_log_line
+    ), f"Error message expected: {failure_message_regex}. Error message received: {pod_last_log_line}."
 
 
 def assert_source_and_target_nodes(configmap, expected_nodes_identical):

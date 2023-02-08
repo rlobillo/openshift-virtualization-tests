@@ -2,6 +2,7 @@ import logging
 import random
 
 import pytest
+from kubernetes.dynamic.exceptions import ResourceNotFoundError
 from ocp_resources.role import Role
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.service_account import ServiceAccount
@@ -35,6 +36,18 @@ LATENCY_DISCONNECTED_CONFIGMAP = "latency-disconnected-configmap"
 def checkup_ns(unprivileged_client):
     yield from create_ns(
         unprivileged_client=unprivileged_client, name="test-checkup-framework"
+    )
+
+
+@pytest.fixture(scope="session")
+def vm_latency_checkup_image_url(csv_scope_session, cnv_current_version):
+    latency_checkup_string = "vm-network-latency-checkup"
+    for image in csv_scope_session.instance.spec.relatedImages:
+        if latency_checkup_string in image["image"]:
+            return image["image"]
+
+    raise ResourceNotFoundError(
+        f"No image with the string {latency_checkup_string} was found in the csv_dict"
     )
 
 
@@ -235,6 +248,7 @@ def first_latency_job_checkup_ready(
 
 @pytest.fixture()
 def latency_concurrent_job(
+    vm_latency_checkup_image_url,
     framework_service_account,
     default_latency_configmap,
     cnv_current_version,
@@ -245,8 +259,8 @@ def latency_concurrent_job(
     with create_latency_job(
         name="concurrent-checkup-job",
         service_account=framework_service_account,
-        cnv_current_version=cnv_current_version,
         latency_configmap_name=default_latency_configmap.name,
+        vm_latency_checkup_image=vm_latency_checkup_image_url,
     ) as job:
         yield job
 
@@ -281,29 +295,31 @@ def latency_disconnected_configmap_sriov(
 
 @pytest.fixture()
 def latency_nonexistent_configmap_env_job(
+    vm_latency_checkup_image_url,
     framework_service_account,
     cnv_current_version,
 ):
     with create_latency_job(
         name=f"latency-{NONEXISTING_CONFIGMAP}-env-job",
         service_account=framework_service_account,
-        cnv_current_version=cnv_current_version,
         latency_configmap_name=NONEXISTING_CONFIGMAP,
+        vm_latency_checkup_image=vm_latency_checkup_image_url,
     ) as job:
         yield job
 
 
 @pytest.fixture()
 def latency_no_env_variables_job(
+    vm_latency_checkup_image_url,
     framework_service_account,
     cnv_current_version,
 ):
     with create_latency_job(
         name="latency-no-env-variables-job",
         service_account=framework_service_account,
-        cnv_current_version=cnv_current_version,
-        latency_configmap_name=None,
+        latency_configmap_name="",
         env_variables=False,
+        vm_latency_checkup_image=vm_latency_checkup_image_url,
     ) as job:
         yield job
 
@@ -335,8 +351,8 @@ def latency_nonexistent_node_configmap(
         namespace_name=checkup_ns.name,
         network_attachment_definition_namespace=checkup_ns.name,
         network_attachment_definition_name=network_type.name,
-        source_node="non-existent-node",
-        target_node=worker_node1.hostname,
+        source_node=worker_node1.hostname,
+        target_node="non-existent-node",
         configmap_name="latency-nonexistent-node-configmap",
     ) as configmap:
         yield configmap
@@ -371,6 +387,7 @@ def latency_nonexistent_namespace_configmap(
 
 @pytest.fixture()
 def latency_job(
+    vm_latency_checkup_image_url,
     framework_service_account,
     cnv_current_version,
     latency_configmap,
@@ -379,8 +396,8 @@ def latency_job(
     with create_latency_job(
         name=configmap_name.replace("configmap", "job"),
         service_account=framework_service_account,
-        cnv_current_version=cnv_current_version,
         latency_configmap_name=configmap_name,
+        vm_latency_checkup_image=vm_latency_checkup_image_url,
     ) as job:
         yield job
 

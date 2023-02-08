@@ -99,11 +99,11 @@ class TestCheckupLatency:
             unprivileged_client=unprivileged_client,
             job=latency_concurrent_job,
             checkup_ns=checkup_ns,
-            failure_message="configMap is already in use",
+            failure_message_regex="configMap is already in use",
         )
 
     @pytest.mark.parametrize(
-        "latency_job, failure_message",
+        "latency_job, failure_message_regex",
         [
             pytest.param(
                 pytest.lazy_fixture("latency_nonexistent_configmap_env_job"),
@@ -124,18 +124,18 @@ class TestCheckupLatency:
         network_type,
         default_latency_configmap,
         latency_job,
-        failure_message,
+        failure_message_regex,
         latency_job_failure,
     ):
         verify_failure_reason_in_log(
             unprivileged_client=unprivileged_client,
             job=latency_job,
             checkup_ns=checkup_ns,
-            failure_message=failure_message,
+            failure_message_regex=failure_message_regex,
         )
 
     @pytest.mark.parametrize(
-        "latency_configmap, failure_message",
+        "latency_configmap, failure_message_regex",
         [
             pytest.param(
                 pytest.lazy_fixture("latency_nonexistent_nad_configmap"),
@@ -151,8 +151,8 @@ class TestCheckupLatency:
             ),
             pytest.param(
                 pytest.lazy_fixture("latency_nonexistent_node_configmap"),
-                "setup: failed to wait for VMI 'test-checkup-framework/latency-check-source' IP address "
-                "to appear on status: timed out waiting for the condition",
+                r"setup: failed to wait for VMI 'test-checkup-framework/latency-check-target' IP address to "
+                "appear on status: timed out waiting for the condition",
                 marks=pytest.mark.polarion("CNV-9476"),
             ),
         ],
@@ -164,12 +164,12 @@ class TestCheckupLatency:
         network_type,
         latency_configmap,
         latency_job,
-        failure_message,
+        failure_message_regex,
         latency_job_failure,
     ):
         verify_failure_reason_in_log(
             unprivileged_client=unprivileged_client,
             job=latency_job,
             checkup_ns=checkup_ns,
-            failure_message=failure_message,
+            failure_message_regex=failure_message_regex,
         )
