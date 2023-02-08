@@ -612,7 +612,7 @@ six = "*"
 
 [[package]]
 name = "openshift-python-utilities"
-version = "4.12.11"
+version = "4.12.14"
 description = "Wrapper around https://github.com/openshift/openshift-python-utilities"
 category = "main"
 optional = false
@@ -628,7 +628,7 @@ PyYAML = "*"
 
 [[package]]
 name = "openshift-python-wrapper"
-version = "4.12.25"
+version = "4.12.26"
 description = "Wrapper around https://github.com/openshift/openshift-restclient-python"
 category = "main"
 optional = false
@@ -953,8 +953,8 @@ python-versions = ">=3.6"
 
 [package.dependencies]
 pytest = [
-    {version = ">=6.2.4", markers = "python_version >= \"3.10\""},
     {version = ">=5.0", markers = "python_version < \"3.10\""},
+    {version = ">=6.2.4", markers = "python_version >= \"3.10\""},
 ]
 
 [[package]]
@@ -1371,7 +1371,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "660b7b896007404b2f935f700cf94a1627b5f97ce5f898fed853abfbef157194"
+content-hash = "4386c5dacd3b6156762ad65b5ccc1ebcd81337764261a97dd3c69a1cbb42fd98"
 
 [metadata.files]
 appnope = [
@@ -1705,10 +1705,10 @@ openshift = [
     {file = "openshift-0.13.1.tar.gz", hash = "sha256:a060afb7565dda18b2749857867d80ab22b2f4143264519f493a9cabccc3b8a8"},
 ]
 openshift-python-utilities = [
-    {file = "openshift-python-utilities-4.12.11.tar.gz", hash = "sha256:1848e026776deb3edcbebd0d95f895bd761cf5f4fc83d4a21d41aba73fd8fb1b"},
+    {file = "openshift-python-utilities-4.12.14.tar.gz", hash = "sha256:9d50dc76af15511bd27b3b709d111916ac1a0b80afcd4db1916fea32798d3236"},
 ]
 openshift-python-wrapper = [
-    {file = "openshift-python-wrapper-4.12.25.tar.gz", hash = "sha256:a8a7db10750fe5be27133c867e6730d12e1b34a033c54772cae492a5ea3ec372"},
+    {file = "openshift-python-wrapper-4.12.26.tar.gz", hash = "sha256:26ac52972b9ddc2d0e2ba642150a996250d9bac3e3c92bf1cf5c7e83665198d3"},
 ]
 packaging = [
     {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},
