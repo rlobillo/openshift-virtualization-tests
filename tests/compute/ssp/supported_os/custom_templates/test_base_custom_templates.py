@@ -74,15 +74,10 @@ class CustomTemplate(Template):
 
 
 @pytest.fixture()
-def custom_template_from_base_template(request, namespace, admin_client):
-    base_template = next(
-        Template.get(
-            admin_client,
-            namespace=NamespacesNames.OPENSHIFT,
-            name=request.param["base_template_name"],
-        )
+def custom_template_from_base_template(request, namespace):
+    base_template = cluster_resource(Template)(
+        namespace=NamespacesNames.OPENSHIFT, name=request.param["base_template_name"]
     )
-
     with cluster_resource(CustomTemplate)(
         name=request.param["new_template_name"],
         namespace=namespace.name,
