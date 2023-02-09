@@ -7,9 +7,8 @@ from openshift.dynamic.exceptions import ForbiddenError
 from tests.install_upgrade_operators.crypto_policy.constants import (
     MANAGED_CRS_LIST,
     TLS_CUSTOM_PROFILE,
-    TLS_SECURITY_PROFILE,
 )
-from utilities.constants import TLS_CUSTOM_POLICY
+from utilities.constants import TLS_CUSTOM_POLICY, TLS_SECURITY_PROFILE
 from utilities.hco import ResourceEditorValidateHCOReconcile
 
 

@@ -19,13 +19,13 @@ from tests.install_upgrade_operators.crypto_policy.constants import (
     RESOURCE_NAME_STR,
     RESOURCE_NAMESPACE_STR,
     TLS_INTERMEDIATE_CIPHERS_IANA_OPENSSL_SYNTAX,
-    TLS_SECURITY_PROFILE,
 )
 from utilities.constants import (
     CLUSTER_RESOURCE_NAME,
     DEFAULT_RESOURCE_CONDITIONS,
     TIMEOUT_2MIN,
     TIMEOUT_15MIN,
+    TLS_SECURITY_PROFILE,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.infra import ExecCommandOnPod, is_bug_open

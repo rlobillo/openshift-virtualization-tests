@@ -6,13 +6,13 @@ from pytest_testconfig import config as py_config
 
 from tests.install_upgrade_operators.crypto_policy.constants import (
     CRYPTO_POLICY_SPEC_DICT,
-    TLS_SECURITY_PROFILE,
 )
 from tests.install_upgrade_operators.crypto_policy.utils import (
     assert_crypto_policy_propagated_to_components,
     get_resource_crypto_policy,
     set_hco_crypto_policy,
 )
+from utilities.constants import TLS_SECURITY_PROFILE
 
 
 LOGGER = logging.getLogger(__name__)

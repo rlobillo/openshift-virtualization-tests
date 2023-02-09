@@ -19,7 +19,6 @@ from tests.install_upgrade_operators.crypto_policy.constants import (
     RESOURCE_NAME_STR,
     RESOURCE_NAMESPACE_STR,
     RESOURCE_TYPE_STR,
-    TLS_SECURITY_PROFILE,
 )
 from tests.install_upgrade_operators.crypto_policy.utils import (
     get_resource_crypto_policy,
@@ -30,6 +29,7 @@ from utilities.constants import (
     CLUSTER_RESOURCE_NAME,
     KUBEVIRT_HCO_NAME,
     SSP_KUBEVIRT_HYPERCONVERGED,
+    TLS_SECURITY_PROFILE,
 )
 from utilities.hco import wait_for_hco_conditions
 from utilities.infra import MissingResourceException

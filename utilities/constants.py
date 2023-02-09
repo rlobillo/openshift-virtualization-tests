@@ -525,6 +525,7 @@ CLUSTER_RESOURCE_NAME = "cluster"
 TLS_OLD_POLICY = "old"
 TLS_CUSTOM_POLICY = "custom"
 IMAGE_CRON_STR = "image-cron"
+TLS_SECURITY_PROFILE = "tlsSecurityProfile"
 
 
 class StorageClassNames:

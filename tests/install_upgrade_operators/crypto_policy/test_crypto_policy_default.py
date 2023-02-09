@@ -17,7 +17,6 @@ from tests.install_upgrade_operators.crypto_policy.constants import (
     RESOURCE_NAMESPACE_STR,
     RESOURCE_TYPE_STR,
     TLS_INTERMEDIATE_POLICY,
-    TLS_SECURITY_PROFILE,
 )
 from tests.install_upgrade_operators.crypto_policy.utils import (
     assert_tls_version_connection,
@@ -27,6 +26,7 @@ from utilities.constants import (
     CLUSTER_RESOURCE_NAME,
     KUBEVIRT_HCO_NAME,
     SSP_KUBEVIRT_HYPERCONVERGED,
+    TLS_SECURITY_PROFILE,
 )
 
 

@@ -22,6 +22,7 @@ from utilities.constants import (
     TIMEOUT_4MIN,
     TIMEOUT_10MIN,
     TIMEOUT_30MIN,
+    TLS_SECURITY_PROFILE,
     StorageClassNames,
 )
 from utilities.ssp import (
@@ -68,8 +69,11 @@ class ResourceEditorValidateHCOReconcile(ResourceEditor):
         self._consecutive_checks_count = consecutive_checks_count
         self.list_resource_reconcile = list_resource_reconcile or []
         # TODO: Remove this variable when https://issues.redhat.com/browse/CNV-23504 is fixed
-        self.hco_crypto_policy_update = utilities.infra.is_jira_open(
-            jira_id="CNV-23504"
+        LOGGER.info(f"Patches: {self.patches}")
+        self.hco_crypto_policy_update = (
+            utilities.infra.is_jira_open(jira_id="CNV-23504")
+            if TLS_SECURITY_PROFILE in str(self.patches)
+            else False
         )
 
     def update(self, backup_resources=False):
