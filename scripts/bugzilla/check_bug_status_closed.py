@@ -139,10 +139,10 @@ def main():
                         mismatch_bugs_version.setdefault(filename_for_key, []).append(
                             f"{_bug} [{bug_target_release}]"
                         )
-
                 except InvalidVersion:
-                    # Continue if target version is not version.
-                    continue
+                    # Ignore bugs with 'future' target release version
+                    if bug_target_release == "future":
+                        continue
 
                 if parent_branch not in bug_target_release:
                     mismatch_bugs_version.setdefault(filename_for_key, []).append(
