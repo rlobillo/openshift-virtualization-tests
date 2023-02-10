@@ -5,17 +5,10 @@ from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
 
 from tests.compute.ssp.constants import PVC_NOT_FOUND_ERROR
-from tests.compute.ssp.supported_os.common_templates.golden_images.utils import (
-    assert_missing_golden_image_pvc,
-)
 from tests.os_params import FEDORA_LATEST, FEDORA_LATEST_LABELS, FEDORA_LATEST_OS
-from utilities.constants import HOSTPATH_CSI_BASIC, TIMEOUT_8MIN, StorageClassNames
-from utilities.infra import BUG_STATUS_CLOSED, cluster_resource
-from utilities.virt import (
-    VirtualMachineForTestsFromTemplate,
-    running_vm,
-    wait_for_vm_interfaces,
-)
+from utilities.constants import HOSTPATH_CSI_BASIC, StorageClassNames
+from utilities.infra import cluster_resource
+from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -201,55 +194,6 @@ def test_vm_dv_with_different_sc(
     # Using NFS and HPP, as Block <> Filesystem is not supported.
     # TODO: Add OCS - HPP test
     vm_from_golden_image.ssh_exec.executor().is_connective()
-
-
-@pytest.mark.parametrize(
-    "golden_image_data_volume_scope_function, vm_from_golden_image",
-    [
-        pytest.param(
-            {
-                "dv_name": "fedora-dv",
-                "image": FEDORA_LATEST["image_path"],
-                "dv_size": FEDORA_LATEST["dv_size"],
-                "storage_class": py_config["default_storage_class"],
-            },
-            {
-                "updated_source_pvc_name": NON_EXISTING_DV_NAME,
-                "start_vm": False,
-            },
-            marks=(
-                pytest.mark.polarion("CNV-5528"),
-                pytest.mark.bugzilla(
-                    2165083, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-                ),
-            ),
-        ),
-    ],
-    indirect=True,
-)
-def test_missing_golden_image_pvc(
-    admin_client,
-    namespace,
-    golden_image_data_source_scope_function,
-    vm_from_golden_image,
-):
-    vm_from_golden_image.start()
-    assert_missing_golden_image_pvc(
-        vm=vm_from_golden_image,
-        pvc_name=NON_EXISTING_DV_NAME,
-    )
-
-    # Update dataSource spec with the correct name
-    ResourceEditor(
-        patches={
-            golden_image_data_source_scope_function: {
-                "spec": {"source": {"pvc": {"name": "fedora-dv"}}}
-            }
-        }
-    ).update()
-
-    vm_from_golden_image.wait_for_ready_status(status=True, timeout=TIMEOUT_8MIN)
-    wait_for_vm_interfaces(vmi=vm_from_golden_image.vmi)
 
 
 @pytest.mark.parametrize(

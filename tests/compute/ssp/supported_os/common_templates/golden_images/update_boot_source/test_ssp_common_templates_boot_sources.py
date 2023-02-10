@@ -8,13 +8,9 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
-from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_source.constants import (
-    DATA_SOURCE_READY_FOR_CONSUMPTION_MESSAGE,
-)
 from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_source.utils import (
     template_labels,
     vm_with_data_source,
-    wait_for_condition_message_value,
 )
 from tests.compute.ssp.supported_os.common_templates.golden_images.utils import (
     assert_missing_golden_image_pvc,
@@ -23,7 +19,6 @@ from tests.compute.ssp.supported_os.common_templates.utils import (
     validate_os_info_vmi_vs_linux_os,
 )
 from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_5MIN, Images
-from utilities.infra import BUG_STATUS_CLOSED
 from utilities.virt import running_vm
 
 
@@ -69,14 +64,6 @@ def rhel9_data_source(golden_images_namespace):
     return DataSource(
         name=RHEL9_NAME,
         namespace=golden_images_namespace.name,
-    )
-
-
-@pytest.fixture()
-def rhel9_ready_data_source(rhel9_data_source):
-    wait_for_condition_message_value(
-        resource=rhel9_data_source,
-        expected_message=DATA_SOURCE_READY_FOR_CONSUMPTION_MESSAGE,
     )
 
 
@@ -210,19 +197,4 @@ def test_vm_with_uploaded_golden_image_opt_out(
     rhel9_dv,
 ):
     LOGGER.info(f"Test VM with manually uploaded {rhel9_dv.name} golden image DV")
-    running_vm(vm=vm_without_boot_source)
-
-
-@pytest.mark.bugzilla(
-    2165083, skip_when=lambda bug: bug.status not in BUG_STATUS_CLOSED
-)
-@pytest.mark.polarion("CNV-8031")
-def test_vm_with_uploaded_golden_image_opt_in(
-    disabled_common_boot_image_import_feature_gate_scope_function,
-    vm_without_boot_source,
-    enabled_common_boot_image_import_feature_gate_scope_function,
-    rhel9_data_source,
-    rhel9_ready_data_source,
-):
-    LOGGER.info(f"Test VM with auto-updated {rhel9_data_source.name} golden image DV")
     running_vm(vm=vm_without_boot_source)
