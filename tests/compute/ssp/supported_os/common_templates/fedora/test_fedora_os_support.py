@@ -69,7 +69,7 @@ HYPERV_DICT = {
 def disabled_selinux(
     golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
 ):
-    if is_jira_open(jira_id=25498):
+    if is_jira_open(jira_id="CNV-25498"):
         selinux_enable_cmd = "sudo setenforce"
         run_ssh_commands(
             host=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class.ssh_exec,
