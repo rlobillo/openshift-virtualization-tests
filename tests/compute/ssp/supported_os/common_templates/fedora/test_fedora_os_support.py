@@ -18,7 +18,7 @@ from tests.compute.utils import (
     validate_pause_optional_migrate_unpause_linux_vm,
 )
 from utilities import console
-from utilities.infra import is_bug_open
+from utilities.infra import is_jira_open
 from utilities.virt import migrate_vm_and_verify, running_vm, wait_for_console
 
 
@@ -69,7 +69,7 @@ HYPERV_DICT = {
 def disabled_selinux(
     golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class,
 ):
-    if is_bug_open(bug_id=1917024):
+    if is_jira_open(jira_id=25498):
         selinux_enable_cmd = "sudo setenforce"
         run_ssh_commands(
             host=golden_image_vm_object_from_template_multi_fedora_os_multi_storage_scope_class.ssh_exec,
