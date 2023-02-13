@@ -255,6 +255,7 @@ class TestUpgradeCompute:
     @pytest.mark.polarion("CNV-3682")
     @pytest.mark.order(after=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
     @pytest.mark.dependency(
+        name=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_machine_type_after_upgrade",
         depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,
     )
@@ -263,7 +264,7 @@ class TestUpgradeCompute:
     ):
         for vm in vms_for_upgrade:
             assert (
-                vm.instance.spec.template.spec.domain.machine.type
+                vm.vmi.instance.spec.domain.machine.type
                 == vms_for_upgrade_dict_before[vm.name]["spec"]["template"]["spec"][
                     "domain"
                 ]["machine"]["type"]
@@ -364,3 +365,25 @@ class TestUpgradeCompute:
                 f"Golden image default {DATA_SOURCE_NAME} "
                 f"mismatch after upgrade:\n{mismatching_templates}"
             )
+
+    @pytest.mark.polarion("CNV-9667")
+    @pytest.mark.order(
+        after=f"{DEPENDENCIES_NODE_ID_PREFIX}::test_machine_type_after_upgrade"
+    )
+    @pytest.mark.dependency(
+        depends=[
+            IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
+            COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID,
+        ],
+        scope=DEPENDENCY_SCOPE_SESSION,
+    )
+    def test_vm_after_machine_type_upgrade(
+        self,
+        skip_on_ocp_upgrade,
+        skip_on_zstream,
+        vm_with_updated_machine_type,
+        machine_type_from_kubevirt_config,
+    ):
+        assert (
+            vm_with_updated_machine_type.vmi.instance.spec.domain.machine.type
+        ) == machine_type_from_kubevirt_config

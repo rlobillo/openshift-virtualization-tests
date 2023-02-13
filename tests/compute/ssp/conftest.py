@@ -17,12 +17,6 @@ def smbios_from_kubevirt_config(kubevirt_config_scope_module):
 
 
 @pytest.fixture(scope="module")
-def machine_type_from_kubevirt_config(kubevirt_config_scope_module):
-    """Extract machine type default from kubevirt CR."""
-    return kubevirt_config_scope_module["machineType"]
-
-
-@pytest.fixture(scope="module")
 def downloaded_latest_libosinfo_db(
     tmpdir_factory, latest_osinfo_db_file_name, osinfo_repo
 ):

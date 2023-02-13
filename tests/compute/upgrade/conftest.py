@@ -5,6 +5,7 @@ from copy import deepcopy
 import pytest
 from ocp_resources.data_source import DataSource
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.resource import ResourceEditor
 from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import py_config
@@ -15,7 +16,12 @@ from tests.compute.upgrade.utils import (
     wait_for_automatic_vm_migrations,
 )
 from tests.compute.utils import check_pod_disruption_budget_for_completed_migrations
-from utilities.constants import TIMEOUT_30MIN, TIMEOUT_40MIN, TIMEOUT_90MIN
+from utilities.constants import (
+    TIMEOUT_30MIN,
+    TIMEOUT_40MIN,
+    TIMEOUT_90MIN,
+    UpgradeStreams,
+)
 from utilities.infra import cluster_resource
 from utilities.storage import (
     create_dv,
@@ -279,3 +285,32 @@ def run_strategy_golden_image_rwx_data_source(
         source=generate_data_source_dict(dv=run_strategy_golden_image_rwx_dv),
     ) as ds:
         yield ds
+
+
+@pytest.fixture(scope="session")
+def skip_on_zstream(cnv_upgrade_info):
+    if cnv_upgrade_info == UpgradeStreams.Z_STREAM:
+        pytest.skip("This test is not supported for z-stream upgrade")
+
+
+@pytest.fixture()
+def vm_with_updated_machine_type(vms_for_upgrade, machine_type_from_kubevirt_config):
+    vm = vms_for_upgrade[0]
+    vm.stop(wait=True)
+    ResourceEditor(
+        patches={
+            vm: {
+                "spec": {
+                    "template": {
+                        "spec": {
+                            "domain": {
+                                "machine": {"type": machine_type_from_kubevirt_config}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ).update()
+    running_vm(vm=vm)
+    yield vm

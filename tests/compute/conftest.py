@@ -120,3 +120,9 @@ def vm_from_template_with_existing_dv(
         existing_data_volume=data_volume_scope_function,
     ) as vm:
         yield vm
+
+
+@pytest.fixture(scope="module")
+def machine_type_from_kubevirt_config(kubevirt_config_scope_module):
+    """Extract machine type default from kubevirt CR."""
+    return kubevirt_config_scope_module["machineType"]

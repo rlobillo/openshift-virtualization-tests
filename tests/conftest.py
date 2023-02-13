@@ -96,6 +96,7 @@ from utilities.constants import (
     Images,
     NamespacesNames,
     StorageClassNames,
+    UpgradeStreams,
 )
 from utilities.exceptions import CommonNodesCpusNotFoundError
 from utilities.infra import (
@@ -183,12 +184,6 @@ AMD_CPU_MODELS = ["Opteron_G1", "Opteron_G2"]
 NIGHTLY_ART_IMAGE = (
     "quay.io/openshift-release-dev/ocp-release-nightly:iib-int-index-art-operators"
 )
-
-
-class UpgradeStreams:
-    X_STREAM = "x-stream"
-    Y_STREAM = "y-stream"
-    Z_STREAM = "z-stream"
 
 
 def login_to_account(api_address, user, password=None):
