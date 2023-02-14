@@ -1,7 +1,6 @@
 import shlex
 
 import pytest
-from ocp_resources.pod import Pod
 from ocp_resources.service_account import ServiceAccount
 
 from tests.network.constants import (
@@ -10,6 +9,7 @@ from tests.network.constants import (
     PORT_8080,
     SERVICE_MESH_PORT,
 )
+from tests.network.upgrade.utils import wait_for_http_pod_to_be_in_running_state
 from tests.network.utils import (
     CirrosVirtualMachineForServiceMesh,
     ServiceMeshDeployments,
@@ -22,7 +22,7 @@ from utilities.constants import (
     KMP_VM_ASSIGNMENT_LABEL,
     LINUX_BRIDGE,
 )
-from utilities.infra import cluster_resource, create_ns, get_pod_by_name_prefix
+from utilities.infra import cluster_resource, create_ns
 from utilities.network import cloud_init, network_nad
 from utilities.virt import (
     VirtualMachineForTests,
@@ -149,16 +149,15 @@ def httpbin_service_mesh_service_for_upgrade(
         namespace=deployment_namespace,
         app_name=httpbin_service_mesh_deployment_for_upgrade.app_name,
         port=httpbin_service_mesh_deployment_for_upgrade.service_port,
-    ) as sv:
+    ) as sm_deployment_service:
         # TODO: Once Jira issue CNV-24274 is closed, and we have the health-check of the pod working accurately,
         #   the next function call (6 lines) can be removed.
-        get_pod_by_name_prefix(
-            dyn_client=admin_client,
-            pod_prefix=sv.app_name,
-            namespace=deployment_namespace,
-            get_all=True,
-        )[0].wait_for_status(status=Pod.Status.RUNNING)
-        yield sv
+        wait_for_http_pod_to_be_in_running_state(
+            admin_client=admin_client,
+            sm_deployment_service=sm_deployment_service,
+            deployment_namespace=deployment_namespace,
+        )
+        yield sm_deployment_service
 
 
 @pytest.fixture(scope="session")
