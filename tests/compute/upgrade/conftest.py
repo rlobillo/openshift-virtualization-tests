@@ -243,7 +243,7 @@ def windows_vm(
         volume_mode=py_config["default_volume_mode"],
         size=latest_windows_dict["dv_size"],
     ) as dv:
-        dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_30MIN)
+        dv.wait_for_dv_success(timeout=TIMEOUT_30MIN)
         with cluster_resource(DataSource)(
             name=dv.name,
             namespace=dv.namespace,
