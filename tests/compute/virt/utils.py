@@ -9,8 +9,8 @@ from tests.compute.utils import (
     fetch_pid_from_linux_vm,
     kill_processes_by_name_linux,
     start_and_fetch_processid_on_linux_vm,
-    update_hco_annotations,
 )
+from utilities.hco import update_hco_annotations
 from utilities.virt import (
     migrate_vm_and_verify,
     verify_vm_migrated,

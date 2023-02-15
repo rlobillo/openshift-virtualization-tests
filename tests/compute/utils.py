@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
 import shlex
-from contextlib import contextmanager
 
 from ocp_resources.pod_disruption_budget import PodDisruptionBudget
 from ocp_resources.resource import ResourceEditor
@@ -11,10 +10,6 @@ from ocp_utilities.utils import run_ssh_commands
 
 from tests.compute.contants import DISK_SERIAL, RHSM_SECRET_NAME
 from utilities.constants import RHSM_PASSWD, RHSM_USER, TIMEOUT_5MIN, TIMEOUT_10SEC
-from utilities.hco import (
-    ResourceEditorValidateHCOReconcile,
-    hco_cr_jsonpatch_annotations_dict,
-)
 from utilities.infra import base64_encode_str, cluster_resource
 from utilities.virt import (
     migrate_vm_and_verify,
@@ -143,48 +138,6 @@ def kill_processes_by_name_linux(vm, process_name, check_rc=True):
 def kill_processes_by_name_windows(vm, process_name):
     cmd = shlex.split(f"taskkill /F /IM {process_name}")
     run_ssh_commands(host=vm.ssh_exec, commands=cmd)
-
-
-@contextmanager
-def update_hco_annotations(resource, path, value, overwrite_patches=False):
-    """
-    Update jsonpatch annotation in HCO CR.
-
-    Args:
-        resource (HyperConverged): HCO resource object
-        path (str): key path in KubeVirt CR
-        value (any): key value
-        overwrite_patches (bool): if True - overwrites existing jsonpatch annotation/s
-
-    """
-    jsonpatch_key = "kubevirt.kubevirt.io/jsonpatch"
-    resource_existing_jsonpatch_annotation = resource.instance.metadata.get(
-        "annotations", {}
-    ).get(jsonpatch_key)
-    hco_config_jsonpath_dict = hco_cr_jsonpatch_annotations_dict(
-        component="kubevirt",
-        path=path,
-        value=value,
-    )
-
-    # Avoid overwriting existing jsonpatch annotations
-    # example:
-    # '[{"op": "add", "path": "/spec/configuration/machineType", "value": "pc-q35-rhel8.4.0"},
-    # {"op": "add", "path": "/spec/configuration/cpuModel", "value": "Haswell-noTSX"}]]'
-    if resource_existing_jsonpatch_annotation and not overwrite_patches:
-        hco_annotations_dict = hco_config_jsonpath_dict["metadata"]["annotations"]
-        hco_annotations_dict[
-            jsonpatch_key
-        ] = f"{resource_existing_jsonpatch_annotation[:-1]},{hco_annotations_dict[jsonpatch_key][1:]}"
-
-    editor = ResourceEditorValidateHCOReconcile(
-        patches={
-            resource: hco_config_jsonpath_dict,
-        },
-    )
-    editor.update(backup_resources=True)
-    yield
-    editor.restore()
 
 
 def verify_pods_priority_class_value(pods, expected_value):

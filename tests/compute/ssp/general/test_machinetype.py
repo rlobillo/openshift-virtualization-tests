@@ -9,12 +9,12 @@ from openshift.dynamic.exceptions import UnprocessibleEntityError
 from pytest_testconfig import py_config
 
 from tests.compute.ssp.constants import MachineTypesNames
-from tests.compute.utils import update_hco_annotations
 from tests.os_params import (
     RHEL_6_10_TEMPLATE_LABELS,
     RHEL_7_8,
     RHEL_7_8_TEMPLATE_LABELS,
 )
+from utilities.hco import update_hco_annotations
 from utilities.infra import cluster_resource
 from utilities.virt import (
     VirtualMachineForTests,

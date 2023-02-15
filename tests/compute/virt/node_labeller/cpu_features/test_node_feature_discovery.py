@@ -3,8 +3,8 @@ Test node feature discovery.
 """
 import pytest
 
-from tests.compute.utils import update_hco_annotations
 from tests.compute.virt.node_labeller.constants import CPU_MODEL_LABEL_PREFIX
+from utilities.hco import update_hco_annotations
 from utilities.virt import wait_for_kv_stabilize, wait_for_updated_kv_value
 
 

@@ -1,5 +1,6 @@
 import json
 import logging
+from contextlib import contextmanager
 
 from ocp_resources.cdi import CDI
 from ocp_resources.hyperconverged import HyperConverged
@@ -470,3 +471,50 @@ def hco_cr_jsonpatch_annotations_dict(component, path, value, op="add"):
             }
         }
     }
+
+
+@contextmanager
+def update_hco_annotations(
+    resource, path, value, overwrite_patches=False, component="kubevirt"
+):
+    """
+    Update jsonpatch annotation in HCO CR.
+
+    Args:
+        resource (HyperConverged): HCO resource object
+        path (str): key path in KubeVirt CR
+        value (any): key value
+        overwrite_patches (bool): if True - overwrites existing jsonpatch annotation/s
+        component (str): component getting json patched
+
+    """
+    jsonpatch_key = (
+        f"{HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT[component]['api_group_prefix']}."
+        f"{Resource.ApiGroup.KUBEVIRT_IO}/jsonpatch"
+    )
+    resource_existing_jsonpatch_annotation = resource.instance.metadata.get(
+        "annotations", {}
+    ).get(jsonpatch_key)
+    hco_config_jsonpath_dict = hco_cr_jsonpatch_annotations_dict(
+        component=component,
+        path=path,
+        value=value,
+    )
+    # Avoid overwriting existing jsonpatch annotations
+    # example:
+    # '[{"op": "add", "path": "/spec/configuration/machineType", "value": "pc-q35-rhel8.4.0"},
+    # {"op": "add", "path": "/spec/configuration/cpuModel", "value": "Haswell-noTSX"}]]'
+    if resource_existing_jsonpatch_annotation and not overwrite_patches:
+        hco_annotations_dict = hco_config_jsonpath_dict["metadata"]["annotations"]
+        hco_annotations_dict[
+            jsonpatch_key
+        ] = f"{resource_existing_jsonpatch_annotation[:-1]},{hco_annotations_dict[jsonpatch_key][1:]}"
+
+    editor = ResourceEditorValidateHCOReconcile(
+        patches={
+            resource: hco_config_jsonpath_dict,
+        },
+    )
+    editor.update(backup_resources=True)
+    yield
+    editor.restore()
