@@ -13,21 +13,28 @@ from tests.install_upgrade_operators.json_patch.utils import (
     wait_for_metrics_value_update,
 )
 from utilities.hco import update_hco_annotations, wait_for_hco_conditions
+from utilities.storage import get_hyperconverged_cdi
 
 
-PATH = "migrations"
-DISABLE_TLS = "disableTLS"
-COMPONENT = "kubevirt"
+PATH = "featureGates/0"
+COMPONENT = "cdi"
 
 
 @pytest.fixture(scope="class")
-def json_patched_kubevirt(
+def cdi_feature_gates_scope_class(admin_client):
+    return get_hyperconverged_cdi(admin_client=admin_client).instance.spec.config.get(
+        "featureGates"
+    )
+
+
+@pytest.fixture(scope="class")
+def json_patched_cdi(
     admin_client, hco_namespace, prometheus, hyperconverged_resource_scope_class
 ):
     with update_hco_annotations(
         resource=hyperconverged_resource_scope_class,
         path=PATH,
-        value={DISABLE_TLS: True},
+        op="remove",
         component=COMPONENT,
     ):
         yield
@@ -40,17 +47,18 @@ def json_patched_kubevirt(
 @pytest.mark.usefixtures(
     "kubevirt_all_unsafe_modification_metrics_before_test",
     "kubevirt_alerts_before_test",
-    "json_patched_kubevirt",
+    "cdi_feature_gates_scope_class",
+    "json_patched_cdi",
 )
 class TestKubevirtJsonPatch:
-    @pytest.mark.polarion("CNV-8689")
-    def test_kubevirt_json_patch(
+    @pytest.mark.polarion("CNV-8717")
+    def test_cdi_json_patch(
         self,
         admin_client,
         hco_namespace,
-        kubevirt_resource,
+        cdi_feature_gates_scope_class,
+        cdi_resource_scope_function,
     ):
-
         wait_for_hco_conditions(
             admin_client=admin_client,
             hco_namespace=hco_namespace,
@@ -58,16 +66,15 @@ class TestKubevirtJsonPatch:
                 **{"TaintedConfiguration": Resource.Condition.Status.TRUE},
             },
         )
-        migration_current_value = (
-            kubevirt_resource.instance.spec.configuration.migrations
+        cdi_current_feature_gates = (
+            cdi_resource_scope_function.instance.spec.config.get("featureGates", [])
         )
-        assert migration_current_value.get(DISABLE_TLS), (
-            f"Unable to json patch kubevirt to set {DISABLE_TLS}. "
-            f"Current Value: {migration_current_value}."
-        )
+        assert (
+            len(cdi_feature_gates_scope_class) - len(cdi_current_feature_gates) == 1
+        ), f"Json patch to remove {PATH} from CDI was unsuccessful. Current value: {cdi_current_feature_gates}"
 
-    @pytest.mark.polarion("CNV-9697")
-    def test_kubevirt_json_patch_metrics(
+    @pytest.mark.polarion("CNV-9707")
+    def test_cdi_json_patch_metrics(
         self, prometheus, kubevirt_all_unsafe_modification_metrics_before_test
     ):
         before_value = filter_metric_by_component(
@@ -82,8 +89,8 @@ class TestKubevirtJsonPatch:
             previous_value=before_value,
         )
 
-    @pytest.mark.polarion("CNV-9698")
-    def test_kubevirt_json_patch_alert(self, prometheus):
+    @pytest.mark.polarion("CNV-9706")
+    def test_cdi_json_patch_alert(self, prometheus):
         wait_for_alert(
             prometheus=prometheus, alert_name=ALERT_NAME, component_name=COMPONENT
         )

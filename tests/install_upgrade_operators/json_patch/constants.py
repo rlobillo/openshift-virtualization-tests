@@ -1,0 +1,2 @@
+ALERT_NAME = "KubevirtHyperconvergedClusterOperatorUSModification"
+QUERY_STRING = "kubevirt_hco_unsafe_modification_count"

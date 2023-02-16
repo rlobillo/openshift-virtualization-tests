@@ -453,7 +453,7 @@ def get_hco_namespace(admin_client, namespace="openshift-cnv"):
     raise ResourceNotFoundError(f"Namespace: {namespace} not found.")
 
 
-def hco_cr_jsonpatch_annotations_dict(component, path, value, op="add"):
+def hco_cr_jsonpatch_annotations_dict(component, path, value=None, op="add"):
     # https://github.com/kubevirt/hyperconverged-cluster-operator/blob/master/docs/cluster-configuration.md#jsonpatch-annotations
     component_dict = HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT[component]
     return {
@@ -475,7 +475,7 @@ def hco_cr_jsonpatch_annotations_dict(component, path, value, op="add"):
 
 @contextmanager
 def update_hco_annotations(
-    resource, path, value, overwrite_patches=False, component="kubevirt"
+    resource, path, value=None, overwrite_patches=False, component="kubevirt", op="add"
 ):
     """
     Update jsonpatch annotation in HCO CR.
@@ -486,6 +486,7 @@ def update_hco_annotations(
         value (any): key value
         overwrite_patches (bool): if True - overwrites existing jsonpatch annotation/s
         component (str): component getting json patched
+        op (str): operation string
 
     """
     jsonpatch_key = (
@@ -499,6 +500,7 @@ def update_hco_annotations(
         component=component,
         path=path,
         value=value,
+        op=op,
     )
     # Avoid overwriting existing jsonpatch annotations
     # example:

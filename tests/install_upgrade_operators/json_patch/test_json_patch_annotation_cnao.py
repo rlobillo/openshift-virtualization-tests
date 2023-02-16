@@ -15,19 +15,22 @@ from tests.install_upgrade_operators.json_patch.utils import (
 from utilities.hco import update_hco_annotations, wait_for_hco_conditions
 
 
-PATH = "migrations"
-DISABLE_TLS = "disableTLS"
-COMPONENT = "kubevirt"
+PATH = "selfSignConfiguration"
+COMPONENT = "cnao"
 
 
 @pytest.fixture(scope="class")
-def json_patched_kubevirt(
-    admin_client, hco_namespace, prometheus, hyperconverged_resource_scope_class
+def json_patched_cnao(
+    admin_client,
+    hco_namespace,
+    prometheus,
+    hyperconverged_resource_scope_class,
 ):
     with update_hco_annotations(
         resource=hyperconverged_resource_scope_class,
         path=PATH,
-        value={DISABLE_TLS: True},
+        op="replace",
+        value=None,
         component=COMPONENT,
     ):
         yield
@@ -40,17 +43,16 @@ def json_patched_kubevirt(
 @pytest.mark.usefixtures(
     "kubevirt_all_unsafe_modification_metrics_before_test",
     "kubevirt_alerts_before_test",
-    "json_patched_kubevirt",
+    "json_patched_cnao",
 )
-class TestKubevirtJsonPatch:
-    @pytest.mark.polarion("CNV-8689")
-    def test_kubevirt_json_patch(
+class TestCNAOJsonPatch:
+    @pytest.mark.polarion("CNV-8715")
+    def test_cnao_json_patch(
         self,
         admin_client,
         hco_namespace,
-        kubevirt_resource,
+        cnao_resource,
     ):
-
         wait_for_hco_conditions(
             admin_client=admin_client,
             hco_namespace=hco_namespace,
@@ -58,16 +60,13 @@ class TestKubevirtJsonPatch:
                 **{"TaintedConfiguration": Resource.Condition.Status.TRUE},
             },
         )
-        migration_current_value = (
-            kubevirt_resource.instance.spec.configuration.migrations
-        )
-        assert migration_current_value.get(DISABLE_TLS), (
-            f"Unable to json patch kubevirt to set {DISABLE_TLS}. "
-            f"Current Value: {migration_current_value}."
-        )
+        cnao_spec = cnao_resource.instance.spec
+        assert not cnao_spec.get(
+            PATH
+        ), f"Unable to replace {PATH} from CNAO via json patch. Current value: {cnao_spec}"
 
-    @pytest.mark.polarion("CNV-9697")
-    def test_kubevirt_json_patch_metrics(
+    @pytest.mark.polarion("CNV-9713")
+    def test_cnao_json_patch_metrics(
         self, prometheus, kubevirt_all_unsafe_modification_metrics_before_test
     ):
         before_value = filter_metric_by_component(
@@ -82,8 +81,8 @@ class TestKubevirtJsonPatch:
             previous_value=before_value,
         )
 
-    @pytest.mark.polarion("CNV-9698")
-    def test_kubevirt_json_patch_alert(self, prometheus):
+    @pytest.mark.polarion("CNV-9712")
+    def test_cnao_json_patch_alert(self, prometheus):
         wait_for_alert(
             prometheus=prometheus, alert_name=ALERT_NAME, component_name=COMPONENT
         )
