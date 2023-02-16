@@ -8,7 +8,7 @@ from ocp_resources.virtual_machine_instance_migration import (
 
 from tests.compute.virt.constants import MIGRATION_POLICY_VM_LABEL
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_3MIN
-from utilities.infra import cluster_resource, is_bug_open
+from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
@@ -95,11 +95,6 @@ def migration_metrics_dict():
         Resource.Status.SUCCEEDED: "kubevirt_migrate_vmi_succeeded",
         Resource.Status.FAILED: "kubevirt_migrate_vmi_failed",
     }
-    if is_bug_open(bug_id=2148383):
-        migration_metrics[
-            Resource.Status.SUCCEEDED
-        ] = "kubevirt_migrate_vmi_succeeded_total"
-        migration_metrics[Resource.Status.FAILED] = "kubevirt_migrate_vmi_failed_total"
     return migration_metrics
 
 
