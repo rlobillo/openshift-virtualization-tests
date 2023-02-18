@@ -22,9 +22,8 @@ def create_vm_for_snapshot_upgrade_tests(
             image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
         ),
         storage_class=storage_class_for_snapshot,
-        volume_mode=DataVolume.VolumeMode.BLOCK,
-        access_modes=DataVolume.AccessMode.RWX,
         size=Images.Cirros.DEFAULT_DV_SIZE,
+        api_name="storage",
     )
     dv.to_dict()
     with cluster_resource(VirtualMachineForTests)(

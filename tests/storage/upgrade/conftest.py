@@ -9,8 +9,8 @@ from tests.storage.upgrade.utils import (
 )
 from tests.storage.utils import update_scratch_space_sc
 from utilities.constants import HOTPLUG_DISK_SERIAL
-from utilities.infra import cluster_resource
-from utilities.storage import create_dv, virtctl_volume
+from utilities.infra import cluster_resource, is_bug_open
+from utilities.storage import create_dv, sc_volume_binding_mode_is_wffc, virtctl_volume
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -160,3 +160,12 @@ def hotplug_volume_upg(fedora_vm_for_hotplug_upg):
 @pytest.fixture()
 def fedora_vm_for_hotplug_upg_ssh_connectivity(fedora_vm_for_hotplug_upg):
     wait_for_ssh_connectivity(vm=fedora_vm_for_hotplug_upg)
+
+
+@pytest.fixture(scope="session")
+def skip_if_sc_for_snapshot_is_wffc_and_bug_2149654_open(storage_class_for_snapshot):
+    bug_id = 2149654
+    if sc_volume_binding_mode_is_wffc(sc=storage_class_for_snapshot) and is_bug_open(
+        bug_id=bug_id
+    ):
+        pytest.skip(f"Skip Snapshot + WFFC test because of the bug: {bug_id}")

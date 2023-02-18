@@ -57,6 +57,7 @@ class TestUpgradeStorage:
     def test_vm_snapshot_restore_before_upgrade(
         self,
         skip_if_no_storage_class_for_snapshot,
+        skip_if_sc_for_snapshot_is_wffc_and_bug_2149654_open,
         cirros_vm_for_upgrade_a,
         snapshots_for_upgrade_a,
     ):
@@ -82,9 +83,10 @@ class TestUpgradeStorage:
     def test_vm_snapshot_created_before_upgrade(
         self,
         skip_if_no_storage_class_for_snapshot,
+        skip_if_sc_for_snapshot_is_wffc_and_bug_2149654_open,
         snapshots_for_upgrade_b,
     ):
-        assert snapshots_for_upgrade_b.instance.status.readyToUse
+        snapshots_for_upgrade_b.wait_snapshot_done()
 
     @pytest.mark.polarion("CNV-7258")
     @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
