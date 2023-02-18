@@ -3,6 +3,7 @@ from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.ssp import SSP
 
+from tests.install_upgrade_operators.constants import KEY_PATH_SEPARATOR
 from utilities.constants import TLS_CUSTOM_POLICY, TLS_OLD_POLICY
 
 
@@ -56,6 +57,8 @@ KUBEVIRT_OLD_PROFILE = {
     ],
     "minTLSVersion": "VersionTLS10",
 }
+KUBEVIRT_TLS_CONFIG_KEY = "tlsConfiguration"
+KUBEVIRT_TLS_CONFIG_STR = f"configuration{KEY_PATH_SEPARATOR}{KUBEVIRT_TLS_CONFIG_KEY}"
 
 TLS_INTERMEDIATE_CIPHERS_IANA_OPENSSL_SYNTAX = {
     "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256": "ECDHE-ECDSA-AES128-GCM-SHA256",

@@ -5,7 +5,6 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from utilities.constants import TIMEOUT_5MIN, TIMEOUT_30SEC
 from utilities.hco import HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT
-from utilities.infra import get_hyperconverged_resource
 
 
 LOGGER = logging.getLogger(__name__)
@@ -104,16 +103,3 @@ def wait_for_metrics_value_update(
             f"Query string: {query_string} for component: {component_name}, previous value: {previous_value}."
         )
         raise
-
-
-def is_tainted_config(admin_client, hco_namespace):
-    hco = get_hyperconverged_resource(client=admin_client, hco_ns_name=hco_namespace)
-    return (
-        True
-        if [
-            condition
-            for condition in hco.instance.status.conditions
-            if condition["type"] == "TaintedConfiguration"
-        ]
-        else False
-    )

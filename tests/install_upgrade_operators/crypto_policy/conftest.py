@@ -14,6 +14,7 @@ from tests.install_upgrade_operators.constants import KEY_PATH_SEPARATOR
 from tests.install_upgrade_operators.crypto_policy.constants import (
     CRYPTO_POLICY_SPEC_DICT,
     KEY_NAME_STR,
+    KUBEVIRT_TLS_CONFIG_STR,
     RESOURCE_NAME_STR,
     RESOURCE_NAMESPACE_STR,
     RESOURCE_TYPE_STR,
@@ -41,7 +42,7 @@ def resources_dict(hco_namespace):
         KubeVirt: {
             RESOURCE_NAME_STR: KUBEVIRT_HCO_NAME,
             RESOURCE_NAMESPACE_STR: hco_namespace.name,
-            KEY_NAME_STR: f"configuration{KEY_PATH_SEPARATOR}{TLS_SECURITY_PROFILE}",
+            KEY_NAME_STR: KUBEVIRT_TLS_CONFIG_STR,
         },
         SSP: {
             RESOURCE_NAME_STR: SSP_KUBEVIRT_HYPERCONVERGED,

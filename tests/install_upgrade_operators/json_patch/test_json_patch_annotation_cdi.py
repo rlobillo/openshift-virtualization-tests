@@ -7,12 +7,15 @@ from tests.install_upgrade_operators.json_patch.constants import (
 )
 from tests.install_upgrade_operators.json_patch.utils import (
     filter_metric_by_component,
-    is_tainted_config,
     wait_for_alert,
     wait_for_firing_alert_clean_up,
     wait_for_metrics_value_update,
 )
-from utilities.hco import update_hco_annotations, wait_for_hco_conditions
+from utilities.hco import (
+    is_hco_tainted,
+    update_hco_annotations,
+    wait_for_hco_conditions,
+)
 from utilities.storage import get_hyperconverged_cdi
 
 
@@ -38,7 +41,7 @@ def json_patched_cdi(
         component=COMPONENT,
     ):
         yield
-    assert not is_tainted_config(
+    assert not is_hco_tainted(
         admin_client=admin_client, hco_namespace=hco_namespace.name
     )
     wait_for_firing_alert_clean_up(prometheus=prometheus, alert_name=ALERT_NAME)

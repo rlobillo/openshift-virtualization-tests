@@ -12,6 +12,7 @@ from pytest_testconfig import config as py_config
 from tests.install_upgrade_operators.crypto_policy.constants import (
     CRYPTO_POLICY_EXPECTED_DICT,
     KEY_NAME_STR,
+    KUBEVIRT_TLS_CONFIG_STR,
     MIN_TLS_VERSIONS,
     RESOURCE_NAME_STR,
     RESOURCE_NAMESPACE_STR,
@@ -63,7 +64,7 @@ pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
                 RESOURCE_TYPE_STR: KubeVirt,
                 RESOURCE_NAME_STR: KUBEVIRT_HCO_NAME,
                 RESOURCE_NAMESPACE_STR: py_config["hco_namespace"],
-                KEY_NAME_STR: "configuration->tlsConfiguration",
+                KEY_NAME_STR: KUBEVIRT_TLS_CONFIG_STR,
             },
             KubeVirt,
             marks=(pytest.mark.polarion("CNV-9465")),

@@ -520,3 +520,15 @@ def update_hco_annotations(
     editor.update(backup_resources=True)
     yield
     editor.restore()
+
+
+def is_hco_tainted(admin_client, hco_namespace):
+    hco = utilities.infra.get_hyperconverged_resource(
+        client=admin_client,
+        hco_ns_name=hco_namespace,
+    )
+    return [
+        condition
+        for condition in hco.instance.status.conditions
+        if condition["type"] == "TaintedConfiguration"
+    ]
