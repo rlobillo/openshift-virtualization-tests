@@ -75,6 +75,10 @@ def registered_rhsm(rhsm_vm):
     ],
     indirect=True,
 )
+# We add this marker to allow us to exclude this test when running on external cluster like IBM Cloud
+# which can't access Redhat internal service, like "subscription.rhsm.stage.redhat.com"
+# and we don't have any external alternative for it.
+@pytest.mark.redhat_internal_dependency
 def test_rhel_yum_update(
     skip_upstream,
     unprivileged_client,
