@@ -257,9 +257,13 @@ def create_cluster_role(name, api_groups, verbs, permissions_to_resources):
     """
     with cluster_resource(ClusterRole)(
         name=name,
-        api_groups=api_groups,
-        permissions_to_resources=permissions_to_resources,
-        verbs=verbs,
+        rules=[
+            {
+                "apiGroups": api_groups,
+                "resources": permissions_to_resources,
+                "verbs": verbs,
+            },
+        ],
     ) as cluster_role:
         yield cluster_role
 
