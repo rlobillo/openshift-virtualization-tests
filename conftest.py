@@ -88,6 +88,7 @@ TEAM_MARKERS = {
     "network": ["network", "deprecated_api"],
     "storage": ["storage", "deprecated_api"],
     "iuo": ["install_upgrade_operators", "deprecated_api"],
+    "infrastructure": ["infrastructure", "deprecated_api"],
 }
 
 RESOURCES_TO_COLLECT_INFO = [
