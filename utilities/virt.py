@@ -1314,7 +1314,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
                 0
             ].spec.template.metadata.annotations[f"{self.ApiGroup.VM_KUBEVIRT_IO}/os"]
         )
-        # Extract only from strings such as: "fedora35", "os.template.kubevirt.io/fedora35" will return "fedora"
+        # Extract only from strings such as: "fedora37", "os.template.kubevirt.io/fedora37" will return "fedora"
         return re.search(r"(.*/)?(?P<os>[a-z]+)", os_name)["os"]
 
     def process_template(self):

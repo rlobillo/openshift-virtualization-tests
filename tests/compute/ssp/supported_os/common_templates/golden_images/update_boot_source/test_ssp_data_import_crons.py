@@ -169,7 +169,7 @@ def vm_from_custom_data_import_cron(
         data_source=custom_data_source_scope_function,
         namespace=namespace,
         client=unprivileged_client,
-        template_labels=template_labels(os="fedora35"),
+        template_labels=template_labels(os="fedora37"),
     ) as vm:
         yield vm
 
