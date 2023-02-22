@@ -28,6 +28,7 @@ from utilities.network import network_device, network_nad
 
 
 LOGGER = logging.getLogger(__name__)
+LATENCY_DISCONNECTED_CONFIGMAP = "latency-disconnected-configmap"
 
 
 @pytest.fixture(scope="session")
@@ -206,6 +207,7 @@ def network_type(request):
 
 @pytest.fixture()
 def default_latency_configmap(
+    index_number,
     checkup_ns,
     network_type,
 ):
@@ -213,7 +215,7 @@ def default_latency_configmap(
         namespace_name=checkup_ns.name,
         network_attachment_definition_namespace=checkup_ns.name,
         network_attachment_definition_name=network_type.name,
-        configmap_name="default-latency-configmap",
+        configmap_name=f"default-latency-configmap-{next(index_number)}",
     ) as configmap:
         yield configmap
 
@@ -254,6 +256,7 @@ def latency_disconnected_configmap(
     disconnected_checkup_nad,
 ):
     with create_latency_configmap(
+        configmap_name=LATENCY_DISCONNECTED_CONFIGMAP,
         namespace_name=checkup_ns.name,
         network_attachment_definition_namespace=disconnected_checkup_nad.namespace,
         network_attachment_definition_name=disconnected_checkup_nad.name,
@@ -267,6 +270,7 @@ def latency_disconnected_configmap_sriov(
     checkup_sriov_disconnected_network,
 ):
     with create_latency_configmap(
+        configmap_name=f"{LATENCY_DISCONNECTED_CONFIGMAP}-sriov",
         namespace_name=checkup_ns.name,
         network_attachment_definition_namespace=checkup_ns.name,
         network_attachment_definition_name=checkup_sriov_disconnected_network.name,

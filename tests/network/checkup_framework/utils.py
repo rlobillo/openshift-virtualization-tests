@@ -9,6 +9,7 @@ from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
 from utilities.constants import TIMEOUT_4MIN, TIMEOUT_5SEC, TIMEOUT_11MIN
+from utilities.exceptions import ResourceValueError
 from utilities.infra import get_pods, is_jira_open
 
 
@@ -163,7 +164,7 @@ def wait_for_job_failure(job):
         timeout = TIMEOUT_11MIN
     else:
         timeout = TIMEOUT_4MIN
-    job_status = "not available"
+    sample = None
     try:
         job_status = TimeoutSampler(
             wait_timeout=timeout,
@@ -171,20 +172,16 @@ def wait_for_job_failure(job):
             func=lambda: job.instance.status.conditions[0],
         )
         for sample in job_status:
-            if (
-                sample["type"] == job.Status.FAILED
-                and sample["status"] == job.Condition.Status.TRUE
-            ):
-                return
-            if (
-                sample["type"] == job.Status.SUCCEEDED
-                and sample["status"] == job.Condition.Status.TRUE
-            ):
-                LOGGER.error(f"Job {job.name} has succeeded and should have failed.")
-                raise
+            if sample["status"] == job.Condition.Status.TRUE:
+                if sample["type"] == job.Status.FAILED:
+                    return
+                if sample["type"] == job.Status.SUCCEEDED:
+                    raise ResourceValueError(
+                        f"Job {job.name} has succeeded and should have failed."
+                    )
     except TimeoutExpiredError:
         LOGGER.error(
-            f"Job {job.name} current status is {job_status} and not {job.Status.FAILED} as expected."
+            f"Job {job.name} current status is {sample} and not {job.Status.FAILED} as expected."
         )
         raise
 
