@@ -710,7 +710,6 @@ def test_hostpath_clone_dv_without_annotation_wffc(
             existing_data_volume=target_dv,
         ) as vm:
             running_vm(vm=vm)
-            vm.ssh_exec.executor().is_connective()
 
 
 @pytest.mark.polarion("CNV-2770")
