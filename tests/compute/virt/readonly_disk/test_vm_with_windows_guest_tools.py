@@ -1,10 +1,12 @@
 import logging
 
 import pytest
+from ocp_resources.configmap import ConfigMap
 from ocp_resources.template import Template
 from pytest_testconfig import py_config
 
 from tests.os_params import WINDOWS_10
+from utilities.constants import VIRTIO_WIN
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     migrate_vm_and_verify,
@@ -24,13 +26,7 @@ class MissingCDRomDeviceError(Exception):
 
 
 class WindowsVMWithGuestTools(VirtualMachineForTestsFromTemplate):
-    def __init__(
-        self,
-        name,
-        namespace,
-        client,
-        data_source,
-    ):
+    def __init__(self, name, namespace, client, data_source, virtio_image):
         super().__init__(
             name=name,
             namespace=namespace,
@@ -38,6 +34,7 @@ class WindowsVMWithGuestTools(VirtualMachineForTestsFromTemplate):
             data_source=data_source,
             labels=Template.generate_template_labels(**WINDOWS_10["template_labels"]),
         )
+        self.virtio_image = virtio_image
 
     def to_dict(self):
         super().to_dict()
@@ -45,7 +42,7 @@ class WindowsVMWithGuestTools(VirtualMachineForTestsFromTemplate):
         spec["volumes"].append(
             {
                 "containerDisk": {
-                    "image": "registry.redhat.io/container-native-virtualization/virtio-win",
+                    "image": self.virtio_image,
                     "imagePullPolicy": "IfNotPresent",
                 },
                 "name": "windows-guest-tools",
@@ -71,12 +68,19 @@ def verify_cdrom_in_xml(vm):
     raise MissingCDRomDeviceError("cdrom device is missing; VMI devices: {vmi_devices}")
 
 
+@pytest.fixture(scope="session")
+def virtio_win_image(hco_namespace):
+    virtio_win_cm = ConfigMap(name=VIRTIO_WIN, namespace=hco_namespace.name)
+    return virtio_win_cm.instance.data["virtio-win-image"]
+
+
 @pytest.fixture(scope="class")
 def vm_with_guest_tools(
     cluster_cpu_model_scope_class,
     namespace,
     unprivileged_client,
     golden_image_data_source_scope_class,
+    virtio_win_image,
 ):
     """Create Windows with guest-tools cd-rom"""
     with WindowsVMWithGuestTools(
@@ -84,6 +88,7 @@ def vm_with_guest_tools(
         namespace=namespace.name,
         client=unprivileged_client,
         data_source=golden_image_data_source_scope_class,
+        virtio_image=virtio_win_image,
     ) as vm:
         running_vm(vm=vm)
         yield vm
