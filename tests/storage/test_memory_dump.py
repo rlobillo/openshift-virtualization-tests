@@ -115,7 +115,7 @@ def consumer_pod_for_verifying_windows_memory_dump(
 
         assert re.match(
             rf"{windows_vm_for_memory_dump.name}-{pvc_for_windows_memory_dump.name}-\d*-\d*.memory.dump",
-            pod.execute(command=shlex.split("ls -1 /pvc")),
+            pod.execute(command=shlex.split("bash -c 'ls -1 /pvc | grep dump'")),
             re.IGNORECASE,
         ), "Memory dump file doesn't exist"
 
