@@ -22,9 +22,10 @@ ERROR_MSG_USER_CANNOT_CREATE_VM_EXPORT = (
 
 
 @pytest.mark.parametrize(
-    "data_volume_scope_function",
+    "namespace, data_volume_scope_function",
     [
         pytest.param(
+            {"use_unprivileged_client": False},
             {
                 "dv_name": "cirros-dv-9338",
                 "image": f"{Images.Cirros.DIR}/{Images.Cirros.QCOW2_IMG}",
@@ -38,6 +39,7 @@ ERROR_MSG_USER_CANNOT_CREATE_VM_EXPORT = (
 )
 def test_fail_to_vmexport_with_unprivileged_client_no_permissions(
     unprivileged_client,
+    namespace,
     data_volume_scope_function,
 ):
     with pytest.raises(
