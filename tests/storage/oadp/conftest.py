@@ -6,7 +6,7 @@ from ocp_resources.template import Template
 from pytest_testconfig import config as py_config
 
 from tests.storage.oadp.utils import VeleroBackup, VeleroRestore
-from utilities.constants import TIMEOUT_5MIN, Images
+from utilities.constants import TIMEOUT_10MIN, Images
 from utilities.infra import cluster_resource
 from utilities.storage import create_dv
 from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
@@ -106,11 +106,10 @@ def rhel_vm_for_backup(admin_client, rhel_dv_dict):
 
 
 @pytest.fixture()
-def backup_multiple_ns(admin_client, imported_dv_in_progress, rhel_vm_for_backup):
-    imported_dv_in_progress.wait_for_dv_success()
+def backup_multiple_ns(admin_client, imported_dv, rhel_vm_for_backup):
     with cluster_resource(VeleroBackup)(
         included_namespaces=[
-            imported_dv_in_progress.namespace,
+            imported_dv.namespace,
             rhel_vm_for_backup.namespace,
         ],
         name="backup-multiple-ns",
@@ -134,8 +133,13 @@ def restore_multiple_ns(admin_client, backup_multiple_ns):
 
 
 @pytest.fixture()
-def backup_exclude_pvc(imported_dv_in_progress, admin_client, namespace_for_backup):
-    imported_dv_in_progress.wait_for_dv_success(timeout=TIMEOUT_5MIN)
+def imported_dv(imported_dv_in_progress):
+    imported_dv_in_progress.wait_for_dv_success(timeout=TIMEOUT_10MIN)
+    yield imported_dv_in_progress
+
+
+@pytest.fixture()
+def backup_exclude_pvc(imported_dv, admin_client, namespace_for_backup):
     with cluster_resource(VeleroBackup)(
         included_namespaces=[
             namespace_for_backup.name,

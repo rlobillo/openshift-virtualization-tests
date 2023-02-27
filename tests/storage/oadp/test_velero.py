@@ -19,22 +19,27 @@ def test_backup_while_dv_create(
 
 @pytest.mark.polarion("CNV-8695")
 def test_restore_multiple_ns(
-    restore_multiple_ns, imported_dv_in_progress, rhel_vm_for_backup
+    imported_dv,
+    rhel_vm_for_backup,
+    restore_multiple_ns,
 ):
-    assert (
-        imported_dv_in_progress.instance.status.phase
-        == imported_dv_in_progress.Status.SUCCEEDED
-    )
+    pvc = imported_dv.pvc
+    assert not imported_dv.exists
+    assert pvc.status == pvc.Status.BOUND
     running_vm(vm=rhel_vm_for_backup)
 
 
 @pytest.mark.polarion("CNV-9078")
-def test_backup_exclude_pvc(restore_exclude_pvc, imported_dv_in_progress):
-    imported_dv_in_progress.wait_for_status(
-        status=imported_dv_in_progress.Status.PENDING,
+def test_backup_exclude_pvc(
+    disabled_cdi_garbage_collector,
+    restore_exclude_pvc,
+    imported_dv,
+):
+    imported_dv.wait_for_status(
+        status=imported_dv.Status.PENDING,
         timeout=TIMEOUT_2MIN,
-        stop_status=imported_dv_in_progress.Status.SUCCEEDED,
+        stop_status=imported_dv.Status.SUCCEEDED,
     )
     assert not PersistentVolumeClaim(
-        namespace=imported_dv_in_progress.namespace, name=imported_dv_in_progress.name
+        namespace=imported_dv.namespace, name=imported_dv.name
     ).exists
