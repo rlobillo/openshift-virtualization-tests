@@ -42,7 +42,7 @@ from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.exceptions import NodeNotReadyError, NodeUnschedulableError
 from ocp_utilities.infra import (
-    assert_nodes_ready,
+    assert_nodes_in_healthy_condition,
     assert_nodes_schedulable,
     cluster_resource,
     get_client,
@@ -57,6 +57,7 @@ from utilities.constants import (
     AUDIT_LOGS_PATH,
     HCO_CATALOG_SOURCE,
     IMAGE_CRON_STR,
+    KUBELET_READY_CONDITION,
     OC_ADM_LOGS_COMMAND,
     OPERATOR_NAME_SUFFIX,
     SANITY_TESTS_FAILURE,
@@ -691,7 +692,9 @@ def cluster_sanity(
             LOGGER.info(
                 f"Check nodes sanity. (To skip nodes sanity check pass {skip_nodes_check} to pytest)"
             )
-            assert_nodes_ready(nodes=nodes)
+            assert_nodes_in_healthy_condition(
+                nodes=nodes, healthy_node_condition_type=KUBELET_READY_CONDITION
+            )
             assert_nodes_schedulable(nodes=nodes)
 
             try:

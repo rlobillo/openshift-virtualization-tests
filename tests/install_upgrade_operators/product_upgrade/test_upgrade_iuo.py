@@ -2,7 +2,10 @@ import logging
 import os
 
 import pytest
-from ocp_utilities.infra import assert_nodes_ready, assert_nodes_schedulable
+from ocp_utilities.infra import (
+    assert_nodes_in_healthy_condition,
+    assert_nodes_schedulable,
+)
 
 from tests.install_upgrade_operators.product_upgrade.utils import (
     process_alerts_fired_during_upgrade,
@@ -15,7 +18,7 @@ from tests.upgrade_params import (
     IUO_CNV_POD_ORDERING_NODE_ID,
     IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
 )
-from utilities.constants import DEPENDENCY_SCOPE_SESSION
+from utilities.constants import DEPENDENCY_SCOPE_SESSION, KUBELET_READY_CONDITION
 
 
 LOGGER = logging.getLogger(__name__)
@@ -97,7 +100,9 @@ class TestUpgradeIUO:
     )
     def test_nodes_ready_after_upgrade(self, nodes):
         LOGGER.info("Verify all nodes are in ready state after upgrade")
-        assert_nodes_ready(nodes=nodes)
+        assert_nodes_in_healthy_condition(
+            nodes=nodes, healthy_node_condition_type=KUBELET_READY_CONDITION
+        )
 
     @pytest.mark.polarion("CNV-6865")
     @pytest.mark.order(before=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
