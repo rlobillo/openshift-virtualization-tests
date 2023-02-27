@@ -218,6 +218,7 @@ def get_cnv_qe_server_url(cluster_host_url):
     ibm_server = f"cnv-qe-server.{cluster_host_url.replace('https://api.', '').replace(':6443', '')}"
     rhood_server = "cnv-qe-server.cnv-qe.rhood.us"
     servers = {
+        "rhos-psi.cnv-qe.rhood.us": default_server,
         "ibmc.cnv-qe.rhood.us": ibm_server,
         "ibmc-upi.cnv-qe.rhood.us": ibm_server,
         "qe.azure.devcluster.openshift.com": rhood_server,
