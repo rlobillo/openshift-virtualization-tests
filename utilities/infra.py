@@ -1093,8 +1093,12 @@ def download_file_from_cluster(get_console_spec_links_name, dest_dir):
     download_urls = get_all_console_links(
         console_cli_downloads_spec_links=console_cli_links
     )
+    os_system = platform.system().lower()
+    if os_system == "darwin" and platform.mac_ver()[0]:
+        os_system = "mac"
+
     binary_file = get_and_extract_file_from_cluster(
-        system_os=platform.system().lower(),
+        system_os=os_system,
         urls=download_urls,
         dest_dir=dest_dir,
     )
