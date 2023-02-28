@@ -612,7 +612,7 @@ six = "*"
 
 [[package]]
 name = "openshift-python-utilities"
-version = "4.12.14"
+version = "4.12.18"
 description = "Wrapper around https://github.com/openshift/openshift-python-utilities"
 category = "main"
 optional = false
@@ -621,7 +621,7 @@ python-versions = ">=3.8"
 [package.dependencies]
 colorlog = "*"
 openshift = "*"
-openshift-python-wrapper = ">=4.12.0,<4.13.0"
+openshift-python-wrapper-data-collector = "*"
 pytest = "*"
 pytest-testconfig = "*"
 PyYAML = "*"
@@ -632,7 +632,7 @@ version = "4.12.28"
 description = "Wrapper around https://github.com/openshift/openshift-restclient-python"
 category = "main"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
 colorlog = "*"
@@ -1719,7 +1719,7 @@ openshift = [
     {file = "openshift-0.13.1.tar.gz", hash = "sha256:a060afb7565dda18b2749857867d80ab22b2f4143264519f493a9cabccc3b8a8"},
 ]
 openshift-python-utilities = [
-    {file = "openshift-python-utilities-4.12.14.tar.gz", hash = "sha256:9d50dc76af15511bd27b3b709d111916ac1a0b80afcd4db1916fea32798d3236"},
+    {file = "openshift-python-utilities-4.12.18.tar.gz", hash = "sha256:6542678501d6ced391b23060f2718ced1a7d649cacd97cbcfcb2dc0709b7dd1a"},
 ]
 openshift-python-wrapper = [
     {file = "openshift-python-wrapper-4.12.28.tar.gz", hash = "sha256:33e7c62a9c57efa092f2b937b2c4961b8edf2396d5eaca5f26913fc3b52007c5"},
