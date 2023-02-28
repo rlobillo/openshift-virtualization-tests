@@ -52,6 +52,9 @@ HCO_JSONPATCH_ANNOTATION_COMPONENT_DICT = {
     "cnao": {
         "api_group_prefix": "networkaddonsconfigs",
     },
+    "ssp": {
+        "api_group_prefix": "ssp",
+    },
 }
 
 

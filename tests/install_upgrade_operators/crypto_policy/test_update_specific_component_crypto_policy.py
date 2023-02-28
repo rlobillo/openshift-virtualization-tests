@@ -6,6 +6,7 @@ from ocp_resources.cdi import CDI
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.resource import Resource
+from ocp_resources.ssp import SSP
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.install_upgrade_operators.crypto_policy.constants import (
@@ -140,6 +141,16 @@ def updated_cr_with_custom_crypto_policy(
             },
             marks=pytest.mark.polarion("CNV-9381"),
             id="test_set_kubevirt_crypto_policy_using_hco_jsonpatch_annotation",
+        ),
+        pytest.param(
+            {
+                "component": "ssp",
+                "resource": SSP,
+                "key": TLS_SECURITY_PROFILE,
+                "value": deepcopy(TLS_CUSTOM_PROFILE),
+            },
+            marks=pytest.mark.polarion("CNV-9676"),
+            id="test_set_ssp_crypto_policy_using_hco_jsonpatch_annotation",
         ),
     ],
     indirect=["updated_cr_with_custom_crypto_policy"],
