@@ -2413,7 +2413,7 @@ def virtctl_binary(
     if installed_virtctl:
         LOGGER.warning(f"Using previously installed: {installed_virtctl}")
         return
-    download_file_from_cluster(
+    return download_file_from_cluster(
         get_console_spec_links_name=VIRTCTL_CLI_DOWNLOADS, dest_dir=bin_directory
     )
 
@@ -2426,7 +2426,7 @@ def oc_binary(is_upstream_distribution, os_path_environment, bin_directory):
     if installed_oc:
         LOGGER.warning(f"Using previously installed: {installed_oc}")
         return
-    download_file_from_cluster(
+    return download_file_from_cluster(
         get_console_spec_links_name="oc-cli-downloads", dest_dir=bin_directory
     )
 
@@ -2436,7 +2436,7 @@ def bin_directory_to_os_path(
     os_path_environment, bin_directory, virtctl_binary, oc_binary
 ):
     LOGGER.info(f"Adding {bin_directory} to $PATH")
-    os.environ["PATH"] = f"{os_path_environment}:{bin_directory}"
+    os.environ["PATH"] = f"{bin_directory}:{os_path_environment}"
 
 
 @pytest.fixture(autouse=True)

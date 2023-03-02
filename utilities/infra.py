@@ -899,18 +899,19 @@ def is_bug_open(bug_id):
     return False
 
 
-def run_virtctl_command(command, namespace=None):
+def run_virtctl_command(command, virtctl_binary="virtctl", namespace=None):
     """
     Run virtctl command
 
     Args:
         command (list): Command to run
+        virtctl_binary (str): virtctl binary including full path to binary
         namespace (str, default:None): Namespace to send to virtctl command
 
     Returns:
         tuple: True, out if command succeeded, False, err otherwise.
     """
-    virtctl_cmd = ["virtctl"]
+    virtctl_cmd = [virtctl_binary]
     kubeconfig = os.getenv("KUBECONFIG")
     if namespace:
         virtctl_cmd.extend(["-n", namespace])
@@ -1103,6 +1104,7 @@ def download_file_from_cluster(get_console_spec_links_name, dest_dir):
         dest_dir=dest_dir,
     )
     os.chmod(binary_file, stat.S_IRUSR | stat.S_IXUSR)
+    return binary_file
 
 
 def get_nodes_with_label(nodes, label):
