@@ -3,20 +3,39 @@ vGPU VM
 """
 import pytest
 
+from tests.compute.virt.gpu.utils import wait_for_manager_pods_deployed
 from utilities.constants import (
     MDEV_GRID_T4_16Q_NAME,
     MDEV_GRID_T4_16Q_TYPE,
     MDEV_NAME,
     MDEV_TYPE,
+    NVIDIA_VGPU_MANAGER_DS,
     VGPU_DEVICE_NAME,
     VGPU_GRID_T4_16Q_NAME,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile, wait_for_hco_conditions
-from utilities.infra import ExecCommandOnPod
+from utilities.infra import ExecCommandOnPod, label_nodes
 
 
 @pytest.fixture(scope="session")
-def non_existent_mdev_bus_nodes(workers_utility_pods, gpu_nodes):
+def gpu_nodes_labeled_with_vm_vgpu(gpu_nodes):
+    yield from label_nodes(
+        nodes=gpu_nodes, labels={"nvidia.com/gpu.workload.config": "vm-vgpu"}
+    )
+
+
+@pytest.fixture(scope="session")
+def vgpu_ready_nodes(admin_client, gpu_nodes_labeled_with_vm_vgpu):
+    wait_for_manager_pods_deployed(
+        admin_client=admin_client,
+        ds_name=NVIDIA_VGPU_MANAGER_DS,
+        gpu_nodes_amount=len(gpu_nodes_labeled_with_vm_vgpu),
+    )
+    yield gpu_nodes_labeled_with_vm_vgpu
+
+
+@pytest.fixture(scope="session")
+def non_existent_mdev_bus_nodes(workers_utility_pods, vgpu_ready_nodes):
     """
     Check if the mdev_bus needed for vGPU is availble.
 
@@ -27,7 +46,7 @@ def non_existent_mdev_bus_nodes(workers_utility_pods, gpu_nodes):
     """
     desired_bus = "mdev_bus"
     non_existent_mdev_bus_nodes = []
-    for node in gpu_nodes.keys():
+    for node in vgpu_ready_nodes:
         pod_exec = ExecCommandOnPod(utility_pods=workers_utility_pods, node=node)
         if desired_bus not in pod_exec.exec(
             command=f"ls /sys/class | grep {desired_bus} || true"

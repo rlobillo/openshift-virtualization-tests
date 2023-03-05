@@ -6,18 +6,46 @@ GPU PCI Passthrough VM
 import pytest
 from ocp_resources.resource import ResourceEditor
 
-from utilities.constants import GPU_DEVICE_ID, GPU_DEVICE_NAME, KERNEL_DRIVER
+from tests.compute.virt.gpu.utils import get_gpu_nodes, wait_for_manager_pods_deployed
+from utilities.constants import (
+    GPU_DEVICE_ID,
+    GPU_DEVICE_NAME,
+    KERNEL_DRIVER,
+    NVIDIA_VFIO_MANAGER_DS,
+)
 from utilities.hco import ResourceEditorValidateHCOReconcile, wait_for_hco_conditions
+from utilities.infra import label_nodes
 
 
 @pytest.fixture(scope="session")
-def fail_if_device_unbound_to_vfiopci_driver(gpu_nodes):
+def gpu_nodes_labeled_with_vm_passthrough(gpu_nodes):
+    yield from label_nodes(
+        nodes=gpu_nodes, labels={"nvidia.com/gpu.workload.config": "vm-passthrough"}
+    )
+
+
+@pytest.fixture(scope="session")
+def gpu_passthrough_ready_nodes(admin_client, gpu_nodes_labeled_with_vm_passthrough):
+    wait_for_manager_pods_deployed(
+        admin_client=admin_client,
+        ds_name=NVIDIA_VFIO_MANAGER_DS,
+        gpu_nodes_amount=len(gpu_nodes_labeled_with_vm_passthrough),
+    )
+    yield gpu_nodes_labeled_with_vm_passthrough
+
+
+@pytest.fixture(scope="session")
+def fail_if_device_unbound_to_vfiopci_driver(
+    workers_utility_pods, gpu_passthrough_ready_nodes
+):
     """
     Fail if the Kernel Driver vfio-pci is not in use by the NVIDIA GPU Device.
     """
     device_unbound_nodes = []
-    for node, output in gpu_nodes.items():
-        if KERNEL_DRIVER not in output:
+    for node, lspci_out in get_gpu_nodes(
+        util_pods=workers_utility_pods, nodes_list=gpu_passthrough_ready_nodes
+    ).items():
+        if KERNEL_DRIVER not in lspci_out:
             device_unbound_nodes.append(node.name)
     if device_unbound_nodes:
         pytest.fail(

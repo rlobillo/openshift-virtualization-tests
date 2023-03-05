@@ -251,9 +251,11 @@ GPU_DEVICE_MANUFACTURER = "nvidia.com"
 GPU_DEVICE_ID = "10de:1eb8"
 
 # GPU Passthrough constants
+NVIDIA_VFIO_MANAGER_DS = "nvidia-vfio-manager"
 GPU_DEVICE_NAME = f"{GPU_DEVICE_MANUFACTURER}/TU104GL_Tesla_T4"
 
 # vGPU constants
+NVIDIA_VGPU_MANAGER_DS = "nvidia-vgpu-manager-daemonset"
 VGPU_DEVICE_NAME = f"{GPU_DEVICE_MANUFACTURER}/GRID_T4_2Q"
 MDEV_NAME = "GRID T4-2Q"
 MDEV_AVAILABLE_INSTANCES = "8"
@@ -553,3 +555,4 @@ class NamespacesNames:
     OPENSHIFT_CLUSTER_STORAGE_OPERATOR = "openshift-cluster-storage-operator"
     CHAOS = "chaos"
     DEFAULT = "default"
+    NVIDIA_GPU_OPERATOR = "nvidia-gpu-operator"

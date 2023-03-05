@@ -3,26 +3,17 @@ GPU PCI Passthrough and vGPU Testing
 """
 import pytest
 
-from tests.compute.virt.gpu.utils import install_nvidia_drivers_on_windows_vm
-from utilities.constants import GPU_DEVICE_ID, OS_FLAVOR_WINDOWS
-from utilities.infra import ExecCommandOnPod
+from tests.compute.virt.gpu.utils import (
+    get_gpu_nodes,
+    install_nvidia_drivers_on_windows_vm,
+)
+from utilities.constants import OS_FLAVOR_WINDOWS
 from utilities.virt import vm_instance_from_template
 
 
 @pytest.fixture(scope="session")
 def gpu_nodes(workers_utility_pods, schedulable_nodes):
-    """
-    Find GPU Worker Node, where GPU device is allocated.
-    """
-    nodes = {}
-    for node in schedulable_nodes:
-        pod_exec = ExecCommandOnPod(utility_pods=workers_utility_pods, node=node)
-        out = pod_exec.exec(
-            command="sudo /sbin/lspci -nnk | grep -A 3 '3D controller' || true"
-        )
-        if GPU_DEVICE_ID in out:
-            nodes.update({node: out})
-    return nodes
+    return get_gpu_nodes(util_pods=workers_utility_pods, nodes_list=schedulable_nodes)
 
 
 @pytest.fixture(scope="session")
