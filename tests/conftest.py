@@ -169,7 +169,10 @@ HTPASSWD_PROVIDER_DICT = {
     "type": "HTPasswd",
     "htpasswd": {"fileData": {"name": HTTP_SECRET_NAME}},
 }
-ACCESS_TOKEN = {"accessTokenMaxAgeSeconds": 604800}
+ACCESS_TOKEN = {
+    "accessTokenMaxAgeSeconds": 604800,
+    "accessTokenInactivityTimeout": None,
+}
 CNV_NOT_INSTALLED = "CNV not yet installed."
 UPGRADE_Z_STREAM = "z-stream"
 
@@ -364,7 +367,6 @@ def unprivileged_client(
                 f"Only one should be used, "
                 f"either remove {kube_config_path} file or unset {KUBECONFIG}"
             )
-
         # Update identity provider
         identity_provider_config_editor = ResourceEditor(
             patches={
