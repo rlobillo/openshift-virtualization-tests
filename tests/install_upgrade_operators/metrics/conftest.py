@@ -154,7 +154,7 @@ def mutation_count_before_change(request, prometheus):
     )
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def unique_namespace(unprivileged_client):
     """
     Creates a namespace to be used by key metrics test cases.
@@ -166,7 +166,7 @@ def unique_namespace(unprivileged_client):
     yield from create_ns(unprivileged_client=unprivileged_client, name=namespace_name)
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def vm_list(unique_namespace):
     """
     Creates n vms, waits for them all to go to running state and cleans them up at the end
@@ -186,20 +186,6 @@ def vm_list(unique_namespace):
     yield vms_list
     for vm in vms_list:
         vm.clean_up()
-
-
-@pytest.fixture()
-def first_metric_vm(vm_list):
-    """
-    Returns the first vm from the list of created vms
-
-    Args:
-        vm_list (list): list of VirtualMachineForTests created
-
-    Returns:
-        VirtualMachineForTests: a VirtualMachineForTests object
-    """
-    return vm_list[0]
 
 
 @pytest.fixture()
@@ -354,12 +340,17 @@ def virt_pod_names_by_label(request, admin_client, hco_namespace):
     ]
 
 
-@pytest.fixture(scope="class")
-def single_metric_vm(namespace):
-    """Returns the first vm from the list of created vms"""
+@pytest.fixture(scope="module")
+def single_metrics_namespace(unprivileged_client):
+    namespace_name = unique_name(name="test-metrics")
+    yield from create_ns(unprivileged_client=unprivileged_client, name=namespace_name)
+
+
+@pytest.fixture(scope="module")
+def single_metric_vm(single_metrics_namespace):
     vm = create_vms(
-        name_prefix="test-metric-vm",
-        namespace_name=namespace.name,
+        name_prefix="test-single-vm",
+        namespace_name=single_metrics_namespace.name,
         vm_count=SINGLE_VM,
     )[0]
     running_vm(vm=vm)

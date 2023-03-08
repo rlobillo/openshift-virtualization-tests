@@ -1,9 +1,6 @@
 import pytest
 from ocp_resources.resource import Resource
 
-from tests.install_upgrade_operators.metrics.utils import (
-    assert_vmi_dommemstat_with_metric_value,
-)
 from utilities.constants import VIRT_API, VIRT_CONTROLLER, VIRT_HANDLER, VIRT_OPERATOR
 
 
@@ -113,33 +110,3 @@ def test_virt_up_recording_rules(
     assert (
         len(virt_pod_names_by_label) == virt_up_metrics_values
     ), f"Actual pod count {virt_pod_names_by_label} not matching with expected pod count {virt_up_metrics_values}"
-
-
-class TestRecordingRuleMetrics:
-    @pytest.mark.polarion("CNV-8262")
-    def test_vmi_domain_total_memory_bytes(
-        self,
-        single_metric_vm,
-        vmi_domain_total_memory_in_bytes_from_vm,
-        vmi_domain_total_memory_bytes_metric_value_from_prometheus,
-    ):
-        """This test will check the domain total memory of VMI with given metrics output in bytes."""
-        assert (
-            vmi_domain_total_memory_in_bytes_from_vm
-            == vmi_domain_total_memory_bytes_metric_value_from_prometheus
-        ), (
-            f"VM {single_metric_vm.name}'s domain memory total {vmi_domain_total_memory_in_bytes_from_vm} "
-            f"is not matching with metrics value {vmi_domain_total_memory_bytes_metric_value_from_prometheus} bytes."
-        )
-
-    @pytest.mark.polarion("CNV-8931")
-    def test_vmi_used_memory_bytes(
-        self,
-        prometheus,
-        single_metric_vm,
-        updated_dommemstat,
-    ):
-        """This test will check the used memory of VMI with given metrics output in bytes."""
-        assert_vmi_dommemstat_with_metric_value(
-            prometheus=prometheus, vm=single_metric_vm
-        )
