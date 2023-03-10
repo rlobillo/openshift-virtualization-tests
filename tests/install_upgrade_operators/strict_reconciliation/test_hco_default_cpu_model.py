@@ -1,5 +1,4 @@
 import pytest
-from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.kubevirt import KubeVirt
 from ocp_utilities.infra import cluster_resource
 
@@ -77,8 +76,8 @@ def hco_with_default_cpu_model_set(
                 },
             }
         },
-        list_resource_reconcile=[KubeVirt, HyperConverged],
         wait_for_reconcile_post_update=True,
+        list_resource_reconcile=[KubeVirt],
     ):
         yield nodes_common_cpu_model
 
