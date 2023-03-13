@@ -487,8 +487,6 @@ OC_ADM_LOGS_COMMAND = "oc adm node-logs"
 AUDIT_LOGS_PATH = "--path=kube-apiserver"
 CNV_TEST_SERVICE_ACCOUNT = "cnv-tests-sa"
 VM_CRD = f"virtualmachines.{Resource.ApiGroup.KUBEVIRT_IO}"
-VM_CLONE_CRD = f"virtualmachineclones.clone.{Resource.ApiGroup.KUBEVIRT_IO}"
-VM_EXPORT_CRD = f"virtualmachineexports.export.{Resource.ApiGroup.KUBEVIRT_IO}"
 ALL_CNV_CRDS = [
     f"cdiconfigs.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
     f"cdis.{Resource.ApiGroup.CDI_KUBEVIRT_IO}",
@@ -515,9 +513,9 @@ ALL_CNV_CRDS = [
     VM_CRD,
     f"virtualmachinesnapshotcontents.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
     f"virtualmachinesnapshots.{Resource.ApiGroup.SNAPSHOT_KUBEVIRT_IO}",
-    VM_CLONE_CRD,
+    f"virtualmachineclones.clone.{Resource.ApiGroup.KUBEVIRT_IO}",
     f"virtualmachineclusterpreferences.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
-    VM_EXPORT_CRD,
+    f"virtualmachineexports.export.{Resource.ApiGroup.KUBEVIRT_IO}",
     f"virtualmachinepreferences.{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}",
 ]
 PRODUCTION_CATALOG_SOURCE = "redhat-operators"
