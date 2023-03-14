@@ -214,7 +214,7 @@ def get_cnv_qe_server_url(cluster_host_url):
         str: cnv-qe-server in the same region of the cluster.
     """
     LOGGER.info(f"Getting cnv-qe-server for {cluster_host_url}")
-    default_server = "cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com"
+    default_server = "cnv-qe-server.rhos-psi.cnv-qe.rhood.us"
     ibm_server = f"cnv-qe-server.{cluster_host_url.replace('https://api.', '').replace(':6443', '')}"
     rhood_server = "cnv-qe-server.cnv-qe.rhood.us"
     servers = {
