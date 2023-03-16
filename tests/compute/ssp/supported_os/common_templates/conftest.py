@@ -6,6 +6,7 @@ from subprocess import CalledProcessError, check_output
 
 import pytest
 from ocp_resources.utils import TimeoutSampler
+from pytest_testconfig import config as py_config
 
 from tests.compute.ssp.supported_os.common_templates.utils import HVINFO_PATH
 
@@ -17,14 +18,10 @@ LOGGER = logging.getLogger(__name__)
 def hvinfo_binary_in_executor(tmpdir_factory):
     executor_hvinfo_dir = tmpdir_factory.mktemp("hvinfo")
     executor_hvinfo_path = os.path.join(executor_hvinfo_dir, "hvinfo.exe")
-    download_hvinfo_cmd = (
-        "wget -N "
-        "http://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/binaries/hvinfo/hvinfo.exe "
-        f"-O {executor_hvinfo_path}"
-    )
+    hvinfo_exe_url = f'{py_config["servers"]["http_server"]}binaries/hvinfo/hvinfo.exe'
 
-    LOGGER.info(f"Download hvinfo to executor, path: {executor_hvinfo_path}")
-    check_output(download_hvinfo_cmd, shell=True)
+    LOGGER.info(f"Download hvinfo from {hvinfo_exe_url} to: {executor_hvinfo_path}")
+    check_output(f"curl {hvinfo_exe_url} -s -o {executor_hvinfo_path}", shell=True)
 
     yield executor_hvinfo_path
 
