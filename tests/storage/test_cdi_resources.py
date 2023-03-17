@@ -20,6 +20,7 @@ from ocp_resources.utils import TimeoutSampler
 from tests.storage.utils import import_image_to_dv, upload_image_to_dv
 from utilities.constants import (
     CDI_APISERVER,
+    CDI_CONFIGMAPS,
     CDI_OPERATOR,
     CDI_SECRETS,
     TIMEOUT_10MIN,
@@ -51,10 +52,7 @@ def verify_cdi_app_label(cdi_resources, cnv_version):
             continue
         elif resource.kind == "ServiceAccount" and resource.name == CDI_OPERATOR:
             continue
-        elif (
-            resource.kind == "ConfigMap"
-            and resource.name == "cdi-operator-leader-election-helper"
-        ):
+        elif resource.kind == "ConfigMap" and resource.name not in CDI_CONFIGMAPS:
             continue
         else:
             assert (

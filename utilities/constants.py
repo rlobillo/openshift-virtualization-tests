@@ -215,6 +215,16 @@ CDI_SECRETS = [
     "cdi-uploadserver-signer",
 ]
 
+CDI_CONFIGMAPS = [
+    "cdi-apiserver-signer-bundle",
+    "cdi-config",
+    "cdi-controller-leader-election-helper",
+    "cdi-insecure-registries",
+    "cdi-uploadproxy-signer-bundle",
+    "cdi-uploadserver-client-signer-bundle",
+    "cdi-uploadserver-signer-bundle",
+]
+
 # Miscellaneous constants
 UTILITY = "utility"
 OPERATOR_NAME_SUFFIX = "operator"
