@@ -129,11 +129,6 @@ def pytest_addoption(parser):
     install_upgrade_group.addoption(
         "--upgrade", choices=["cnv", "ocp"], help="Run OCP or CNV upgrade tests"
     )
-    install_upgrade_group.addoption(
-        "--upgrade_resilience",
-        action="store_true",
-        help="If provided, run upgrade with disruptions",
-    )
 
     # CNV upgrade options
     install_upgrade_group.addoption(
@@ -379,14 +374,6 @@ def pytest_collection_modifyitems(session, config, items):
         for marker in item.iter_markers(name="jira"):
             test_id = marker.args[0]
             item.user_properties.append(("jira", test_id))
-
-        for _ in item.iter_markers(name="upgrade_resilience"):
-            item.user_properties.append(
-                (
-                    "polarion-parameter-upgrade_resilience",
-                    config.getoption("upgrade_resilience"),
-                )
-            )
 
         # Add tier2 marker for tests without an exclution marker.
         markers = [mark.name for mark in list(item.iter_markers())]

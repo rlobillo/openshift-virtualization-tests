@@ -16,7 +16,6 @@ LOGGER = logging.getLogger(__name__)
 @pytest.mark.upgrade
 class TestUpgrade:
     @pytest.mark.ocp_upgrade
-    @pytest.mark.upgrade_resilience
     @pytest.mark.polarion("CNV-8381")
     @pytest.mark.dependency(name=IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID)
     def test_ocp_upgrade_process(
@@ -34,12 +33,10 @@ class TestUpgrade:
         )
 
     @pytest.mark.cnv_upgrade
-    @pytest.mark.upgrade_resilience
     @pytest.mark.polarion("CNV-2991")
     @pytest.mark.dependency(name=IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID)
     def test_cnv_upgrade_process(
         self,
-        pytestconfig,
         admin_client,
         hco_namespace,
         cnv_upgrade_path,
@@ -60,7 +57,6 @@ class TestUpgrade:
         verify_upgrade_cnv(
             dyn_client=admin_client,
             hco_namespace=hco_namespace,
-            upgrade_resilience=pytestconfig.option.upgrade_resilience,
             cnv_target_version=cnv_target_version,
             hco_target_version=hco_target_version,
             target_csv=target_csv,

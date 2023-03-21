@@ -52,7 +52,6 @@ def wait_for_new_operator_pod(
     hco_namespace,
     operator_name,
     operator_target_info,
-    upgrade_resilience=False,
 ):
     """
     Wait for a new operator pod to be created and running
@@ -63,7 +62,6 @@ def wait_for_new_operator_pod(
         hco_namespace (Namespace): HCO namespace
         operator_name (str): Operator name as extracted from its deployment
         operator_target_info (dict): With "image" and "strategy" as extracted from its deployment
-        upgrade_resilience (bool, default: False): if True, new operator pods will be deleted during the upgrade
 
     Raises:
         TimeoutExpiredError: if a pod with the expected image is not created or if the pod is not running.
@@ -84,9 +82,7 @@ def wait_for_new_operator_pod(
             if _pod.instance.spec.containers[0].image == _operator_target_info["image"]
         ]
 
-    LOGGER.info(
-        f"Verify new operator pod {operator_name} replacement. Running upgrade resiliency: {upgrade_resilience}"
-    )
+    LOGGER.info(f"Verify new operator pod {operator_name} replacement.")
 
     new_pod_sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_30MIN,
@@ -99,15 +95,10 @@ def wait_for_new_operator_pod(
     )
 
     new_operator_pod = None
-    operator_resiliency = upgrade_resilience
     try:
         for pod in new_pod_sampler:
             if pod:
                 new_operator_pod = pod[0]
-                if operator_resiliency:
-                    new_operator_pod.delete(wait=True, timeout=TIMEOUT_10MIN)
-                    operator_resiliency = False
-                    continue
                 break
     except TimeoutExpiredError:
         LOGGER.error(
@@ -124,7 +115,6 @@ def wait_for_operator_pods_replacement(
     dyn_client,
     hco_namespace,
     operators_target_versions,
-    upgrade_resilience,
 ):
     LOGGER.info("Wait for operators replacement.")
 
@@ -139,7 +129,6 @@ def wait_for_operator_pods_replacement(
                 "hco_namespace": hco_namespace,
                 "operator_name": operator_name,
                 "operator_target_info": operator_target_info,
-                "upgrade_resilience": upgrade_resilience,
             },
         )
         processes.append(sub_process)
@@ -446,7 +435,6 @@ def wait_for_post_upgrade_deployments_replicas(dyn_client, hco_namespace):
 def verify_upgrade_cnv(
     dyn_client,
     hco_namespace,
-    upgrade_resilience,
     cnv_target_version,
     hco_target_version,
     target_csv,
@@ -457,7 +445,6 @@ def verify_upgrade_cnv(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace.name,
         operators_target_versions=target_operator_pods_images_name_and_strategy,
-        upgrade_resilience=upgrade_resilience,
     )
     LOGGER.info(f"Wait for csv: {target_csv.name} to be in SUCCEEDED state.")
     target_csv.wait_for_status(
