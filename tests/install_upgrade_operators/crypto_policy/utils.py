@@ -1,10 +1,10 @@
 import logging
 from contextlib import contextmanager
 
+import deepdiff
 from benedict import benedict
 from ocp_resources.cluster_operator import ClusterOperator
 from ocp_resources.hyperconverged import HyperConverged
-from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import cluster_resource
@@ -28,7 +28,7 @@ from utilities.constants import (
     TLS_SECURITY_PROFILE,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile, wait_for_hco_conditions
-from utilities.infra import ExecCommandOnPod, is_bug_open
+from utilities.infra import ExecCommandOnPod
 
 
 LOGGER = logging.getLogger(__name__)
@@ -105,7 +105,11 @@ def wait_for_crypto_policy_update(
             LOGGER.info(
                 f"{resource_name} actual: {sample}, expected: {expected_policy}"
             )
-            if sample and sorted(sample.items()) == sorted(expected_policy.items()):
+            if sample and not deepdiff.DeepDiff(
+                sample,
+                expected_policy,
+                ignore_type_in_groups=[(benedict, dict)],
+            ):
                 return
     except TimeoutExpiredError:
         error_message = (
@@ -216,7 +220,6 @@ def assert_crypto_policy_propagated_to_components(
         & CDI) doesn't match with the expected 'crypto_policy'
     """
     conflicting_resources = []
-    kubevirt_bug_id = 2153527
     for resource in MANAGED_CRS_LIST:
         expected_value = CRYPTO_POLICY_EXPECTED_DICT[crypto_policy][resource]
         error_message = wait_for_crypto_policy_update(
@@ -228,11 +231,6 @@ def assert_crypto_policy_propagated_to_components(
             expected_policy=expected_value,
         )
         if error_message:
-            if resource.kind == KubeVirt.kind and is_bug_open(bug_id=kubevirt_bug_id):
-                LOGGER.warning(
-                    f"Skipping KubeVirt Cipher validation for bug {kubevirt_bug_id}"
-                )
-                continue
             conflicting_resources.append(resource.kind)
     assert not conflicting_resources, (
         f"After updating the resource {updated_resource_kind} with {crypto_policy}, "

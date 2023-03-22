@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from ocp_resources.cdi import CDI
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
@@ -69,6 +71,16 @@ TLS_INTERMEDIATE_CIPHERS_IANA_OPENSSL_SYNTAX = {
     "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256": "ECDHE-RSA-CHACHA20-POLY1305",
 }
 
+# For Kubevirt need to convert from OPENSSL to IANA syntax and keep ciphers order same as in TLS_CUSTOM_PROFILE
+TLS_CUSTOM_PROFILE_KUBEVIRT = deepcopy(TLS_CUSTOM_PROFILE)
+TLS_CUSTOM_PROFILE_KUBEVIRT[TLS_CUSTOM_POLICY]["ciphers"] = [
+    key
+    for cipher in TLS_CUSTOM_CIPHERS
+    for key, value in TLS_INTERMEDIATE_CIPHERS_IANA_OPENSSL_SYNTAX.items()
+    if value == cipher
+]
+
+
 KEY_NAME_STR = "key_name"
 CRYPTO_POLICY_EXPECTED_DICT = {
     TLS_INTERMEDIATE_POLICY: {
@@ -81,7 +93,7 @@ CRYPTO_POLICY_EXPECTED_DICT = {
         NetworkAddonsConfig: TLS_INTERMEDIATE_PROFILE,
     },
     TLS_CUSTOM_POLICY: {
-        KubeVirt: TLS_CUSTOM_PROFILE[TLS_CUSTOM_POLICY],
+        KubeVirt: TLS_CUSTOM_PROFILE_KUBEVIRT[TLS_CUSTOM_POLICY],
         SSP: TLS_CUSTOM_PROFILE,
         CDI: TLS_CUSTOM_PROFILE,
         NetworkAddonsConfig: TLS_CUSTOM_PROFILE,

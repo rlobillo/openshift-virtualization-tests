@@ -10,9 +10,9 @@ from ocp_resources.ssp import SSP
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.install_upgrade_operators.crypto_policy.constants import (
-    CRYPTO_POLICY_EXPECTED_DICT,
     KUBEVIRT_TLS_CONFIG_KEY,
     TLS_CUSTOM_PROFILE,
+    TLS_CUSTOM_PROFILE_KUBEVIRT,
     TLS_INTERMEDIATE_POLICY,
     TLS_MODERN_POLICY,
 )
@@ -32,7 +32,6 @@ from utilities.hco import (
     update_hco_annotations,
     wait_for_hco_conditions,
 )
-from utilities.infra import is_bug_open
 
 
 LOGGER = logging.getLogger(__name__)
@@ -42,16 +41,6 @@ TLS_POLICIES_WITHOUT_CUSTOM_POLICY = {
     TLS_INTERMEDIATE_POLICY: None,
     TLS_MODERN_POLICY: None,
 }
-
-
-def generate_kubevirt_custom_policy():
-    crypto_policy = deepcopy(CRYPTO_POLICY_EXPECTED_DICT[TLS_CUSTOM_POLICY][KubeVirt])
-    if is_bug_open(bug_id=2153527):
-        crypto_policy["ciphers"] = [
-            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-        ]
-    return crypto_policy
 
 
 def wait_for_resource_crypto_policy_update(
@@ -137,7 +126,7 @@ def updated_cr_with_custom_crypto_policy(
                 "component": "kubevirt",
                 "resource": KubeVirt,
                 "key": KUBEVIRT_TLS_CONFIG_KEY,
-                "value": generate_kubevirt_custom_policy(),
+                "value": deepcopy(TLS_CUSTOM_PROFILE_KUBEVIRT[TLS_CUSTOM_POLICY]),
             },
             marks=pytest.mark.polarion("CNV-9381"),
             id="test_set_kubevirt_crypto_policy_using_hco_jsonpatch_annotation",

@@ -45,6 +45,7 @@ bs4 = "*"
 shortuuid = "*"
 podman = "*"
 gitpython = "*"
+deepdiff = "*"
 
 [tool.poetry.dev-dependencies]
 ipython = "*"
