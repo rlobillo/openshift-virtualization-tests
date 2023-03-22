@@ -12,7 +12,7 @@ from ocp_resources.daemonset import DaemonSet
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.pod import Pod
-from ocp_resources.resource import NamespacedResource, ResourceEditor
+from ocp_resources.resource import ResourceEditor
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.route import Route
 from ocp_resources.service import Service
@@ -409,11 +409,14 @@ def verify_snapshot_used_namespace_transfer(cdv, unprivileged_client):
     if is_snapshot_supported_by_sc(
         sc_name=storage_class, client=unprivileged_client
     ) and not sc_volume_binding_mode_is_wffc(sc=storage_class):
-        clone_type = f"{NamespacedResource.ApiGroup.CDI_KUBEVIRT_IO}/cloneType"
-        clone_type_annotation = cdv.instance["metadata"]["annotations"][clone_type]
-        assert (
-            clone_type_annotation == "snapshot"
-        ), f"Clone was not performed using Namespace transfer - {clone_type}: {clone_type_annotation}"
+        assert_pvc_snapshot_annotation(pvc=cdv.pvc)
+
+
+def assert_pvc_snapshot_annotation(pvc):
+    assert (
+        pvc.instance["metadata"]["annotations"].get("k8s.io/SmartCloneRequest")
+        == "true"
+    ), "Smart clone annotation does not exist on target PVC"
 
 
 def hpp_cr_suffix(is_hpp_cr_legacy):

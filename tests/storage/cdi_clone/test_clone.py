@@ -12,6 +12,7 @@ from pytest_testconfig import config as py_config
 
 from tests.storage import utils
 from tests.storage.utils import (
+    assert_pvc_snapshot_annotation,
     create_cirros_dv,
     get_storage_class_with_specified_volume_mode,
 )
@@ -364,10 +365,7 @@ def test_successful_snapshot_clone(
         ):
             with utils.create_vm_from_dv(dv=cdv) as vm_dv:
                 utils.check_disk_count_in_vm(vm=vm_dv)
-        assert (
-            cdv.pvc.instance.metadata.annotations.get("k8s.io/SmartCloneRequest")
-            == "true"
-        ), "Smart clone annotation does not exist on target PVC"
+        assert_pvc_snapshot_annotation(pvc=cdv.pvc)
         snapshot.wait_deleted()
 
 
