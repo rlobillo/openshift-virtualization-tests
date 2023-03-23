@@ -1,11 +1,13 @@
 import logging
 
 import pytest
+from ocp_resources.resource import ResourceEditor
 
 from tests.compute.ssp.descheduler.utils import (
     assert_running_process_after_failover,
     assert_vms_consistent_virt_launcher_pods,
     assert_vms_distribution_after_failover,
+    verify_at_least_one_vm_migrated,
 )
 
 
@@ -35,6 +37,25 @@ NO_MIGRATION_STORM_ASSERT_MESSAGE = (
 )
 class TestDeschedulerEvictsVMAfterDrainUncordon:
     TESTS_CLASS_NAME = "TestDeschedulerEvictsVMAfterDrainUncordon"
+
+    @pytest.mark.polarion("CNV-7415")
+    def test_descheduler_node_labels(
+        self,
+        updated_profile_strategy_static_low_node_utilization_for_node_drain,
+        node_with_most_available_memory,
+        node_labeled_for_test,
+        deployed_vms_on_labeled_node,
+    ):
+        with ResourceEditor(
+            patches={
+                node_with_most_available_memory: {
+                    "metadata": {"labels": {"testnode": "true"}}
+                }
+            }
+        ):
+            verify_at_least_one_vm_migrated(
+                vms=deployed_vms_on_labeled_node, node_before=node_labeled_for_test
+            )
 
     @pytest.mark.dependency(
         name=f"{TESTS_CLASS_NAME}::test_descheduler_evicts_vm_after_drain_uncordon"

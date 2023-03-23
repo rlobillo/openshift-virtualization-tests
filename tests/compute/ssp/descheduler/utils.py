@@ -19,7 +19,14 @@ from tests.compute.utils import (
     fetch_pid_from_linux_vm,
     start_and_fetch_processid_on_linux_vm,
 )
-from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC, TIMEOUT_10MIN, TIMEOUT_15MIN
+from utilities.constants import (
+    TIMEOUT_1MIN,
+    TIMEOUT_5MIN,
+    TIMEOUT_5SEC,
+    TIMEOUT_10MIN,
+    TIMEOUT_15MIN,
+    TIMEOUT_20SEC,
+)
 from utilities.infra import get_pods, scale_deployment_replicas
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -49,6 +56,7 @@ class VirtualMachineForDeschedulerTest(VirtualMachineForTests):
         body,
         cpu_requests=None,
         descheduler_eviction=True,
+        node_selector_labels=None,
     ):
         super().__init__(
             name=name,
@@ -59,6 +67,7 @@ class VirtualMachineForDeschedulerTest(VirtualMachineForTests):
             cpu_model=cpu_model,
             body=body,
             cpu_requests=cpu_requests,
+            node_selector_labels=node_selector_labels,
         )
         self.descheduler_eviction = descheduler_eviction
 
@@ -462,3 +471,14 @@ def assert_state_for_utilization_imbalance(
     assert (
         len(nodes_with_low_pod_utilization) > 1
     ), f"Must have two or more low utilization nodes: {nodes_with_low_pod_utilization}"
+
+
+def verify_at_least_one_vm_migrated(vms, node_before):
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_5MIN,
+        sleep=TIMEOUT_20SEC,
+        func=lambda: [vm.vmi.node.name for vm in vms],
+    )
+    for sample in samples:
+        if not all(node_before.name == node for node in sample):
+            return sample

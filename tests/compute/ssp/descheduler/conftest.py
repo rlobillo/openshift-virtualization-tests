@@ -8,6 +8,8 @@ from ocp_resources.kube_descheduler import KubeDescheduler
 from ocp_resources.namespace import Namespace
 from ocp_resources.pod_disruption_budget import PodDisruptionBudget
 from ocp_resources.resource import Resource, ResourceEditor
+from ocp_resources.utils import TimeoutExpiredError
+from ocp_resources.virtual_machine import VirtualMachine
 from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
@@ -20,6 +22,7 @@ from tests.compute.ssp.descheduler.constants import (
 )
 from tests.compute.ssp.descheduler.utils import (
     DeploymentForDeschedulerTests,
+    VirtualMachineForDeschedulerTest,
     assert_state_for_utilization_imbalance,
     calculate_vm_deployment,
     deploy_vms,
@@ -48,7 +51,12 @@ from utilities.operator import (
     wait_for_catalogsource_ready,
     wait_for_operator_install,
 )
-from utilities.virt import node_mgmt_console, wait_for_node_schedulable_status
+from utilities.virt import (
+    fedora_vm_body,
+    node_mgmt_console,
+    running_vm,
+    wait_for_node_schedulable_status,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -500,6 +508,11 @@ def available_memory_per_node(
     }
 
 
+@pytest.fixture()
+def node_with_most_available_memory(available_memory_per_node):
+    return max(available_memory_per_node, key=available_memory_per_node.get)
+
+
 @pytest.fixture(scope="class")
 def deployed_evictable_vms_for_utilization_imbalance(
     namespace,
@@ -534,6 +547,51 @@ def deployed_no_annotation_vms_for_utilization_imbalance(
         deployment_size=DEPLOYMENT_SIZE,
         descheduler_eviction=False,
     )
+
+
+@pytest.fixture()
+def deployed_vms_on_labeled_node(
+    namespace,
+    unprivileged_client,
+    nodes_common_cpu_model,
+):
+    vm_index = 1
+    vms = []
+    while True:
+        vm_name = f"vm-{vm_index}"
+        vm = VirtualMachineForDeschedulerTest(
+            name=vm_name,
+            namespace=namespace.name,
+            client=unprivileged_client,
+            cpu_requests=DEPLOYMENT_SIZE["cpu"],
+            memory_requests=DEPLOYMENT_SIZE["memory"].bytes,
+            cpu_model=nodes_common_cpu_model,
+            descheduler_eviction=True,
+            body=fedora_vm_body(name=vm_name),
+            node_selector_labels={"testnode": "true"},
+        )
+        vm.deploy()
+        vm_index += 1
+
+        try:
+            running_vm(vm=vm)
+            vms.append(vm)
+        except TimeoutExpiredError:
+            printable_status = vm.printable_status
+            vm.clean_up()
+            if printable_status == VirtualMachine.Status.ERROR_UNSCHEDULABLE:
+                break
+            else:
+                LOGGER.error(
+                    f"VM {vm.name} did not manage to start: {printable_status}"
+                )
+                raise
+
+    assert vms, "Not enough memory for at least 1 VM to be created"
+    yield vms
+
+    for vm in vms:
+        vm.clean_up()
 
 
 @pytest.fixture()
@@ -767,3 +825,18 @@ def utilization_imbalance(
         ) as deployment:
             deployment.wait_for_replicas(timeout=unallocated_pod_count * TIMEOUT_5SEC)
             yield
+
+
+@pytest.fixture()
+def node_labeled_for_test(available_memory_per_node):
+    node_with_least_available_memory = min(
+        available_memory_per_node, key=available_memory_per_node.get
+    )
+    with ResourceEditor(
+        patches={
+            node_with_least_available_memory: {
+                "metadata": {"labels": {"testnode": "true"}}
+            }
+        }
+    ):
+        yield node_with_least_available_memory
