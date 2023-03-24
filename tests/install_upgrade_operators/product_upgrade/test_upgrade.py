@@ -41,7 +41,7 @@ class TestUpgrade:
         hco_namespace,
         cnv_registry_source,
         cnv_target_version,
-        cnv_upgrade_path,
+        cnv_upgrade_info,
         fired_alerts_before_cnv_upgrade,
         disabled_default_sources_in_operatorhub,
         updated_image_content_source,

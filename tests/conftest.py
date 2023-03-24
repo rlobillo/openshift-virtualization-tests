@@ -177,13 +177,18 @@ ACCESS_TOKEN = {
     "accessTokenInactivityTimeout": None,
 }
 CNV_NOT_INSTALLED = "CNV not yet installed."
-UPGRADE_Z_STREAM = "z-stream"
 
 AMD_CPU_MODELS = ["Opteron_G1", "Opteron_G2"]
 
 NIGHTLY_ART_IMAGE = (
     "quay.io/openshift-release-dev/ocp-release-nightly:iib-int-index-art-operators"
 )
+
+
+class UpgradeStreams:
+    X_STREAM = "x-stream"
+    Y_STREAM = "y-stream"
+    Z_STREAM = "z-stream"
 
 
 def login_to_account(api_address, user, password=None):
@@ -2174,38 +2179,49 @@ def vm_bridge_networks(upgrade_bridge_on_all_nodes):
 
 
 @pytest.fixture(scope="session")
-def cnv_upgrade_path(request, admin_client, pytestconfig, cnv_current_version):
-    cnv_target_version = pytestconfig.option.cnv_version
+def cnv_upgrade_info(admin_client, pytestconfig, cnv_current_version):
+    """
+    Verify if the upgrade can be performed by comparing the current and target versions.
+
+    Args:
+        admin_client: The admin client instance.
+        pytestconfig: The pytest configuration object.
+        cnv_current_version: The current CNV version.
+    """
     current_version = packaging.version.parse(version=cnv_current_version)
-    target_version = packaging.version.parse(version=cnv_target_version)
+    target_version = packaging.version.parse(version=pytestconfig.option.cnv_version)
     if target_version <= current_version:
         # Upgrade only if a newer CNV version is requested
         raise ValueError(
             f"Cannot upgrade to older/identical versions,"
-            f"current: {cnv_current_version} target: {cnv_target_version}"
+            f"current: {cnv_current_version} target: {target_version}"
         )
 
+    upgrade_stream = determine_upgrade_stream(
+        current_version=current_version, target_version=target_version
+    )
+
+    LOGGER.info(
+        f"CNV upgrade:\n"
+        f"Current version: {cnv_current_version},\n"
+        f"Target version: {target_version},\n"
+        f"Upgrade stream: {upgrade_stream},\n"
+        f"Target channel: {target_version.major}.{target_version.minor}"
+    )
+    return upgrade_stream
+
+
+def determine_upgrade_stream(current_version, target_version):
     if current_version.major < target_version.major:
-        upgrade_stream = "x-stream"
+        return UpgradeStreams.X_STREAM
     elif current_version.minor < target_version.minor:
-        upgrade_stream = "y-stream"
+        return UpgradeStreams.Y_STREAM
     elif current_version.micro < target_version.micro:
-        upgrade_stream = UPGRADE_Z_STREAM
-    elif current_version.release == target_version.release:
-        upgrade_stream = "dev-stream"
+        return UpgradeStreams.Z_STREAM
     else:
         raise ValueError(
-            f"unknown upgrade stream, current: {cnv_current_version} target: {cnv_target_version}"
+            f"unknown upgrade stream, current: {current_version} target: {target_version}"
         )
-
-    cnv_upgrade_dict = {
-        "current_version": cnv_current_version,
-        "target_version": cnv_target_version,
-        "upgrade_stream": upgrade_stream,
-        "target_channel": f"{target_version.major}.{target_version.minor}",
-    }
-    LOGGER.info(f"CNV upgrade: {cnv_upgrade_dict}")
-    return cnv_upgrade_dict
 
 
 @pytest.fixture(scope="session")
