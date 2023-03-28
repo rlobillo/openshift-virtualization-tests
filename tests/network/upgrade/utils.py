@@ -1,10 +1,15 @@
+import logging
+
 from kubernetes.dynamic.exceptions import ResourceNotFoundError
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.pod import Pod
-from ocp_resources.utils import TimeoutSampler
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
-from utilities.constants import TIMEOUT_1MIN
+from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5SEC
 from utilities.infra import get_pod_by_name_prefix
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def assert_bridge_and_vms_on_same_node(vm_a, vm_b, bridge):
@@ -19,11 +24,23 @@ def assert_node_is_marked_by_bridge(bridge_nad, vm):
 
 
 def assert_nmstate_bridge_creation(bridge):
-    nns = NodeNetworkState(name=bridge.node_selector)
     bridge_name = bridge.bridge_name
-    assert nns.get_interface(
-        name=bridge_name
-    ), f"Nmstate bridge: {bridge_name} not found"
+
+    # Although the bridge interface was already created, the NodeNetworkState resource takes some time to be updated.
+    sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_1MIN,
+        sleep=TIMEOUT_5SEC,
+        func=lambda: NodeNetworkState(name=bridge.node_selector).get_interface(
+            name=bridge_name
+        ),
+    )
+    try:
+        for sample in sampler:
+            if sample:
+                break
+    except TimeoutExpiredError:
+        LOGGER.error(f"Bridge {bridge_name} not found in NNS.")
+        raise
 
 
 def assert_label_in_namespace(labeled_namespace, label_key, expected_label_value):
