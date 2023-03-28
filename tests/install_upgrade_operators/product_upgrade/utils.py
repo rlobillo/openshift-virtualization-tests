@@ -45,12 +45,6 @@ from utilities.operator import approve_install_plan, wait_for_mcp_update_complet
 LOGGER = logging.getLogger(__name__)
 TIER_2_PODS_TYPE = "tier-2"
 FIRING_STATE = "firing"
-IGNORE_ALERTS = [
-    "APIRemovedInNextEUSReleaseInUse",
-    "APIRemovedInNextReleaseInUse",
-    "etcdHighCommitDurations",
-    "etcdGRPCRequestsSlow",
-]
 
 
 def wait_for_new_operator_pod(
@@ -568,18 +562,26 @@ def verify_upgrade_ocp(admin_client, target_ocp_version, machine_config_pools_li
     )
 
 
-def get_all_alerts(prometheus, file_name, base_directory):
+def get_all_cnv_alerts(prometheus, file_name, base_directory):
+    cnv_alerts = []
     alerts_fired = prometheus.alerts["data"].get("alerts")
+    for alert in alerts_fired:
+        if (
+            alert["labels"].get("kubernetes_operator_part_of")
+            and alert["labels"]["kubernetes_operator_part_of"] == "kubevirt"
+        ):
+            cnv_alerts.append(alert)
+
     write_to_file(
         base_directory=base_directory,
         file_name=file_name,
-        content=json.dumps(alerts_fired),
+        content=json.dumps(cnv_alerts),
     )
-    return alerts_fired
+    return cnv_alerts
 
 
 def get_alerts_fired_during_upgrade(prometheus, before_upgrade_alerts, base_directory):
-    after_upgrade_alerts = get_all_alerts(
+    after_upgrade_alerts = get_all_cnv_alerts(
         prometheus=prometheus,
         file_name="after_upgrade_alerts.json",
         base_directory=base_directory,
@@ -590,7 +592,7 @@ def get_alerts_fired_during_upgrade(prometheus, before_upgrade_alerts, base_dire
     fired_during_upgrade = []
     for alert in after_upgrade_alerts:
         alert_name = alert["labels"]["alertname"]
-        if alert_name in before_upgrade_alert_names or alert_name in IGNORE_ALERTS:
+        if alert_name in before_upgrade_alert_names:
             continue
         LOGGER.info(
             f"Alert {alert_name}, state: {alert['state']} fired during upgrade."
@@ -619,6 +621,11 @@ def wait_for_pending_alerts_to_fire(pending_alerts, prometheus):
         current_firing_alerts = []
         current_pending_alerts = []
         for _alert in _all_alerts:
+            if (
+                not _alert["labels"].get("kubernetes_operator_part_of")
+                or _alert["labels"]["kubernetes_operator_part_of"] != "kubevirt"
+            ):
+                continue
             _alert_name = _alert["labels"]["alertname"]
             if _alert["state"] == FIRING_STATE:
                 current_firing_alerts.append(_alert_name)

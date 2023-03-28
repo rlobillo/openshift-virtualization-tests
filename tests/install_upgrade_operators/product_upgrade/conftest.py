@@ -15,7 +15,7 @@ from pytest_testconfig import py_config
 from tests.install_upgrade_operators.product_upgrade.utils import (
     approve_cnv_upgrade_install_plan,
     get_alerts_fired_during_upgrade,
-    get_all_alerts,
+    get_all_cnv_alerts,
     get_nodes_labels,
     get_nodes_taints,
     update_icsp_stage_mirror,
@@ -284,7 +284,7 @@ def alert_dir():
 
 @pytest.fixture(scope="session")
 def fired_alerts_before_cnv_upgrade(prometheus, alert_dir):
-    return get_all_alerts(
+    return get_all_cnv_alerts(
         prometheus=prometheus,
         file_name="before_cnv_upgrade_alerts.json",
         base_directory=alert_dir,
@@ -304,7 +304,7 @@ def fired_alerts_during_cnv_upgrade(
 
 @pytest.fixture(scope="session")
 def fired_alerts_before_ocp_upgrade(prometheus, alert_dir):
-    return get_all_alerts(
+    return get_all_cnv_alerts(
         prometheus=prometheus,
         file_name="before_ocp_upgrade_alerts.json",
         base_directory=alert_dir,
