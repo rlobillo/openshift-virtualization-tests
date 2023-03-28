@@ -1,6 +1,5 @@
 import shlex
 
-from ocp_resources.utils import TimeoutSampler
 from ocp_utilities.utils import run_ssh_commands
 
 from utilities.constants import (
@@ -8,8 +7,6 @@ from utilities.constants import (
     NVIDIA_GRID_DRIVER_NAME,
     OS_FLAVOR_WINDOWS,
     TIMEOUT_3MIN,
-    TIMEOUT_5MIN,
-    TIMEOUT_10SEC,
     VGPU_DEVICE_NAME,
     NamespacesNames,
 )
@@ -145,19 +142,10 @@ def get_gpu_nodes(util_pods, nodes_list):
     return nodes
 
 
-def wait_for_manager_pods_deployed(admin_client, ds_name, gpu_nodes_amount):
-    def _get_manager_ds_ready_replicas():
-        daemonsets_in_namespace = get_daemonsets(
-            admin_client=admin_client, namespace=NamespacesNames.NVIDIA_GPU_OPERATOR
-        )
-        for ds in daemonsets_in_namespace:
-            if ds_name in ds.name:
-                return ds.instance.status["numberReady"]
-
-    for sample in TimeoutSampler(
-        wait_timeout=TIMEOUT_5MIN,
-        sleep=TIMEOUT_10SEC,
-        func=_get_manager_ds_ready_replicas,
-    ):
-        if sample and sample == gpu_nodes_amount:
-            break
+def wait_for_manager_pods_deployed(admin_client, ds_name):
+    daemonsets_in_namespace = get_daemonsets(
+        admin_client=admin_client, namespace=NamespacesNames.NVIDIA_GPU_OPERATOR
+    )
+    for ds in daemonsets_in_namespace:
+        if ds_name in ds.name:
+            ds.wait_until_deployed()
