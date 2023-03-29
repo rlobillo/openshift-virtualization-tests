@@ -4,6 +4,7 @@ import logging
 import os
 import shlex
 from contextlib import contextmanager
+from datetime import datetime
 from pprint import pformat
 
 from ocp_resources.catalog_source import CatalogSource
@@ -32,6 +33,7 @@ from utilities.constants import (
     ICSP_FILE,
     TIMEOUT_5MIN,
     TIMEOUT_10MIN,
+    TIMEOUT_10SEC,
     TIMEOUT_15MIN,
     TIMEOUT_20MIN,
     TIMEOUT_75MIN,
@@ -117,91 +119,156 @@ def delete_existing_icsp(
             icsp.delete(wait=True)
 
 
-def get_mcps_with_matching_status_conditions(condition_type, machine_config_pools_list):
+def get_mcps_with_different_transition_times(
+    condition_type, machine_config_pools_list, initial_transition_times
+):
+    """
+    Return a set of machine config pool (MCP) names with different transition times.
+
+    Filters a list of MCPs based on a given condition type and returns a set of names
+    of the MCPs that have a different last transition time compared to the corresponding
+    initial_transition_times entry.
+
+    Args:
+        condition_type (str): The condition type to match against.
+        machine_config_pools_list (list): A list of machine config pools to filter.
+        initial_transition_times (dict): A dictionary with MCP names as keys and
+            initial transition times as values. Used to compare against the MCP's lastTransitionTime.
+
+    Returns:
+        set: A set of machine config pool names with different transition times.
+    """
+    date_format = "%Y-%m-%dT%H:%M:%SZ"
     return {
         mcp.name
         for mcp in machine_config_pools_list
         for condition in mcp.instance.status.conditions
-        if condition["type"] == condition_type
-        and condition["status"] == Resource.Condition.Status.TRUE
+        if (
+            condition["type"] == condition_type
+            and datetime.strptime(condition["lastTransitionTime"], date_format)
+            > datetime.strptime(initial_transition_times[mcp.name], date_format)
+        )
     }
 
 
-def wait_for_machine_config_pools_condition_status(
-    machine_config_pools_list, condition_type, timeout
-):
-    mcps_to_check = {mcp.name for mcp in machine_config_pools_list}
-    LOGGER.info(
-        f"Waiting for mcps {mcps_to_check} to reach condition: desired={condition_type}"
-    )
-    samplers = TimeoutSampler(
-        wait_timeout=timeout,
-        sleep=5,
-        func=get_mcps_with_matching_status_conditions,
-        exceptions_dict=BASE_EXCEPTIONS_DICT,
-        condition_type=condition_type,
-        machine_config_pools_list=machine_config_pools_list,
-    )
-    found_mcp_in_status = set()
-    not_matching_mcp = set()
-    try:
-        for sample in samplers:
-            found_mcp_in_status.update(sample)
-            not_matching_mcp = mcps_to_check - found_mcp_in_status
-            if not not_matching_mcp:
-                return
-    except TimeoutExpiredError:
-        LOGGER.error(
-            f"Out of mcps {mcps_to_check}, followings {not_matching_mcp} were not at desired "
-            f"condition {condition_type} before timeout. "
-            f"current mcp status={ {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools_list}}"
+def get_mcps_with_true_condition_status(condition_type, machine_config_pools_list):
+    """
+    Return a set of machine config pool (MCP) names with true status conditions.
+
+    Filters a list of MCPs based on a given condition type and returns a set of names
+    of the MCPs that have a true status condition.
+
+    Args:
+        condition_type (str): The condition type to match against.
+        machine_config_pools_list (list): A list of machine config pools to filter.
+
+    Returns:
+        set: A set of machine config pool names with true status conditions.
+    """
+    return {
+        mcp.name
+        for mcp in machine_config_pools_list
+        for condition in mcp.instance.status.conditions
+        if (
+            condition["type"] == condition_type
+            and condition["status"] == Resource.Condition.Status.TRUE
         )
-        if py_config.get("data_collector"):
-            data_collector_dict = get_data_collector_dict()
-            collect_resources_yaml_instance(
-                resources_to_collect=[MachineConfigPool, Node],
-                base_directory=data_collector_dict["data_collector_base_directory"],
-            )
-            collect_mcp_information()
-        raise
+    }
 
 
 def wait_for_machine_config_pool_updated_condition(machine_config_pools_list):
-    LOGGER.info("Wait for mcp update to end.")
+    updated_condition = MachineConfigPool.Status.UPDATED
+    mcps_to_check = {mcp.name for mcp in machine_config_pools_list}
+    LOGGER.info(
+        f"Waiting for MCP update to end. "
+        f"Waiting for MCPs {mcps_to_check} to reach desired condition: {updated_condition}"
+    )
+    sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_75MIN,
+        sleep=5,
+        func=get_mcps_with_true_condition_status,
+        exceptions_dict=BASE_EXCEPTIONS_DICT,
+        condition_type=updated_condition,
+        machine_config_pools_list=machine_config_pools_list,
+    )
+    not_matching_mcps = set()
     try:
-        wait_for_machine_config_pools_condition_status(
-            machine_config_pools_list=machine_config_pools_list,
-            condition_type=MachineConfigPool.Status.UPDATED,
-            timeout=TIMEOUT_75MIN,
-        )
+        for sample in sampler:
+            if sample:
+                not_matching_mcps = {mcp for mcp in mcps_to_check if mcp not in sample}
+                if not not_matching_mcps:
+                    return
     except TimeoutExpiredError:
-        if py_config.get("data_collector"):
-            collect_mcp_information()
+        _collect_mcp_data_on_update_timeout(
+            machine_config_pools_list=machine_config_pools_list,
+            not_matching_mcps=not_matching_mcps,
+            condition_type=updated_condition,
+        )
         raise
 
 
-def wait_for_machine_config_pool_updating_condition(machine_config_pools_list):
-    LOGGER.info("Wait for mcp update to start.")
+def wait_for_machine_config_pool_updating_condition(
+    machine_config_pools_list, initial_transition_times
+):
+    updating_condition = MachineConfigPool.Status.UPDATING
+    mcps_to_check = {mcp.name for mcp in machine_config_pools_list}
+    LOGGER.info(
+        f"Waiting for MCP update to start. "
+        f"Waiting for MCPs {mcps_to_check} to reach desired condition: {updating_condition}"
+    )
+    sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_15MIN,
+        sleep=TIMEOUT_10SEC,
+        func=get_mcps_with_different_transition_times,
+        exceptions_dict=BASE_EXCEPTIONS_DICT,
+        condition_type=updating_condition,
+        machine_config_pools_list=machine_config_pools_list,
+        initial_transition_times=initial_transition_times,
+    )
+    not_matching_mcps = set()
     try:
-        wait_for_machine_config_pools_condition_status(
-            machine_config_pools_list=machine_config_pools_list,
-            condition_type=MachineConfigPool.Status.UPDATING,
-            timeout=TIMEOUT_15MIN,
-        )
+        for sample in sampler:
+            if sample:
+                not_matching_mcps = {mcp for mcp in mcps_to_check if mcp not in sample}
+                if not not_matching_mcps:
+                    return
     except TimeoutExpiredError:
-        # In cases where the MCP transitions quickly and the UPDATING status is missed
-        updated_mcps = get_mcps_with_matching_status_conditions(
+        _collect_mcp_data_on_update_timeout(
             machine_config_pools_list=machine_config_pools_list,
-            condition_type=MachineConfigPool.Status.UPDATED,
+            not_matching_mcps=not_matching_mcps,
+            condition_type=updating_condition,
+        )
+        updated_condition = MachineConfigPool.Status.UPDATED
+        updated_mcps = get_mcps_with_true_condition_status(
+            condition_type=updated_condition,
+            machine_config_pools_list=machine_config_pools_list,
         )
         if updated_mcps:
-            LOGGER.info(
-                f"Following mcp(s)={updated_mcps} are already in {MachineConfigPool.Status.UPDATED} condition: "
+            LOGGER.warning(
+                f"Some of the MCPs reached {updated_condition}: {updated_mcps}. "
+                f"Continuing with the test."
             )
         else:
-            if py_config.get("data_collector"):
-                collect_mcp_information()
+            LOGGER.error(f"None of the MCPs reached {updated_condition}.")
             raise
+
+
+def _collect_mcp_data_on_update_timeout(
+    machine_config_pools_list, not_matching_mcps, condition_type
+):
+    mcps_to_check = {mcp.name for mcp in machine_config_pools_list}
+    LOGGER.error(
+        f"Out of MCPs {mcps_to_check}, following MCPs {not_matching_mcps} were not at desired "
+        f"condition {condition_type} before timeout. "
+        f"current MCP status={ {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools_list} }"
+    )
+    if py_config.get("data_collector"):
+        data_collector_dict = get_data_collector_dict()
+        collect_resources_yaml_instance(
+            resources_to_collect=[MachineConfigPool, Node],
+            base_directory=data_collector_dict["data_collector_base_directory"],
+        )
+        collect_mcp_information()
 
 
 def get_machine_config_pool_by_name(mcp_name):
@@ -439,13 +506,34 @@ def wait_for_csv_successful_state(admin_client, namespace_name, subscription_nam
     )
 
 
-def wait_for_mcp_update_completion(machine_config_pools_list):
+def wait_for_mcp_update_completion(machine_config_pools_list, initial_mcp_conditions):
+    initial_updating_transition_times = get_mcp_updating_transition_times(
+        mcp_conditions=initial_mcp_conditions
+    )
+
     wait_for_machine_config_pool_updating_condition(
-        machine_config_pools_list=machine_config_pools_list
+        machine_config_pools_list=machine_config_pools_list,
+        initial_transition_times=initial_updating_transition_times,
     )
     wait_for_machine_config_pool_updated_condition(
-        machine_config_pools_list=machine_config_pools_list
+        machine_config_pools_list=machine_config_pools_list,
     )
+
+
+def get_mcp_updating_transition_times(mcp_conditions):
+    """
+    Extract the initial transition times for the Updating MCP condition
+    """
+
+    updating_transition_times = {}
+
+    for role, conditions_list in mcp_conditions.items():
+        for conditions in conditions_list:
+            condition_type = conditions["type"]
+            if condition_type == MachineConfigPool.Status.UPDATING:
+                updating_transition_times[role] = conditions["lastTransitionTime"]
+
+    return updating_transition_times
 
 
 def create_operator(operator_class, operator_name, namespace_name=None):
