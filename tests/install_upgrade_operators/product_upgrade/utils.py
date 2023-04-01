@@ -14,16 +14,12 @@ from ocp_wrapper_data_collector.data_collector import (
 )
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 
-from tests.install_upgrade_operators.utils import (
-    wait_for_install_plan,
-    wait_for_operator_condition,
-)
+from tests.install_upgrade_operators.utils import wait_for_install_plan
 from utilities.constants import (
     BASE_EXCEPTIONS_DICT,
-    HCO_OPERATOR,
     IMAGE_CRON_STR,
-    OPERATOR_NAME_SUFFIX,
     TIMEOUT_10MIN,
+    TIMEOUT_10SEC,
     TIMEOUT_20MIN,
     TIMEOUT_30MIN,
     TIMEOUT_180MIN,
@@ -33,10 +29,10 @@ from utilities.data_collector import get_data_collector_dict
 from utilities.hco import wait_for_hco_conditions, wait_for_hco_version
 from utilities.infra import (
     cluster_resource,
-    cnv_target_images,
     get_clusterversion,
     get_deployments,
     get_pod_by_name_prefix,
+    get_pods,
     wait_for_consistent_resource_conditions,
 )
 from utilities.operator import approve_install_plan, wait_for_mcp_update_completion
@@ -47,88 +43,82 @@ TIER_2_PODS_TYPE = "tier-2"
 FIRING_STATE = "firing"
 
 
-def wait_for_new_operator_pod(
-    dyn_client,
-    hco_namespace,
-    operator_name,
-    operator_target_info,
-):
+def wait_for_pod_replacement(dyn_client, hco_namespace, pod_name, related_images):
     """
-    Wait for a new operator pod to be created and running
+    Wait for a new pod to be created and running
 
 
     Args:
         dyn_client (DynamicClient): OCP Client to use
         hco_namespace (Namespace): HCO namespace
-        operator_name (str): Operator name as extracted from its deployment
-        operator_target_info (dict): With "image" and "strategy" as extracted from its deployment
+        pod_name (str): Pod name
+        related_images (dict): "image" and "strategy" information
 
     Raises:
         TimeoutExpiredError: if a pod with the expected image is not created or if the pod is not running.
     """
 
-    def _is_expected_operator_pod_image(
-        _dyn_client, _operator_name, _hco_namespace, _operator_target_info
-    ):
-        operator_pods = get_pod_by_name_prefix(
+    def _is_expected_pod_image(_dyn_client, _pod_name, _hco_namespace, _related_images):
+        _pods = get_pod_by_name_prefix(
             dyn_client=_dyn_client,
-            pod_prefix=_operator_name,
+            pod_prefix=_pod_name,
             namespace=_hco_namespace,
             get_all=True,
         )
-        return [
+        _replaced_pods = [
             _pod
-            for _pod in operator_pods
-            if _pod.instance.spec.containers[0].image == _operator_target_info["image"]
+            for _pod in _pods
+            if _pod.instance.spec.containers[0].image in _related_images
         ]
 
-    LOGGER.info(f"Verify new operator pod {operator_name} replacement.")
+        if len(_pods) == len(_replaced_pods):
+            return _replaced_pods
+        LOGGER.warning(
+            f"{len(_pods)}/{len(_replaced_pods)} {_pod_name} pods has been replaced."
+        )
 
+    LOGGER.info(f"Verify new pod {pod_name} replacement.")
     new_pod_sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_30MIN,
         sleep=1,
-        func=_is_expected_operator_pod_image,
+        func=_is_expected_pod_image,
         _dyn_client=dyn_client,
-        _operator_name=operator_name,
+        _pod_name=pod_name,
         _hco_namespace=hco_namespace,
-        _operator_target_info=operator_target_info,
+        _related_images=related_images,
     )
 
-    new_operator_pod = None
+    new_pods = []
     try:
-        for pod in new_pod_sampler:
-            if pod:
-                new_operator_pod = pod[0]
+        for pods in new_pod_sampler:
+            if pods:
+                new_pods = pods
                 break
     except TimeoutExpiredError:
         LOGGER.error(
-            f"Operator {operator_name} new pods are not created, expected: {operator_target_info}"
+            f"For {pod_name} type new pods are not created, expected: {related_images}"
         )
         raise
+    for new_pod in new_pods:
+        status_running = new_pod.Status.RUNNING
+        LOGGER.info(f"Wait for {new_pod.name} to be {status_running}")
+        new_pod.wait_for_status(status=status_running, timeout=TIMEOUT_30MIN)
 
-    status_running = new_operator_pod.Status.RUNNING
-    LOGGER.info(f"Wait for {new_operator_pod.name} to be {status_running}")
-    new_operator_pod.wait_for_status(status=status_running, timeout=TIMEOUT_30MIN)
 
-
-def wait_for_operator_pods_replacement(
-    dyn_client,
-    hco_namespace,
-    operators_target_versions,
+def wait_for_pods_replacement_by_type(
+    dyn_client, hco_namespace, related_images, pod_list
 ):
-    LOGGER.info("Wait for operators replacement.")
-
+    LOGGER.info("Wait for pod replacement.")
     processes = []
-
-    for operator_name, operator_target_info in operators_target_versions.items():
+    for pod_name in pod_list:
         sub_process = Process(
-            name=operator_name,
-            target=wait_for_new_operator_pod,
+            name=pod_name,
+            target=wait_for_pod_replacement,
             kwargs={
                 "dyn_client": dyn_client,
                 "hco_namespace": hco_namespace,
-                "operator_name": operator_name,
-                "operator_target_info": operator_target_info,
+                "pod_name": pod_name,
+                "related_images": related_images,
             },
         )
         processes.append(sub_process)
@@ -145,28 +135,6 @@ def wait_for_operator_pods_replacement(
     ), f"Failures during operator pods replacement. Failed processes={failed_processes}"
 
 
-def get_cluster_pods(dyn_client, hco_namespace, pods_type):
-    """
-    Returns a list of cluster pods:
-    pods_type - operator/tier-2 (non-operator) /all
-    """
-    # pods_type is "all"
-    cluster_pods = list(
-        cluster_resource(Pod).get(dyn_client=dyn_client, namespace=hco_namespace)
-    )
-    # Operator pods
-    if pods_type == OPERATOR_NAME_SUFFIX:
-        cluster_pods = [pod for pod in cluster_pods if OPERATOR_NAME_SUFFIX in pod.name]
-    # Tier-2 pods (created by operators)
-    elif pods_type == TIER_2_PODS_TYPE:
-        cluster_pods = [
-            pod for pod in cluster_pods if OPERATOR_NAME_SUFFIX not in pod.name
-        ]
-
-    assert cluster_pods, f"No cluster pods of type {pods_type} were found."
-    return cluster_pods
-
-
 def get_operator_by_name(dyn_client, hco_namespace, operator_name):
     pods = list(
         cluster_resource(Pod).get(dyn_client=dyn_client, namespace=hco_namespace)
@@ -179,7 +147,6 @@ def assert_only_expected_pods_exist(
     dyn_client,
     hco_namespace,
     expected_images,
-    pods_type,
 ):
     """
     Verifies that only pods with expected images (taken from target CSV) exist.
@@ -188,20 +155,13 @@ def assert_only_expected_pods_exist(
         dyn_client (DynamicClient): OCP Client to use
         hco_namespace (Namespace): HCO namespace
         expected_images (list): of expected images
-        pods_type (str): operator or tier-2
 
     Raises:
         AssertionError if there are pods' images which do not match the expected images list
     """
-    LOGGER.info(
-        f"Verify {pods_type} pods have the right image and no leftover pods exist"
-    )
-    current_cnv_pods = get_cluster_pods(
-        dyn_client=dyn_client, hco_namespace=hco_namespace, pods_type=pods_type
-    )
-    expected_images = cnv_target_images(
-        target_related_images_name_and_versions=expected_images
-    )
+    LOGGER.info("Verify all cnv pods have the right image and no leftover pods exist")
+    current_cnv_pods = get_pods(dyn_client=dyn_client, namespace=hco_namespace)
+
     mismatching_pods = {
         pod.name: pod.instance.spec.containers[0].image
         for pod in current_cnv_pods
@@ -213,7 +173,7 @@ def assert_only_expected_pods_exist(
     }
 
     assert not mismatching_pods, (
-        f"The following {pods_type} pods images were not replaced / removed: {mismatching_pods}."
+        f"The following pods images were not replaced / removed: {mismatching_pods}."
         f"Expected images: {expected_images}"
     )
 
@@ -229,6 +189,33 @@ def get_nodes_taints(nodes):
         nodes_dict (dict): dictionary containing taints information associated with every nodes
     """
     return {node.name: node.instance.spec.taints for node in nodes}
+
+
+def verify_cnv_pods_are_running(dyn_client, hco_namespace):
+    def _get_pods_that_are_not_running():
+        return [
+            pod.name
+            for pod in get_pods(
+                dyn_client=dyn_client,
+                namespace=hco_namespace,
+            )
+            if pod.status
+            not in (Pod.Status.RUNNING, Pod.Status.COMPLETED, Pod.Status.SUCCEEDED)
+        ]
+
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_10MIN,
+        sleep=TIMEOUT_10SEC,
+        func=_get_pods_that_are_not_running,
+    )
+    sample = None
+    try:
+        for sample in samples:
+            if not sample:
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(f"Some pods are not running: {sample}.")
+        raise
 
 
 def verify_nodes_taints_after_upgrade(nodes, nodes_taints_before_upgrade):
@@ -324,32 +311,6 @@ def get_dict_diff(before_upgrade, after_upgrade):
     }
 
 
-def verify_cnv_pods_are_running(dyn_client, hco_namespace):
-    def _get_pods_that_are_not_running():
-        return [
-            pod.name
-            for pod in get_cluster_pods(
-                dyn_client=dyn_client, hco_namespace=hco_namespace.name, pods_type="all"
-            )
-            if pod.status
-            not in (Pod.Status.RUNNING, Pod.Status.COMPLETED, Pod.Status.SUCCEEDED)
-        ]
-
-    samples = TimeoutSampler(
-        wait_timeout=TIMEOUT_10MIN,
-        sleep=10,
-        func=_get_pods_that_are_not_running,
-    )
-    sample = None
-    try:
-        for sample in samples:
-            if not sample:
-                return
-    except TimeoutExpiredError:
-        LOGGER.error(f"Some pods are not running: {sample}.")
-        raise
-
-
 def update_icsp_stage_mirror(icsp_file_path):
     # TODO: Remove once mirror catalog from stage is fixed
     rc, out, err = run_command(
@@ -366,50 +327,7 @@ def update_icsp_stage_mirror(icsp_file_path):
     ), f"Failed to update stage mirror in ICSP: icsp_file_path={icsp_file_path} out={out} err={err}"
 
 
-def verify_cnv_post_upgrade_conditions(
-    dyn_client,
-    hco_namespace,
-    cnv_target_version,
-    target_operator_pods_images,
-    target_tier_2_images_name_and_versions,
-):
-
-    LOGGER.info("Validate post upgrade HCO status:")
-    wait_for_hco_post_upgrade_state(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace,
-        cnv_target_version=cnv_target_version,
-    )
-    wait_for_post_upgrade_deployments_replicas(
-        dyn_client=dyn_client, hco_namespace=hco_namespace
-    )
-
-    assert_only_expected_pods_exist(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace.name,
-        expected_images=target_operator_pods_images,
-        pods_type=OPERATOR_NAME_SUFFIX,
-    )
-
-    assert_only_expected_pods_exist(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace.name,
-        expected_images=target_tier_2_images_name_and_versions,
-        pods_type=TIER_2_PODS_TYPE,
-    )
-
-
-def wait_for_hco_post_upgrade_state(dyn_client, hco_namespace, cnv_target_version):
-    LOGGER.info("Wait for HCO operator pod to be ready")
-    hco_operator_pod = get_pod_by_name_prefix(
-        dyn_client=dyn_client, pod_prefix=HCO_OPERATOR, namespace=hco_namespace.name
-    )
-    hco_operator_pod.wait_for_condition(
-        condition=Pod.Condition.READY,
-        status=Pod.Condition.Status.TRUE,
-        timeout=TIMEOUT_10MIN,
-    )
-
+def wait_for_hco_upgrade(dyn_client, hco_namespace, cnv_target_version):
     LOGGER.info(f"Wait for HCO version to be updated to {cnv_target_version}.")
     wait_for_hco_version(
         client=dyn_client,
@@ -432,41 +350,15 @@ def wait_for_post_upgrade_deployments_replicas(dyn_client, hco_namespace):
         deployment.wait_for_replicas(timeout=TIMEOUT_10MIN)
 
 
-def verify_upgrade_cnv(
-    dyn_client,
-    hco_namespace,
-    cnv_target_version,
-    hco_target_version,
-    target_csv,
-    target_operator_pods_images_name_and_strategy,
-    target_tier_2_images_name_and_versions,
-):
-    wait_for_operator_pods_replacement(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace.name,
-        operators_target_versions=target_operator_pods_images_name_and_strategy,
+def verify_upgrade_cnv(dyn_client, hco_namespace, expected_images):
+    wait_for_post_upgrade_deployments_replicas(
+        dyn_client=dyn_client, hco_namespace=hco_namespace
     )
-    LOGGER.info(f"Wait for csv: {target_csv.name} to be in SUCCEEDED state.")
-    target_csv.wait_for_status(
-        status=target_csv.Status.SUCCEEDED,
-        timeout=TIMEOUT_10MIN,
-        stop_status=None,
-    )
-    LOGGER.info(
-        f"Wait for operator condition {hco_target_version} to reach upgradable: True"
-    )
-    wait_for_operator_condition(
-        dyn_client=dyn_client,
-        hco_namespace=hco_namespace.name,
-        name=hco_target_version,
-        upgradable=True,
-    )
-    verify_cnv_post_upgrade_conditions(
+
+    assert_only_expected_pods_exist(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace,
-        cnv_target_version=cnv_target_version,
-        target_operator_pods_images=target_operator_pods_images_name_and_strategy,
-        target_tier_2_images_name_and_versions=target_tier_2_images_name_and_versions,
+        expected_images=expected_images,
     )
 
 

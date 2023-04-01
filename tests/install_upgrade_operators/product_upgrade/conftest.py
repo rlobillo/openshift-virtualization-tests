@@ -4,7 +4,6 @@ import re
 
 import pytest
 from ocp_resources.cluster_service_version import ClusterServiceVersion
-from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -19,6 +18,8 @@ from tests.install_upgrade_operators.product_upgrade.utils import (
     get_nodes_labels,
     get_nodes_taints,
     update_icsp_stage_mirror,
+    wait_for_hco_upgrade,
+    wait_for_pods_replacement_by_type,
 )
 from tests.install_upgrade_operators.utils import wait_for_operator_condition
 from utilities.constants import BREW_REGISTERY_SOURCE, HCO_CATALOG_SOURCE, TIMEOUT_10MIN
@@ -40,6 +41,7 @@ from utilities.operator import (
 
 
 LOGGER = logging.getLogger(__name__)
+POD_STR_NOT_MANAGED_BY_HCO = "hostpath-"
 
 
 @pytest.fixture(scope="session")
@@ -160,8 +162,8 @@ def approved_upgrade_install_plan(admin_client, hco_namespace, hco_target_versio
 
 
 @pytest.fixture()
-def target_csv(admin_client, hco_namespace, hco_target_version):
-    LOGGER.info(f"Wait for new CSV: {hco_target_version}")
+def created_target_csv(admin_client, hco_namespace, hco_target_version):
+    LOGGER.info(f"Wait for new CSV {hco_target_version} to be created")
     csv_sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_10MIN,
         sleep=1,
@@ -188,37 +190,31 @@ def target_csv(admin_client, hco_namespace, hco_target_version):
 
 
 @pytest.fixture()
-def target_operator_pods_images_name_and_strategy(target_csv):
+def related_images_from_target_csv(created_target_csv):
+    LOGGER.info(
+        f"Get all related images names and versions from target CSV {created_target_csv.name}"
+    )
+    return get_related_images_name_and_version(csv=created_target_csv)
+
+
+@pytest.fixture()
+def target_operator_pods_images(created_target_csv):
     # Operator pods are taken from csv deployment as their names under relatedImages do not exact-match
     # the pods' prefixes
     return {
-        deploy.name: {
-            "image": deploy.spec.template.spec.containers[0].image,
-        }
-        for deploy in target_csv.instance.spec.install.spec.deployments
+        deploy.name: deploy.spec.template.spec.containers[0].image
+        for deploy in created_target_csv.instance.spec.install.spec.deployments
     }
 
 
 @pytest.fixture()
-def target_tier_2_images_name_and_versions(
-    admin_client, hco_namespace, hco_target_version
-):
-    # Tier 2 pods are non-operator pods
-    LOGGER.info(
-        f"Get all related images names and versions from target CSV {hco_target_version}"
-    )
-    related_images = get_related_images_name_and_version(
-        dyn_client=admin_client,
-        hco_namespace=hco_namespace.name,
-        version=hco_target_version,
-    )
-    # hpp-pool pod uses the same image as hpp operator
-    return {
-        image_name: image_info
-        for image_name, image_info in related_images.items()
-        if not image_info["is_operator_image"]
-        or HostPathProvisioner.Name.HOSTPATH_PROVISIONER in image_name
-    }
+def target_images_for_pods_not_managed_by_hco(related_images_from_target_csv):
+    LOGGER.info("Get hpp target images names and versions.")
+    return [
+        image
+        for image in related_images_from_target_csv.values()
+        if POD_STR_NOT_MANAGED_BY_HCO in image
+    ]
 
 
 @pytest.fixture()
@@ -228,6 +224,53 @@ def started_cnv_upgrade(admin_client, hco_namespace, hco_target_version):
         hco_namespace=hco_namespace.name,
         name=hco_target_version,
         upgradable=False,
+    )
+
+
+@pytest.fixture()
+def upgraded_cnv(
+    admin_client,
+    hco_namespace,
+    cnv_target_version,
+    hco_target_version,
+    created_target_csv,
+    target_operator_pods_images,
+    target_images_for_pods_not_managed_by_hco,
+):
+    LOGGER.info(f"Wait for csv: {created_target_csv.name} to be in SUCCEEDED state.")
+    created_target_csv.wait_for_status(
+        status=created_target_csv.Status.SUCCEEDED,
+        timeout=TIMEOUT_10MIN,
+        stop_status=None,
+    )
+    LOGGER.info(
+        f"Wait for operator condition {hco_target_version} to reach upgradable: True"
+    )
+    wait_for_operator_condition(
+        dyn_client=admin_client,
+        hco_namespace=hco_namespace.name,
+        name=hco_target_version,
+        upgradable=True,
+    )
+
+    LOGGER.info("Wait for all openshift-virtualization operator pod replacement:")
+    wait_for_pods_replacement_by_type(
+        dyn_client=admin_client,
+        hco_namespace=hco_namespace.name,
+        pod_list=target_operator_pods_images.keys(),
+        related_images=target_operator_pods_images.values(),
+    )
+    LOGGER.info("Wait for non-hco managed pods to be replaced:")
+    wait_for_pods_replacement_by_type(
+        dyn_client=admin_client,
+        hco_namespace=hco_namespace.name,
+        pod_list=[POD_STR_NOT_MANAGED_BY_HCO],
+        related_images=target_images_for_pods_not_managed_by_hco,
+    )
+    wait_for_hco_upgrade(
+        dyn_client=admin_client,
+        hco_namespace=hco_namespace,
+        cnv_target_version=cnv_target_version,
     )
 
 

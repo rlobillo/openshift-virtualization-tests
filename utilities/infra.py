@@ -59,7 +59,6 @@ from utilities.constants import (
     IMAGE_CRON_STR,
     KUBELET_READY_CONDITION,
     OC_ADM_LOGS_COMMAND,
-    OPERATOR_NAME_SUFFIX,
     SANITY_TESTS_FAILURE,
     TIMEOUT_1MIN,
     TIMEOUT_2MIN,
@@ -858,29 +857,17 @@ def get_deployments(admin_client, namespace):
     return list(Deployment.get(dyn_client=admin_client, namespace=namespace))
 
 
-def cnv_target_images(target_related_images_name_and_versions):
-    return [item["image"] for item in target_related_images_name_and_versions.values()]
-
-
-def get_related_images_name_and_version(dyn_client, hco_namespace, version):
-    related_images_name_and_versions = {}
-    csv = get_csv_by_name(
-        admin_client=dyn_client,
-        namespace=hco_namespace,
-        csv_name=version,
-    )
+def get_related_images_name_and_version(csv):
+    related_images = {}
     for item in csv.instance.spec.relatedImages:
         # Example: 'registry.redhat.io/container-native-virtualization/node-maintenance-operator:v2.6.3-1'
-        image_name_version = re.search(
-            r".*/(?P<name>.*?):(?P<version>.*)", item["name"]
-        ).groupdict()
-        image_name = image_name_version["name"]
-        related_images_name_and_versions[image_name] = {
-            "image": item["image"],
-            "version": image_name_version["version"],
-            "is_operator_image": image_name.endswith(OPERATOR_NAME_SUFFIX),
-        }
-    return related_images_name_and_versions
+        image_name = re.search(r".*/(?P<name>.*?):(.*)", item["name"]).group(1)
+        if image_name:
+            related_images[image_name] = item["image"]
+    LOGGER.info(
+        f"From {csv.name} the related image information gathered: {related_images}"
+    )
+    return related_images
 
 
 def is_bug_open(bug_id):

@@ -14,7 +14,7 @@ from utilities.constants import (
     TIMEOUT_180MIN,
 )
 from utilities.exceptions import ResourceMissingFieldError
-from utilities.infra import cnv_target_images, get_related_images_name_and_version
+from utilities.infra import get_csv_by_name, get_related_images_name_and_version
 from utilities.virt import wait_for_ssh_connectivity
 
 
@@ -154,19 +154,14 @@ def wait_for_automatic_vm_migrations(admin_client, vm_list):
 
 
 def validate_vms_pod_updated(admin_client, hco_namespace, hco_target_version, vm_list):
-    target_related_images_name_and_versions = get_related_images_name_and_version(
-        dyn_client=admin_client,
-        hco_namespace=hco_namespace.name,
-        version=hco_target_version,
+    csv = get_csv_by_name(
+        admin_client=admin_client,
+        namespace=hco_namespace.name,
+        csv_name=hco_target_version,
     )
-    LOGGER.info(
-        f"Target related images for {hco_target_version}: {target_related_images_name_and_versions}"
-    )
+    target_related_images = get_related_images_name_and_version(csv=csv)
     return [
         {pod.name: pod.instance.spec.containers[0].image}
         for pod in [vm.vmi.virt_launcher_pod for vm in vm_list]
-        if pod.instance.spec.containers[0].image
-        not in cnv_target_images(
-            target_related_images_name_and_versions=target_related_images_name_and_versions
-        )
+        if pod.instance.spec.containers[0].image not in target_related_images.values()
     ]
