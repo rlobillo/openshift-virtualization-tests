@@ -1,4 +1,3 @@
-# TODO add 'reenlightenment' once jira CNV-20418 is done
 HYPERV_FEATURES_LABELS_DOM_XML = [
     "relaxed",
     "vapic",
@@ -11,6 +10,7 @@ HYPERV_FEATURES_LABELS_DOM_XML = [
     "reset",
     "runtime",
     "tlbflush",
+    "reenlightenment",
 ]
 
 HYPERV_FEATURES_LABELS_VM_YAML = HYPERV_FEATURES_LABELS_DOM_XML.copy()

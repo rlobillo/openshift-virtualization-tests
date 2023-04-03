@@ -587,8 +587,9 @@ def test_hyperv_features_exist_in_windows_templates(os_base_templates):
                 template_hyperv_features.keys()
             )
     assert not templates_with_wrong_hyperv_labels, (
-        f"Windows templates are missing hyperV labels, hyperV features templates: {HYPERV_FEATURES_LABELS_VM_YAML}\n, "
-        f"current templates hyperV labels :{templates_with_wrong_hyperv_labels}"
+        "Windows templates are missing hyperV labels.\n"
+        f"Expected Hyper-V features: {HYPERV_FEATURES_LABELS_VM_YAML}\n"
+        f"Current templates Hyper-V labels :{templates_with_wrong_hyperv_labels}"
     )
 
 
