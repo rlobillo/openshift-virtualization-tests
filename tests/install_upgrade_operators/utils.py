@@ -1,3 +1,4 @@
+import importlib
 import inspect
 import logging
 import re
@@ -302,3 +303,77 @@ def wait_for_cr_labels_change(expected_value, component):
             f" current value:'{label}'"
         )
         raise
+
+
+def get_ocp_resource_module_name(related_object_kind, list_submodules):
+    """
+    From a list of ocp_resources submodule, based on kubernetes 'kind' name pick the right module name
+
+    Args:
+        related_object_kind (str): Kubernetes kind name of a resource
+        list_submodules (list): list of ocp_resources submodule names
+
+    Returns:
+        str: Name of the ocp_resources submodule
+
+    Raises:
+        ModuleNotFoundError: if a module associated with related object kind is not found
+    """
+    for module_name in list_submodules:
+        expected_module_name = module_name.replace("_", "")
+        if related_object_kind.lower() == expected_module_name:
+            return module_name
+    raise ModuleNotFoundError(
+        f"{related_object_kind} module not found in ocp_resources"
+    )
+
+
+def get_resource(related_obj, admin_client, module_name):
+    """
+    Gets CR based on associated HCO.status.relatedObject entry and ocp_reources module name
+
+    Args:
+        related_obj (dict): Associated HCO.status.relatedObject dict
+        admin_client (DynamicClient): Dynamic client object
+        module_name (str): Associated ocp_reources module name to be used
+
+    Returns:
+        Resource: Associated cr object
+
+    Raises:
+        AssertionError: if a related object kind is not in module name
+    """
+    kwargs = {"client": admin_client, "name": related_obj["name"]}
+    if related_obj["namespace"]:
+        kwargs["namespace"] = related_obj["namespace"]
+
+    module = importlib.import_module(f"ocp_resources.{module_name}")
+    cls_related_obj = getattr(module, related_obj["kind"], None)
+    assert cls_related_obj, f"class {related_obj['kind']} is not in {module_name}"
+    LOGGER.info(f"reading class {related_obj['kind']} from module {module_name}")
+    return cls_related_obj(**kwargs)
+
+
+def get_resource_from_module_name(
+    related_obj, ocp_resources_submodule_list, admin_client
+):
+    """
+    Gets resource object based on module name
+
+    Args:
+        related_obj (dict): Related object Dictionary
+        ocp_resources_submodule_list (list): list of submudule names associated with ocp_resources package
+        admin_client (DynamicClient): Dynamic client object
+
+    Returns:
+        Resource: Associated cr object
+    """
+    module_name = get_ocp_resource_module_name(
+        related_object_kind=related_obj["kind"],
+        list_submodules=ocp_resources_submodule_list,
+    )
+    return get_resource(
+        admin_client=admin_client,
+        related_obj=related_obj,
+        module_name=module_name,
+    )

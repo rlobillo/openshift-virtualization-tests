@@ -1,4 +1,3 @@
-import importlib
 import logging
 
 from dictdiffer import diff
@@ -180,55 +179,6 @@ def wait_for_fg_update(admin_client, hco_namespace, expected_fg, validate_func):
         raise
 
 
-def get_ocp_resource_module_name(related_object_kind, list_submodules):
-    """
-    From a list of ocp_resources submodule, based on kubernetes 'kind' name pick the right module name
-
-    Args:
-        related_object_kind (str): Kubernetes kind name of a resource
-        list_submodules (list): list of ocp_resources submodule names
-
-    Returns:
-        str: Name of the ocp_resources submodule
-
-    Raises:
-        ModuleNotFoundError: if a module associated with related object kind is not found
-    """
-    for module_name in list_submodules:
-        expected_module_name = module_name.replace("_", "")
-        if related_object_kind.lower() == expected_module_name:
-            return module_name
-    raise ModuleNotFoundError(
-        f"{related_object_kind} module not found in ocp_resources"
-    )
-
-
-def get_resource(related_obj, admin_client, module_name):
-    """
-    Gets CR based on associated HCO.status.relatedObject entry and ocp_reources module name
-
-    Args:
-        related_obj (dict): Associated HCO.status.relatedObject dict
-        admin_client (DynamicClient): Dynamic client object
-        module_name (str): Associated ocp_reources module name to be used
-
-    Returns:
-        Resource: Associated cr object
-
-    Raises:
-        AssertionError: if a related object kind is not in module name
-    """
-    kwargs = {"client": admin_client, "name": related_obj["name"]}
-    if related_obj["namespace"]:
-        kwargs["namespace"] = related_obj["namespace"]
-
-    module = importlib.import_module(f"ocp_resources.{module_name}")
-    cls_related_obj = getattr(module, related_obj["kind"], None)
-    assert cls_related_obj, f"class {related_obj['kind']} is not in {module_name}"
-    LOGGER.info(f"reading class {related_obj['kind']} from module {module_name}")
-    return cls_related_obj(**kwargs)
-
-
 def update_resource_label(component):
     """
     Adds a label to a CR and waits for an expected value to be updated in the CR.
@@ -332,13 +282,13 @@ def wait_for_hco_related_object_version_change(
 
 
 def validate_related_objects(
-    related_objects, ocp_resources_submodule_list, admin_client, hco_namespace
+    related_object_dict, ocp_resource_by_name, admin_client, hco_namespace
 ):
     """
-    Validates all HCO.status.relatedObjects to ensure they get reconciled, appropriate resourceVersion gets reported
+    Validates a given related object gets reconciled, appropriate resourceVersion gets reported
 
     Args:
-        related_objects (list): list of dictionary of related objects
+        related_object (object): A given related object
         ocp_resources_submodule_list (list): list of ocp_resources submodules
         admin_client (DynamicClient): Dynamic client object
         hco_namespace (Namespace): Namespace object
@@ -346,70 +296,26 @@ def validate_related_objects(
     Raises:
         AssertionError: if related objects are not reconciled, if resourceVersion is not updated for HCO
     """
-    error_reconciliation = {}
-    error_resource_version = {}
+    pre_update_resource_version = related_object_dict["resourceVersion"]
 
-    for related_obj in related_objects:
-        pre_update_resource_version = related_obj["resourceVersion"]
-
-        component = get_resource_from_module_name(
-            related_obj=related_obj,
-            ocp_resources_submodule_list=ocp_resources_submodule_list,
-            admin_client=admin_client,
-        )
-        error_update_label = update_resource_label(
-            component=component,
-        )
-        if error_update_label:
-            error_reconciliation[component.name] = error_update_label
-        else:
-            error_resource_version_update = wait_for_resource_version_update(
-                pre_update_resource_version=pre_update_resource_version,
-                component=component,
-            )
-            if error_resource_version_update:
-                error_reconciliation[component.name] = error_resource_version_update
-
-            error_resource_version_value = wait_for_hco_related_object_version_change(
-                admin_client=admin_client,
-                hco_namespace=hco_namespace,
-                component=component,
-                resource_kind=related_obj["kind"],
-            )
-            if error_resource_version_value:
-                error_resource_version[component.name] = error_resource_version_value
-    if error_reconciliation:
-        LOGGER.error(error_reconciliation)
-    if error_resource_version:
-        LOGGER.error(error_resource_version)
-    assert not (
-        error_reconciliation or error_resource_version
-    ), "Failed reconciliation for hco.status.relatedObjects"
-
-
-def get_resource_from_module_name(
-    related_obj, ocp_resources_submodule_list, admin_client
-):
-    """
-    Gets resource object based on module name
-
-    Args:
-        related_obj (dict): Related object Dictionary
-        ocp_resources_submodule_list (list): list of submudule names associated with ocp_resources package
-        admin_client (DynamicClient): Dynamic client object
-
-    Returns:
-        Resource: Associated cr object
-    """
-    module_name = get_ocp_resource_module_name(
-        related_object_kind=related_obj["kind"],
-        list_submodules=ocp_resources_submodule_list,
+    error_update_label = update_resource_label(
+        component=ocp_resource_by_name,
     )
-    return get_resource(
+    assert not error_update_label, error_update_label
+
+    error_resource_version_update = wait_for_resource_version_update(
+        pre_update_resource_version=pre_update_resource_version,
+        component=ocp_resource_by_name,
+    )
+    assert not error_resource_version_update, error_resource_version_update
+
+    error_resource_version_value = wait_for_hco_related_object_version_change(
         admin_client=admin_client,
-        related_obj=related_obj,
-        module_name=module_name,
+        hco_namespace=hco_namespace,
+        component=ocp_resource_by_name,
+        resource_kind=related_object_dict["kind"],
     )
+    assert not error_resource_version_value, error_resource_version_value
 
 
 def wait_for_resource_version_update(component, pre_update_resource_version):

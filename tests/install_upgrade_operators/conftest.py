@@ -1,4 +1,5 @@
 import importlib
+import logging
 import pkgutil
 
 import pytest
@@ -7,11 +8,13 @@ from ocp_resources.deployment import Deployment
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.storage_class import StorageClass
+from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import py_config
 
 from tests.install_upgrade_operators.utils import (
     get_deployment_by_name,
     get_network_addon_config,
+    get_resource_from_module_name,
 )
 from utilities.constants import HPP_POOL
 from utilities.hco import ResourceEditorValidateHCOReconcile, get_hco_version
@@ -22,6 +25,9 @@ from utilities.operator import (
 )
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -55,11 +61,10 @@ def cnv_deployment_by_name(
     )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def ocp_resources_submodule_list():
     """
     Gets the list of submodules in ocp_resources. This list is needed to make get and patch call to the right resource
-
     """
     path = importlib.util.find_spec("ocp_resources").submodule_search_locations
     return [module.name for module in pkgutil.iter_modules(path)]
@@ -172,3 +177,31 @@ def machine_config_pools():
         get_machine_config_pool_by_name(mcp_name="master"),
         get_machine_config_pool_by_name(mcp_name="worker"),
     ]
+
+
+@pytest.fixture()
+def ocp_resource_by_name(
+    admin_client, ocp_resources_submodule_list, related_object_from_hco_status
+):
+    return get_resource_from_module_name(
+        related_obj=related_object_from_hco_status,
+        ocp_resources_submodule_list=ocp_resources_submodule_list,
+        admin_client=admin_client,
+    )
+
+
+@pytest.fixture()
+def related_object_from_hco_status(
+    hco_status_related_objects, cnv_related_object_matrix__function__
+):
+    LOGGER.info(cnv_related_object_matrix__function__)
+    kind_name = list(cnv_related_object_matrix__function__.values())[0]
+    related_object_name = list(cnv_related_object_matrix__function__.keys())[0]
+    LOGGER.info(f"Looking for related object {related_object_name}, kind {kind_name}")
+    for obj in hco_status_related_objects:
+        if obj.name == related_object_name and obj.kind == kind_name:
+            return obj
+    raise ResourceNotFoundError(
+        f"Related object {related_object_name}, kind {kind_name} not found in "
+        f"hco.status.relatedObjects: {hco_status_related_objects}"
+    )

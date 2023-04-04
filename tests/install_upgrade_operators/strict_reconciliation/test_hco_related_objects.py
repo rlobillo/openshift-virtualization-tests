@@ -3,23 +3,30 @@ import pytest
 from tests.install_upgrade_operators.strict_reconciliation.utils import (
     validate_related_objects,
 )
+from utilities.constants import ALL_HCO_RELATED_OBJECTS
 
 
 pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
 
 
 class TestRelatedObjects:
+    @pytest.mark.polarion("CNV-9843")
+    def test_no_new_hco_related_objects(self, hco_status_related_objects):
+        assert len(hco_status_related_objects) == len(
+            ALL_HCO_RELATED_OBJECTS
+        ), f"Expected related objects: {ALL_HCO_RELATED_OBJECTS}, actual: {hco_status_related_objects}"
+
     @pytest.mark.polarion("CNV-7267")
     def test_hco_related_objects(
         self,
-        ocp_resources_submodule_list,
-        hco_status_related_objects,
-        hco_namespace,
         admin_client,
+        hco_namespace,
+        ocp_resource_by_name,
+        related_object_from_hco_status,
     ):
         validate_related_objects(
             admin_client=admin_client,
             hco_namespace=hco_namespace,
-            ocp_resources_submodule_list=ocp_resources_submodule_list,
-            related_objects=hco_status_related_objects,
+            ocp_resource_by_name=ocp_resource_by_name,
+            related_object_dict=related_object_from_hco_status,
         )
