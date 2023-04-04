@@ -69,6 +69,7 @@ class Images:
         NVIDIA_DV_SIZE = "75Gi"
         WSL2_DV_SIZE = "40Gi"
         DEFAULT_MEMORY_SIZE = "8Gi"
+        DEFAULT_MEMORY_SIZE_WSL = "12Gi"
         DEFAULT_CPU_THREADS = 2
 
     class Fedora:

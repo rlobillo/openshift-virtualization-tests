@@ -101,7 +101,7 @@ def windows_10_vm(
         data_source=golden_image_data_source_scope_class,
         cpu_model=nodes_common_cpu_model if nodes_cpu_architecture == INTEL else None,
         cpu_flags={"features": [{"name": cpu_features, "policy": "require"}]},
-        memory_requests="12Gi",
+        memory_requests=Images.Windows.DEFAULT_MEMORY_SIZE_WSL,
         cpu_cores=16,
         cpu_threads=1,  # TODO: Remove once WSL2 image is fixed to work with multi-threads
     ) as vm:

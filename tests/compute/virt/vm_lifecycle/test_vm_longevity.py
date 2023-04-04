@@ -9,7 +9,7 @@ import pytest
 from ocp_utilities.infra import cluster_resource
 from ocp_utilities.utils import run_ssh_commands
 
-from tests.compute.virt.utils import get_stress_ng_pid
+from tests.compute.virt.utils import get_stress_ng_pid, verify_stress_ng_pid_not_changed
 from utilities.constants import TIMEOUT_12HRS
 from utilities.virt import LOGGER, VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -50,14 +50,6 @@ def verify_memory_overuse(pod):
                 "memory limit": virt_process_memory_limits[process],
             }
     return memory_overuse
-
-
-def verify_stress_ng_pid(vm, initial_pid):
-    new_pid = get_stress_ng_pid(ssh_exec=vm.ssh_exec)
-    assert new_pid == initial_pid, (
-        "VM has wrong stress-ng pid, probably VM was restarted"
-        f"Initial: {initial_pid}, New: {new_pid}"
-    )
 
 
 @pytest.fixture()
@@ -110,7 +102,9 @@ def test_longevity_vm_run(
         LOGGER.info(f"Iteration #{current_iteration}")
 
         LOGGER.info("stress-ng PID check")
-        verify_stress_ng_pid(vm=vm_longevity, initial_pid=initial_stress_ng_pid)
+        verify_stress_ng_pid_not_changed(
+            vm=vm_longevity, initial_pid=initial_stress_ng_pid
+        )
 
         LOGGER.info("Check memory usage on the pod")
         current_memory_overuse = verify_memory_overuse(

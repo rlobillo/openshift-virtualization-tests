@@ -1988,6 +1988,7 @@ def vm_instance_from_template(
     node_selector=None,
     vm_cpu_model=None,
     disable_sha2_algorithms=False,
+    vm_cpu_flags=None,
 ):
     """Create a VM from template and start it (start step could be skipped by setting
     request.param['start_vm'] to False.
@@ -2016,6 +2017,7 @@ def vm_instance_from_template(
         data_volume_template=data_volume_template,
         existing_data_volume=existing_data_volume,
         vm_dict=params.get("vm_dict"),
+        cpu_cores=params.get("cpu_cores"),
         cpu_threads=params.get("cpu_threads"),
         memory_requests=params.get("memory_requests"),
         network_model=params.get("network_model"),
@@ -2025,6 +2027,7 @@ def vm_instance_from_template(
         node_selector=node_selector,
         diskless_vm=params.get("diskless_vm"),
         cpu_model=params.get("cpu_model") or vm_cpu_model,
+        cpu_flags=params.get("cpu_flags") or vm_cpu_flags,
         cpu_placement=params.get("cpu_placement"),
         isolate_emulator_thread=params.get("isolate_emulator_thread"),
         iothreads_policy=params.get("iothreads_policy"),

@@ -96,10 +96,25 @@ def migrate_and_verify_multi_vms(vm_list):
     ), f"Some VMs failed to migrate - {failed_migrations_list}"
 
 
-def get_stress_ng_pid(ssh_exec):
+def get_stress_ng_pid(ssh_exec, windows=False):
     stress = "stress-ng"
     LOGGER.info(f"Get pid of {stress}")
+    command = (
+        f'wsl sh -c \'ls -l /proc/*/exe | grep -m 1 {stress} | cut -d"/" -f3 | tr -d "\\n"\''
+        if windows
+        else f"pgrep {stress}"
+    )
     return run_ssh_commands(
         host=ssh_exec,
-        commands=shlex.split(f"pgrep {stress}"),
+        commands=shlex.split(command),
     )[0]
+
+
+def verify_stress_ng_pid_not_changed(vm, initial_pid, windows=False):
+    current_stress_ng_pid = get_stress_ng_pid(
+        ssh_exec=vm.ssh_exec,
+        windows=windows,
+    )
+    assert (
+        initial_pid == current_stress_ng_pid
+    ), f"stress-ng pid changed. Before: {initial_pid}. Current: {current_stress_ng_pid}"
