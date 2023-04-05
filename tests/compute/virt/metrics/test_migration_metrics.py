@@ -8,11 +8,24 @@ from ocp_resources.virtual_machine_instance_migration import (
 
 from tests.compute.virt.constants import MIGRATION_POLICY_VM_LABEL
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_3MIN
-from utilities.infra import cluster_resource
+from utilities.infra import cluster_resource, get_pods
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.usefixtures("skip_when_one_node")
+
+
+def delete_failed_migration_target_pod(admin_client, namespace, vm_name):
+    """
+    Deletes the virt-launcher pod that stays in Pending state after
+    vm migration is triggered, aim is to delete the target pod
+    """
+    pods = get_pods(dyn_client=admin_client, namespace=namespace)
+    for pod in pods:
+        if (pod.instance.status.phase == Resource.Status.PENDING) and (
+            vm_name in pod.name
+        ):
+            pod.delete(wait=True)
 
 
 def get_metric_value(prometheus, metric):
@@ -86,7 +99,7 @@ def assert_metrics_values(
     ), f"Metrices that failed to match expected value {failed_metrics}"
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def migration_metrics_dict():
     migration_metrics = {
         Resource.Status.PENDING: "kubevirt_migrate_vmi_pending_count",
@@ -98,7 +111,7 @@ def migration_metrics_dict():
     return migration_metrics
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def initial_migration_metrics_values(prometheus, migration_metrics_dict):
     metrics_values = {}
     for metric in migration_metrics_dict.values():
@@ -182,6 +195,8 @@ class TestMigrationMetrics:
     @pytest.mark.polarion("CNV-8480")
     def test_migration_metrics_scheduling_and_failed(
         self,
+        admin_client,
+        namespace,
         prometheus,
         migration_metrics_dict,
         vm_with_node_selector,
@@ -196,7 +211,11 @@ class TestMigrationMetrics:
                 VirtualMachineInstance.Status.SCHEDULING
             ],
         )
-        vm_with_node_selector.vmi.virt_launcher_pod.delete(wait=True)
+        delete_failed_migration_target_pod(
+            admin_client=admin_client,
+            namespace=namespace,
+            vm_name=vm_with_node_selector.name,
+        )
         assert_metrics_values(
             prometheus=prometheus,
             migration_metrics_dict=migration_metrics_dict,
