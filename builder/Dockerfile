@@ -10,7 +10,7 @@ ENV LANG=C.UTF-8 \
 
 RUN dnf update -y \
     && dnf -y install epel-release \
-    && dnf install -y --nogpgcheck \
+    && dnf -y install \
     systemd-container \
     python3-pip \
     python3-devel \
@@ -67,7 +67,7 @@ COPY --from=builder ${POETRY_HOME} ${POETRY_HOME}
 
 ##TODO: We can remove wget, and use curl instead, this will require to change some tests
 RUN dnf update -y \
-    && dnf install -y --nogpgcheck procps-ng python3 git sshpass jq wget \
+    && dnf install -y procps-ng python3 git sshpass jq wget \
     && dnf clean all \
     && rm -rf /var/cache/yum \
     && rm -rf /var/lib/dnf \
