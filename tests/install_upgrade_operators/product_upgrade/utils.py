@@ -362,12 +362,15 @@ def verify_upgrade_cnv(dyn_client, hco_namespace, expected_images):
     )
 
 
-def approve_cnv_upgrade_install_plan(dyn_client, hco_namespace, hco_target_version):
+def approve_cnv_upgrade_install_plan(
+    dyn_client, hco_namespace, hco_target_version, is_production_source
+):
     LOGGER.info("Get the upgrade install plan.")
     install_plan = wait_for_install_plan(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace,
         hco_target_version=hco_target_version,
+        is_production_source=is_production_source,
     )
 
     LOGGER.info(

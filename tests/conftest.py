@@ -2174,7 +2174,7 @@ def vm_bridge_networks(upgrade_bridge_on_all_nodes):
 
 
 @pytest.fixture(scope="session")
-def cnv_upgrade_info(admin_client, pytestconfig, cnv_current_version):
+def cnv_upgrade_stream(admin_client, pytestconfig, cnv_current_version):
     """
     Verify if the upgrade can be performed by comparing the current and target versions.
 

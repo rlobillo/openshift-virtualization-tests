@@ -39,20 +39,61 @@ class TestUpgrade:
         self,
         admin_client,
         hco_namespace,
-        cnv_registry_source,
         cnv_target_version,
-        cnv_upgrade_info,
+        cnv_upgrade_stream,
         fired_alerts_before_cnv_upgrade,
         disabled_default_sources_in_operatorhub,
-        updated_image_content_source,
-        updated_catalog_source_image,
-        updated_subscription_channel_and_source,
-        approved_upgrade_install_plan,
+        updated_image_content_source_policy,
+        updated_custom_hco_catalog_source_image,
+        updated_cnv_subscription_source,
+        approved_cnv_upgrade_install_plan,
         started_cnv_upgrade,
-        created_target_csv,
+        created_target_hco_csv,
         related_images_from_target_csv,
         upgraded_cnv,
     ):
+        """
+        Test the CNV upgrade process (using OSBS/stage sources). The main steps of the test are:
+
+        1. Disable the default sources in operatorhub in order to be able to upgrade usg a custom catalog source.
+        2. Generate a new ICSP for the IIB image being used.
+        3. Update HCO CatalogSource with the image being used.
+        4. Update the CNV Subscription source.
+        5. Wait for the upgrade InstallPlan to be created and approve it.
+        6. Wait until the upgrade has finished:
+            6.1. Wait for CSV to be created and reach status SUCCEEDED.
+            6.2. Wait for HCO OperatorCondition to reach status Upgradeable=True.
+            6.3. Wait until all the pods have been replaced.
+            6.4. Wait until HCO is stable and its version is updated.
+        """
+        verify_upgrade_cnv(
+            dyn_client=admin_client,
+            hco_namespace=hco_namespace,
+            expected_images=related_images_from_target_csv.values(),
+        )
+
+    @pytest.mark.cnv_upgrade
+    @pytest.mark.polarion("CNV-9933")
+    @pytest.mark.dependency(name=IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID)
+    def test_cnv_production_source_upgrade_process(
+        self,
+        admin_client,
+        hco_namespace,
+        cnv_target_version,
+        cnv_upgrade_stream,
+        fired_alerts_before_cnv_upgrade,
+        updated_cnv_subscription_source,
+        approved_cnv_upgrade_install_plan,
+        started_cnv_upgrade,
+        created_target_hco_csv,
+        related_images_from_target_csv,
+        upgraded_cnv,
+    ):
+        """
+        Test the CNV upgrade process using the production source.
+        The main steps of the test are the same as for OSBS and stage,
+        but it is not needed to disable the default sources, create a new ICSP or update the HCO CatalogSource.
+        """
         verify_upgrade_cnv(
             dyn_client=admin_client,
             hco_namespace=hco_namespace,

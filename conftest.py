@@ -290,11 +290,13 @@ def pytest_cmdline_main(config):
         if not config.getoption("cnv_version"):
             raise ValueError("Missing --cnv-version")
         if not config.getoption("cnv_image"):
-            raise ValueError("Missing --cnv-image")
+            if config.getoption("cnv_source") != "production":
+                raise ValueError("Missing --cnv-image")
 
     # Default value is set as this value is used to set test name in
     # tests.upgrade_params.UPGRADE_TEST_DEPENDENCY_NODE_ID which is needed for pytest dependency marker
     py_config["upgraded_product"] = config.getoption("--upgrade") or "cnv"
+    py_config["cnv_source"] = config.getoption("--cnv-source")
 
     # [rhel|fedora|windows|centos]-os-matrix and latest-[rhel|fedora|windows|centos] are mutually exclusive
     rhel_os_violation = config.getoption("rhel_os_matrix") and config.getoption(
@@ -389,22 +391,49 @@ def pytest_collection_modifyitems(session, config, items):
         _mark_tests_by_team(_item=item)
 
     #  Collect only 'upgrade' tests when running pytest with --upgrade
-    upgrade_tests = [item for item in items if "upgrade" in item.keywords]
-    non_upgrade_tests = [item for item in items if "upgrade" not in item.keywords]
+    upgrade_tests, non_upgrade_tests = [], []
+    for item in items:
+        if "upgrade" in item.keywords:
+            upgrade_tests.append(item)
+        else:
+            non_upgrade_tests.append(item)
+
     if config.getoption("--upgrade"):
-        # Remove test marked with pytest.mark.ocp_upgrade if CNV upgrade else remove
-        # test marked with pytest.mark.cnv_upgrade
-        ocp_upgrade_test = [
-            test for test in upgrade_tests if "ocp_upgrade" in test.keywords
-        ][0]
-        cnv_upgrade_test = [
-            test for test in upgrade_tests if "cnv_upgrade" in test.keywords
-        ][0]
-        upgrade_tests.remove(
-            ocp_upgrade_test
-            if py_config["upgraded_product"] == "cnv"
-            else cnv_upgrade_test
-        )
+        # If performing OCP upgrade, remove tests marked with pytest.mark.cnv_upgrade.
+        # If performing CNV upgrade, remove test marked with pytest.mark.ocp_upgrade,
+        # and determine if we are running the cnv upgrade test for production source or for stage/osbs.
+
+        cnv_source = config.getoption("--cnv-source")
+
+        (
+            ocp_upgrade_test,
+            cnv_upgrade_test_with_prod_src,
+            cnv_upgrade_test_no_prod_src,
+        ) = (None, None, None)
+        cnv_upgrade_tests = []
+
+        for test in upgrade_tests:
+            if "ocp_upgrade" in test.keywords:
+                ocp_upgrade_test = test
+            elif "cnv_upgrade" in test.keywords:
+                cnv_upgrade_tests.append(test)
+                if "production_source" in test.name:
+                    cnv_upgrade_test_with_prod_src = test
+                else:
+                    cnv_upgrade_test_no_prod_src = test
+
+        if py_config["upgraded_product"] == "cnv":
+            tests_to_remove = [
+                cnv_upgrade_test_no_prod_src
+                if cnv_source == "production"
+                else cnv_upgrade_test_with_prod_src,
+                ocp_upgrade_test,
+            ]
+        else:
+            tests_to_remove = cnv_upgrade_tests
+
+        for test in tests_to_remove:
+            upgrade_tests.remove(test)
 
         discard = non_upgrade_tests
         keep = upgrade_tests

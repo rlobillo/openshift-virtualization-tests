@@ -19,6 +19,7 @@ from utilities.constants import (
     INTEL,
     LINUX_BRIDGE,
     OVS_BRIDGE,
+    PRODUCTION_CATALOG_SOURCE,
     TLS_CUSTOM_POLICY,
     TLS_OLD_POLICY,
     Images,
@@ -83,7 +84,7 @@ cnv_registry_sources = {
         "source_map": "registry.stage.redhat.io/container-native-virtualization",
     },
     "production": {
-        "cnv_subscription_source": HCO_CATALOG_SOURCE,
+        "cnv_subscription_source": PRODUCTION_CATALOG_SOURCE,
     },
 }
 

@@ -35,7 +35,7 @@ from utilities.operator import (
     delete_existing_icsp,
     generate_icsp_file,
     update_image_in_catalog_source,
-    update_subscription_channel_and_source,
+    update_subscription_source,
     wait_for_mcp_update_completion,
 )
 
@@ -72,7 +72,7 @@ def nodes_labels_before_upgrade(nodes, cnv_upgrade):
 
 
 @pytest.fixture()
-def updated_image_content_source(
+def updated_image_content_source_policy(
     admin_client,
     tmpdir_factory,
     machine_config_pools,
@@ -81,13 +81,11 @@ def updated_image_content_source(
     cnv_registry_source,
     pull_secret_directory,
     generated_pulled_secret,
-    is_production_source,
     is_upgrade_from_stage_source,
-    tmpdir,
 ):
-    if is_production_source:
-        LOGGER.info("ICSP updates skipped as upgrading using production source")
-        return
+    """
+    Creates a new ImageContentSourcePolicy file with a given CNV image and applies it to the cluster.
+    """
     source_url = cnv_registry_source["source_map"]
     pull_secret = None
     if BREW_REGISTERY_SOURCE in cnv_image_url:
@@ -125,44 +123,44 @@ def updated_image_content_source(
 
 
 @pytest.fixture()
-def updated_catalog_source_image(
+def updated_custom_hco_catalog_source_image(
     admin_client,
-    is_production_source,
     cnv_image_url,
 ):
-    if not is_production_source:
-        LOGGER.info("Deployment is not from production; update catalog source image.")
-        update_image_in_catalog_source(
-            dyn_client=admin_client,
-            image=cnv_image_url,
-            catalog_source_name=HCO_CATALOG_SOURCE,
-            cr_name=py_config["hco_cr_name"],
-        )
+    LOGGER.info("Deployment is not from production; updating HCO catalog source image.")
+    update_image_in_catalog_source(
+        dyn_client=admin_client,
+        image=cnv_image_url,
+        catalog_source_name=HCO_CATALOG_SOURCE,
+        cr_name=py_config["hco_cr_name"],
+    )
 
 
 @pytest.fixture()
-def updated_subscription_channel_and_source(
+def updated_cnv_subscription_source(
     cnv_subscription_scope_session, cnv_registry_source
 ):
-    LOGGER.info("Update subscription channel and source.")
-    update_subscription_channel_and_source(
+    LOGGER.info("Update subscription source.")
+    update_subscription_source(
         subscription=cnv_subscription_scope_session,
-        subscription_channel="stable",
         subscription_source=cnv_registry_source["cnv_subscription_source"],
     )
 
 
 @pytest.fixture()
-def approved_upgrade_install_plan(admin_client, hco_namespace, hco_target_version):
+def approved_cnv_upgrade_install_plan(
+    admin_client, hco_namespace, hco_target_version, is_production_source
+):
     approve_cnv_upgrade_install_plan(
         dyn_client=admin_client,
         hco_namespace=hco_namespace.name,
         hco_target_version=hco_target_version,
+        is_production_source=is_production_source,
     )
 
 
 @pytest.fixture()
-def created_target_csv(admin_client, hco_namespace, hco_target_version):
+def created_target_hco_csv(admin_client, hco_namespace, hco_target_version):
     LOGGER.info(f"Wait for new CSV {hco_target_version} to be created")
     csv_sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_10MIN,
@@ -190,20 +188,20 @@ def created_target_csv(admin_client, hco_namespace, hco_target_version):
 
 
 @pytest.fixture()
-def related_images_from_target_csv(created_target_csv):
+def related_images_from_target_csv(created_target_hco_csv):
     LOGGER.info(
-        f"Get all related images names and versions from target CSV {created_target_csv.name}"
+        f"Get all related images names and versions from target CSV {created_target_hco_csv.name}"
     )
-    return get_related_images_name_and_version(csv=created_target_csv)
+    return get_related_images_name_and_version(csv=created_target_hco_csv)
 
 
 @pytest.fixture()
-def target_operator_pods_images(created_target_csv):
+def target_operator_pods_images(created_target_hco_csv):
     # Operator pods are taken from csv deployment as their names under relatedImages do not exact-match
     # the pods' prefixes
     return {
         deploy.name: deploy.spec.template.spec.containers[0].image
-        for deploy in created_target_csv.instance.spec.install.spec.deployments
+        for deploy in created_target_hco_csv.instance.spec.install.spec.deployments
     }
 
 
@@ -233,13 +231,15 @@ def upgraded_cnv(
     hco_namespace,
     cnv_target_version,
     hco_target_version,
-    created_target_csv,
+    created_target_hco_csv,
     target_operator_pods_images,
     target_images_for_pods_not_managed_by_hco,
 ):
-    LOGGER.info(f"Wait for csv: {created_target_csv.name} to be in SUCCEEDED state.")
-    created_target_csv.wait_for_status(
-        status=created_target_csv.Status.SUCCEEDED,
+    LOGGER.info(
+        f"Wait for csv: {created_target_hco_csv.name} to be in SUCCEEDED state."
+    )
+    created_target_hco_csv.wait_for_status(
+        status=created_target_hco_csv.Status.SUCCEEDED,
         timeout=TIMEOUT_10MIN,
         stop_status=None,
     )
