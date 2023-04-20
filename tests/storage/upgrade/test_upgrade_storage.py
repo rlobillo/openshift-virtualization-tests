@@ -57,7 +57,6 @@ class TestUpgradeStorage:
     def test_vm_snapshot_restore_before_upgrade(
         self,
         skip_if_no_storage_class_for_snapshot,
-        skip_if_sc_for_snapshot_is_wffc_and_bug_2149654_open,
         cirros_vm_for_upgrade_a,
         snapshots_for_upgrade_a,
     ):
@@ -83,7 +82,6 @@ class TestUpgradeStorage:
     def test_vm_snapshot_created_before_upgrade(
         self,
         skip_if_no_storage_class_for_snapshot,
-        skip_if_sc_for_snapshot_is_wffc_and_bug_2149654_open,
         snapshots_for_upgrade_b,
     ):
         snapshots_for_upgrade_b.wait_snapshot_done()
