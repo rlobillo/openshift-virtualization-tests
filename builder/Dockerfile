@@ -66,7 +66,7 @@ COPY --from=builder ${POETRY_HOME} ${POETRY_HOME}
 
 ##TODO: We can remove wget, and use curl instead, this will require to change some tests
 RUN dnf update -y \
-    && dnf install -y procps-ng python3 git sshpass jq wget rsync \
+    && dnf install -y procps-ng python3 git sshpass jq wget rsync skopeo \
     && dnf clean all \
     && rm -rf /var/cache/yum \
     && rm -rf /var/lib/dnf \
