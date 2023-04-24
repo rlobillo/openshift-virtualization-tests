@@ -1,14 +1,19 @@
+import logging
 import os
 import re
 import shlex
 from pathlib import Path
 
 import pytest
+import xmltodict
 from ocp_utilities.infra import cluster_resource
 from ocp_utilities.utils import run_ssh_commands
 
 from utilities.constants import Images
 from utilities.virt import VirtualMachineForTests, running_vm
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -32,12 +37,20 @@ def libosinfo_rhel_minor_ver_num(request, downloaded_latest_libosinfo_db):
     )
 
     list_of_rhel_os_files = list(
-        sorted(Path(osinfo_file_folder_path).glob(f"{rhel_version}.*.xml"))
+        sorted(
+            Path(osinfo_file_folder_path).glob(f"{rhel_version}.*.xml"), reverse=True
+        )
     )
-    latest_rhel_os_file = list_of_rhel_os_files[-1]
-    return re.findall(
-        rf"(?<={rhel_version}\.)(\d+[\.]?[\d+]?)(?=\.xml)", latest_rhel_os_file.name
-    )[0]
+    for file_path in list_of_rhel_os_files:
+        with open(file_path) as file:
+            parsed_xml = xmltodict.parse(file.read())["libosinfo"]["os"]
+            if parsed_xml.get("release-date"):
+                LOGGER.info(f"Latest stable version: {parsed_xml['version']}")
+                return parsed_xml["version"].split(".")[-1]
+            else:
+                LOGGER.info(
+                    f"Latest version ({parsed_xml['short-id']}) not released, looking for stable version"
+                )
 
 
 @pytest.fixture()
