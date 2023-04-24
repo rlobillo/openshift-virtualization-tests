@@ -393,6 +393,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
         options=None,
         dry_run=None,
         success_timeout=TIMEOUT_8MIN,
+        teardown_absent_ifaces=True,
     ):
         super().__init__(
             name=name,
@@ -404,6 +405,7 @@ class BondNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
             ipv6_enable=ipv6_enable,
             dry_run=dry_run,
             success_timeout=success_timeout,
+            teardown_absent_ifaces=teardown_absent_ifaces,
         )
         self.bond_name = bond_name
         self.bond_ports = bond_ports
