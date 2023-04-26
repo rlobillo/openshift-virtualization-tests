@@ -82,7 +82,7 @@ def vms_for_upgrade(
         vms_list.append(vm)
 
     for vm in vms_list:
-        running_vm(vm=vm)
+        running_vm(vm=vm, wait_for_cloud_init=True)
 
     yield vms_list
 

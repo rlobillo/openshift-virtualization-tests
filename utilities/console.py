@@ -12,6 +12,7 @@ from utilities.constants import (
     OS_LOGIN_PARAMS,
     TIMEOUT_5MIN,
 )
+from utilities.data_collector import get_data_collector_dict
 
 
 LOGGER = logging.getLogger(__name__)
@@ -43,6 +44,8 @@ class Console(object):
         self.login_prompt = "login:"
         self.prompt = prompt if prompt else "#" if self.username == "root" else [r"\$"]
         self.cmd = self._generate_cmd()
+        data_collector_dict = get_data_collector_dict()
+        self.base_dir = data_collector_dict["data_collector_base_directory"]
 
     def connect(self):
         LOGGER.info(f"Connect to {self.vm.name} console")
@@ -100,10 +103,14 @@ class Console(object):
             exceptions_dict={pexpect.exceptions.EOF: []},
             command=command,
             timeout=timeout,
+            encoding="utf-8",
         )
         for sample in sampler:
             if sample:
                 self.child = sample
+                self.child.logfile = open(
+                    f"{self.base_dir}/{self.vm.name}.pexpect.log", "a"
+                )
                 break
 
     def _generate_cmd(self):

@@ -1760,7 +1760,11 @@ def get_rhel_os_dict(rhel_version):
 
 
 def running_vm(
-    vm, wait_for_interfaces=True, check_ssh_connectivity=True, ssh_timeout=TIMEOUT_2MIN
+    vm,
+    wait_for_interfaces=True,
+    check_ssh_connectivity=True,
+    ssh_timeout=TIMEOUT_2MIN,
+    wait_for_cloud_init=False,
 ):
     """
     Wait for the VMI to be in Running state.
@@ -1770,6 +1774,7 @@ def running_vm(
         wait_for_interfaces (bool): Is waiting for VM's interfaces mandatory for declaring VM as running.
         check_ssh_connectivity (bool): Enable SSh service in the VM.
         ssh_timeout (int): how much time to wait for SSH connectivity
+        wait_for_cloud_init (bool): Is waiting for cloud-init required.
 
     Returns:
         VirtualMachine: VM object.
@@ -1831,7 +1836,22 @@ def running_vm(
     if check_ssh_connectivity:
         wait_for_ssh_connectivity(vm=vm, timeout=ssh_timeout)
 
+    if wait_for_cloud_init:
+        wait_for_cloud_init_complete(vm=vm)
     return vm
+
+
+def wait_for_cloud_init_complete(vm, timeout=TIMEOUT_4MIN):
+    cloud_init_status = "cloud-init status"
+    for sample in TimeoutSampler(
+        wait_timeout=timeout,
+        sleep=5,
+        func=vm.ssh_exec.run_command,
+        command=shlex.split(cloud_init_status),
+    ):
+        if not sample[0] and "done" in sample[1]:
+            return True
+        LOGGER.warning(f"{cloud_init_status} command output {sample}")
 
 
 def migrate_vm_and_verify(
