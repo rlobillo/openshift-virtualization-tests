@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 from ocp_resources.migration_policy import MigrationPolicy
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
@@ -7,8 +9,13 @@ from pytest_testconfig import py_config
 from tests.compute.utils import generate_rhsm_secret
 from tests.compute.virt.constants import MIGRATION_POLICY_VM_LABEL
 from tests.compute.virt.utils import append_feature_gate_to_hco
+from utilities.constants import INTEL
 from utilities.infra import cluster_resource, get_daemonset_by_name
 from utilities.storage import create_or_update_data_source
+from utilities.virt import vm_instance_from_template
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -81,3 +88,26 @@ def migration_policy_with_bandwidth():
         vmi_selector=MIGRATION_POLICY_VM_LABEL,
     ) as mp:
         yield mp
+
+
+@pytest.fixture()
+def vm_with_memory_load(
+    request,
+    unprivileged_client,
+    namespace,
+    golden_image_data_source_scope_function,
+    nodes_common_cpu_model,
+    nodes_cpu_architecture,
+):
+    cpu_features = "vmx" if nodes_cpu_architecture == INTEL else "svm"
+    with vm_instance_from_template(
+        request=request,
+        unprivileged_client=unprivileged_client,
+        namespace=namespace,
+        data_source=golden_image_data_source_scope_function,
+        vm_cpu_model=nodes_common_cpu_model
+        if nodes_cpu_architecture == INTEL
+        else None,
+        vm_cpu_flags={"features": [{"name": cpu_features, "policy": "require"}]},
+    ) as vm:
+        yield vm

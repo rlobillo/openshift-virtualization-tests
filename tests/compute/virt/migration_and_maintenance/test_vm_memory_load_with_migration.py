@@ -1,34 +1,30 @@
 import logging
 import os
-import shlex
 
 import pytest
 from ocp_resources.migration_policy import MigrationPolicy
 from ocp_utilities.infra import cluster_resource
-from ocp_utilities.utils import run_ssh_commands
 from pytest_testconfig import config as py_config
 
-from tests.compute.virt.utils import get_stress_ng_pid, verify_stress_ng_pid_not_changed
+from tests.compute.virt.constants import STRESS_CPU_MEM_IO_COMMAND
+from tests.compute.virt.utils import (
+    get_stress_ng_pid,
+    start_stress_on_vm,
+    verify_stress_ng_pid_not_changed,
+)
 from tests.os_params import (
     FEDORA_LATEST,
     FEDORA_LATEST_LABELS,
     FEDORA_LATEST_OS,
     WINDOWS_10_TEMPLATE_LABELS,
 )
-from utilities.constants import INTEL, TIMEOUT_20MIN, TIMEOUT_30MIN, Images
-from utilities.infra import is_jira_open
-from utilities.virt import migrate_vm_and_verify, vm_instance_from_template
+from utilities.constants import TIMEOUT_20MIN, Images
+from utilities.virt import migrate_vm_and_verify
 
 
 LOGGER = logging.getLogger(__name__)
 
 pytestmark = pytest.mark.usefixtures("skip_when_one_node")
-
-
-STRESS_CPU_MEM_IO_COMMAND = (
-    "nohup stress-ng --vm 2 --vm-bytes 50% --vm-method all --verify "
-    f"-t {TIMEOUT_30MIN}s -v --hdd 1 --io 1 --vm-keep &> /dev/null &"
-)
 
 
 @pytest.fixture(scope="class")
@@ -42,48 +38,17 @@ def migration_policy_with_allow_auto_converge(namespace):
 
 
 @pytest.fixture()
-def vm_with_memory_load(
-    request,
-    unprivileged_client,
-    namespace,
-    golden_image_data_source_scope_function,
-    nodes_common_cpu_model,
-    nodes_cpu_architecture,
-):
-    cpu_features = "vmx" if nodes_cpu_architecture == INTEL else "svm"
-    with vm_instance_from_template(
-        request=request,
-        unprivileged_client=unprivileged_client,
-        namespace=namespace,
-        data_source=golden_image_data_source_scope_function,
-        vm_cpu_model=nodes_common_cpu_model
-        if nodes_cpu_architecture == INTEL
-        else None,
-        vm_cpu_flags={"features": [{"name": cpu_features, "policy": "require"}]},
-    ) as vm:
-        yield vm
-
-
-@pytest.fixture()
-def start_vm_stress(vm_with_memory_load):
-    LOGGER.info("Running memory load in VM")
-    if "windows" in vm_with_memory_load.name:
-        command = f"wsl nohup sh -c '{STRESS_CPU_MEM_IO_COMMAND}'"
-    else:
-        command = STRESS_CPU_MEM_IO_COMMAND
-        if is_jira_open(jira_id="CNV-27477"):
-            run_ssh_commands(
-                host=vm_with_memory_load.ssh_exec,
-                commands=shlex.split("sudo dnf install -y stress-ng"),
-            )
-    run_ssh_commands(
-        host=vm_with_memory_load.ssh_exec,
-        commands=shlex.split(command),
+def cpu_mem_io_stress_started(vm_with_memory_load):
+    start_stress_on_vm(
+        vm=vm_with_memory_load,
+        stress_command=STRESS_CPU_MEM_IO_COMMAND.format(
+            workers="2", memory="50%", timeout="30m"
+        ),
     )
 
 
 @pytest.fixture()
-def stress_pid_before_migration(vm_with_memory_load, start_vm_stress):
+def stress_pid_before_migration(vm_with_memory_load, cpu_mem_io_stress_started):
     return get_stress_ng_pid(
         ssh_exec=vm_with_memory_load.ssh_exec,
         windows="windows" in vm_with_memory_load.name,

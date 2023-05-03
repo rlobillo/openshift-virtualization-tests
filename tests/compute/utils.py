@@ -2,6 +2,7 @@
 import logging
 import shlex
 
+import bitmath
 from ocp_resources.pod_disruption_budget import PodDisruptionBudget
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.secret import Secret
@@ -9,6 +10,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.utils import run_ssh_commands
 
 from tests.compute.contants import DISK_SERIAL, RHSM_SECRET_NAME
+from tests.compute.virt.constants import VIRT_PROCESS_MEMORY_LIMITS
 from utilities.constants import RHSM_PASSWD, RHSM_USER, TIMEOUT_5MIN, TIMEOUT_10SEC
 from utilities.infra import base64_encode_str, cluster_resource
 from utilities.virt import (
@@ -318,3 +320,24 @@ def update_vm_efi_spec_and_restart(vm, spec=None, wait_for_interfaces=True):
         }
     ).update()
     restart_vm_wait_for_running_vm(vm=vm, wait_for_interfaces=wait_for_interfaces)
+
+
+def get_virt_launcher_processes_memory_overuse(pod):
+    memory_overuse = {}
+    for process in VIRT_PROCESS_MEMORY_LIMITS.keys():
+        memory_usage = bitmath.KiB(
+            value=int(
+                pod.execute(
+                    command=shlex.split(
+                        f"bash -c 'ps -o rss --no-headers -p $(pidof {process})'"
+                    ),
+                    container="compute",
+                )
+            )
+        )
+        if memory_usage > VIRT_PROCESS_MEMORY_LIMITS[process]:
+            memory_overuse[process] = {
+                "memory usage": memory_usage,
+                "memory limit": VIRT_PROCESS_MEMORY_LIMITS[process],
+            }
+    return memory_overuse

@@ -1,15 +1,18 @@
 """
 Run VM for 21 days and check that memory usage of system processes on the pod still below the limit
 """
-import shlex
 import time
 
-import bitmath
 import pytest
 from ocp_utilities.infra import cluster_resource
-from ocp_utilities.utils import run_ssh_commands
 
-from tests.compute.virt.utils import get_stress_ng_pid, verify_stress_ng_pid_not_changed
+from tests.compute.utils import get_virt_launcher_processes_memory_overuse
+from tests.compute.virt.constants import STRESS_CPU_MEM_IO_COMMAND
+from tests.compute.virt.utils import (
+    get_stress_ng_pid,
+    start_stress_on_vm,
+    verify_stress_ng_pid_not_changed,
+)
 from utilities.constants import TIMEOUT_12HRS
 from utilities.virt import LOGGER, VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -17,39 +20,7 @@ from utilities.virt import LOGGER, VirtualMachineForTests, fedora_vm_body, runni
 pytestmark = [pytest.mark.longevity]
 
 
-virt_process_memory_limits = {
-    "virt-launcher-monitor": bitmath.MiB(25),
-    "virt-launcher": bitmath.MiB(100),
-    "libvirtd": bitmath.MiB(33),
-    "virtlogd": bitmath.MiB(18),
-}
-
 TOTAL_DAYS = 21
-
-
-def get_pod_process_memory_usage(pod, process_name):
-    return bitmath.KiB(
-        value=int(
-            pod.execute(
-                command=shlex.split(
-                    f"bash -c 'ps -o rss --no-headers -p $(pidof {process_name})'"
-                ),
-                container="compute",
-            )
-        )
-    )
-
-
-def verify_memory_overuse(pod):
-    memory_overuse = {}
-    for process in virt_process_memory_limits.keys():
-        memory_usage = get_pod_process_memory_usage(pod=pod, process_name=process)
-        if memory_usage > virt_process_memory_limits[process]:
-            memory_overuse[process] = {
-                "memory usage": memory_usage,
-                "memory limit": virt_process_memory_limits[process],
-            }
-    return memory_overuse
 
 
 @pytest.fixture()
@@ -69,9 +40,12 @@ def vm_longevity(unprivileged_client, namespace):
 
 @pytest.fixture()
 def start_stress_ng(vm_longevity):
-    LOGGER.info("Running memory load in VM")
-    command = "nohup sudo stress-ng --vm 1 --vm-bytes 100% --vm-method all --verify -t 0 &>1 &"
-    run_ssh_commands(host=vm_longevity.ssh_exec, commands=shlex.split(command))
+    start_stress_on_vm(
+        vm=vm_longevity,
+        stress_command=STRESS_CPU_MEM_IO_COMMAND.format(
+            workers="1", memory="100%", timeout="0"
+        ),
+    )
 
 
 @pytest.fixture()
@@ -82,7 +56,9 @@ def initial_stress_ng_pid(vm_longevity):
 @pytest.fixture()
 def initial_memory_overuse(vm_longevity):
     LOGGER.info("Verifying initial memory usage")
-    return verify_memory_overuse(pod=vm_longevity.vmi.virt_launcher_pod)
+    return get_virt_launcher_processes_memory_overuse(
+        pod=vm_longevity.vmi.virt_launcher_pod
+    )
 
 
 @pytest.mark.polarion("CNV-4684")
@@ -107,7 +83,7 @@ def test_longevity_vm_run(
         )
 
         LOGGER.info("Check memory usage on the pod")
-        current_memory_overuse = verify_memory_overuse(
+        current_memory_overuse = get_virt_launcher_processes_memory_overuse(
             pod=vm_longevity.vmi.virt_launcher_pod
         )
         if current_memory_overuse:

@@ -11,6 +11,7 @@ from tests.compute.utils import (
     start_and_fetch_processid_on_linux_vm,
 )
 from utilities.hco import update_hco_annotations
+from utilities.infra import is_jira_open
 from utilities.virt import (
     migrate_vm_and_verify,
     verify_vm_migrated,
@@ -118,3 +119,20 @@ def verify_stress_ng_pid_not_changed(vm, initial_pid, windows=False):
     assert (
         initial_pid == current_stress_ng_pid
     ), f"stress-ng pid changed. Before: {initial_pid}. Current: {current_stress_ng_pid}"
+
+
+def start_stress_on_vm(vm, stress_command):
+    LOGGER.info(f"Running memory load in VM {vm.name}")
+    if "windows" in vm.name:
+        command = f"wsl nohup sh -c '{stress_command}'"
+    else:
+        command = stress_command
+        if is_jira_open(jira_id="CNV-27477"):
+            run_ssh_commands(
+                host=vm.ssh_exec,
+                commands=shlex.split("sudo dnf install -y stress-ng"),
+            )
+    run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=shlex.split(command),
+    )
