@@ -178,6 +178,11 @@ def machine_config_pools():
 
 
 @pytest.fixture()
+def machine_config_pools_conditions(machine_config_pools):
+    return {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools}
+
+
+@pytest.fixture()
 def ocp_resource_by_name(
     admin_client, ocp_resources_submodule_list, related_object_from_hco_status
 ):

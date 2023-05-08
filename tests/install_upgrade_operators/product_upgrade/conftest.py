@@ -74,8 +74,10 @@ def nodes_labels_before_upgrade(nodes, cnv_upgrade):
 @pytest.fixture()
 def updated_image_content_source_policy(
     admin_client,
+    nodes,
     tmpdir_factory,
     machine_config_pools,
+    machine_config_pools_conditions,
     cnv_image_url,
     cnv_image_name,
     cnv_registry_source,
@@ -119,7 +121,11 @@ def updated_image_content_source_policy(
         create_icsp_from_file(icsp_file_path=icsp_file_path)
 
     LOGGER.info("Wait for MCP update after ICSP modification.")
-    wait_for_mcp_update_completion(machine_config_pools_list=machine_config_pools)
+    wait_for_mcp_update_completion(
+        machine_config_pools_list=machine_config_pools,
+        initial_mcp_conditions=machine_config_pools_conditions,
+        nodes=nodes,
+    )
 
 
 @pytest.fixture()

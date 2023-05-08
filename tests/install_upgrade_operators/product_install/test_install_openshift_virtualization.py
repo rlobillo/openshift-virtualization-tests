@@ -26,9 +26,10 @@ from utilities.operator import (
     delete_existing_icsp,
     generate_icsp_file,
     get_install_plan_from_subscription,
+    get_mcp_updating_transition_times,
     wait_for_catalogsource_ready,
-    wait_for_machine_config_pool_updated_condition,
-    wait_for_machine_config_pool_updating_condition,
+    wait_for_mcp_update_end,
+    wait_for_mcp_update_start,
     wait_for_operator_install,
 )
 
@@ -74,7 +75,11 @@ def updated_icsp_hyperconverged(
     is_production_source,
     generated_hyperconverged_icsp,
     machine_config_pools,
+    machine_config_pools_conditions,
 ):
+    initial_updating_transition_times = get_mcp_updating_transition_times(
+        mcp_conditions=machine_config_pools_conditions
+    )
     if is_production_source:
         LOGGER.info(
             "This is installation from production source, icsp update is not needed."
@@ -83,12 +88,11 @@ def updated_icsp_hyperconverged(
     delete_existing_icsp(admin_client=admin_client, name="iib-0")
     create_icsp_from_file(icsp_file_path=generated_hyperconverged_icsp)
     LOGGER.info("Wait for MCP update after ICSP modification.")
-    wait_for_machine_config_pool_updating_condition(
-        machine_config_pools_list=machine_config_pools
+    wait_for_mcp_update_start(
+        machine_config_pools_list=machine_config_pools,
+        initial_transition_times=initial_updating_transition_times,
     )
-    wait_for_machine_config_pool_updated_condition(
-        machine_config_pools_list=machine_config_pools
-    )
+    wait_for_mcp_update_end(machine_config_pools_list=machine_config_pools)
 
 
 @pytest.fixture()
