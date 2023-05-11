@@ -23,6 +23,7 @@ from ocp_resources.pod import Pod
 from ocp_resources.sriov_network import SriovNetwork
 from ocp_resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.utils import run_ssh_commands
 from pytest_testconfig import config as py_config
 
 import utilities.infra
@@ -37,7 +38,9 @@ from utilities.constants import (
     SRIOV,
     TIMEOUT_1MIN,
     TIMEOUT_2MIN,
+    TIMEOUT_5SEC,
     TIMEOUT_8MIN,
+    TIMEOUT_30SEC,
     WORKERS_TYPE,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
@@ -1088,3 +1091,24 @@ def create_sriov_node_policy(
         wait_for_ready_sriov_nodes(snns=sriov_nodes_states)
         yield policy
     wait_for_ready_sriov_nodes(snns=sriov_nodes_states)
+
+
+def verify_dhcpd_activated(vm):
+    active = "active"
+    dhcpd = "dhcpd"
+    sample = None
+    sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_30SEC,
+        sleep=TIMEOUT_5SEC,
+        func=run_ssh_commands,
+        host=vm.ssh_exec,
+        commands=[shlex.split(f"sudo systemctl is-{active} {dhcpd}")],
+    )
+    try:
+        for sample in sampler:
+            if sample[0].strip() == active:
+                return True
+
+    except TimeoutExpiredError:
+        LOGGER.error(f"{dhcpd} status is not '{active}' but rather '{sample}'")
+        raise

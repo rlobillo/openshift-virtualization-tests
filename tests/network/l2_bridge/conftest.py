@@ -12,7 +12,12 @@ from tests.network.utils import (
     update_cloud_init_extra_user_data,
 )
 from utilities.infra import name_prefix
-from utilities.network import cloud_init_network_data, network_device, network_nad
+from utilities.network import (
+    cloud_init_network_data,
+    network_device,
+    network_nad,
+    verify_dhcpd_activated,
+)
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -27,6 +32,7 @@ from utilities.virt import (
 #       | VM-A  |---eth2:10.200.2.1    : multicast(ICMP), custom eth type test:    10.200.2.2:eth2---|  VM-B  |
 #       |       |---eth3:10.200.3.1    : DHCP test :                               10.200.3.2:eth3---|        |
 #       |.......|---eth4:10.200.4.1    : mpls test :                               10.200.4.2:eth4---|........|
+
 
 VMA_MPLS_LOOPBACK_IP = "10.200.100.1/32"
 VMA_MPLS_ROUTE_TAG = 100
@@ -328,12 +334,12 @@ def l2_bridge_vm_b(namespace, worker_node2, l2_bridge_all_nads, unprivileged_cli
 
 @pytest.fixture(scope="class")
 def l2_bridge_running_vm_a(l2_bridge_vm_a):
-    return running_vm(vm=l2_bridge_vm_a)
+    return running_vm(vm=l2_bridge_vm_a, wait_for_cloud_init=True)
 
 
 @pytest.fixture(scope="class")
 def l2_bridge_running_vm_b(l2_bridge_vm_b):
-    return running_vm(vm=l2_bridge_vm_b)
+    return running_vm(vm=l2_bridge_vm_b, wait_for_cloud_init=True)
 
 
 @pytest.fixture(scope="class")
@@ -353,6 +359,7 @@ def configured_l2_bridge_vm_a(
         host=l2_bridge_running_vm_a.ssh_exec,
         commands=[shlex.split(DHCP_SERVICE_RESTART)],
     )
+    verify_dhcpd_activated(vm=l2_bridge_running_vm_a)
     return l2_bridge_vm_a
 
 
