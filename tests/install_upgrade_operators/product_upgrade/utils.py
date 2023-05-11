@@ -1,11 +1,16 @@
 import json
 import logging
+import re
+from contextlib import contextmanager
 from multiprocessing import Process
 
+import requests
 from ocp_resources.cluster_operator import ClusterOperator
+from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.cluster_version import ClusterVersion
+from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.pod import Pod
-from ocp_resources.resource import Resource
+from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.utils import run_command
 from ocp_wrapper_data_collector.data_collector import (
@@ -13,10 +18,18 @@ from ocp_wrapper_data_collector.data_collector import (
     write_to_file,
 )
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
+from packaging.version import Version
+from pytest_testconfig import py_config
+from requests import HTTPError, Timeout, TooManyRedirects
 
+from tests.install_upgrade_operators.constants import CNV_VERSION_EXPLORER_URL
 from tests.install_upgrade_operators.utils import wait_for_install_plan
+from tests.utils import get_hco_version_name
 from utilities.constants import (
     BASE_EXCEPTIONS_DICT,
+    BREW_REGISTERY_SOURCE,
+    EUS_ERROR_CODE,
+    HCO_CATALOG_SOURCE,
     IMAGE_CRON_STR,
     TIMEOUT_10MIN,
     TIMEOUT_10SEC,
@@ -29,18 +42,29 @@ from utilities.data_collector import get_data_collector_dict
 from utilities.hco import wait_for_hco_conditions, wait_for_hco_version
 from utilities.infra import (
     cluster_resource,
+    exit_pytest_execution,
     get_clusterversion,
+    get_csv_by_name,
     get_deployments,
     get_pod_by_name_prefix,
     get_pods,
     wait_for_consistent_resource_conditions,
 )
-from utilities.operator import approve_install_plan, wait_for_mcp_update_completion
+from utilities.operator import (
+    approve_install_plan,
+    create_icsp_command,
+    create_icsp_from_file,
+    delete_existing_icsp,
+    generate_icsp_file,
+    update_image_in_catalog_source,
+    wait_for_mcp_update_completion,
+)
 
 
 LOGGER = logging.getLogger(__name__)
 TIER_2_PODS_TYPE = "tier-2"
 FIRING_STATE = "firing"
+EUS_TO_EUS_EXCEPTIONS = (ValueError, TimeoutExpiredError, ResourceNotFoundError)
 
 
 def wait_for_pod_replacement(dyn_client, hco_namespace, pod_name, related_images):
@@ -366,6 +390,7 @@ def approve_cnv_upgrade_install_plan(
     dyn_client, hco_namespace, hco_target_version, is_production_source
 ):
     LOGGER.info("Get the upgrade install plan.")
+    LOGGER.info(f"HCO TARGET VERSION: {hco_target_version}")
     install_plan = wait_for_install_plan(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace,
@@ -549,4 +574,304 @@ def wait_for_pending_alerts_to_fire(pending_alerts, prometheus):
     except TimeoutExpiredError:
         LOGGER.error(
             f"Out of {pending_alerts}, following alerts did not get to {FIRING_STATE}: {_pending_alerts}"
+        )
+
+
+def query_version_explorer(api_end_point, query_string):
+    try:
+        response = requests.get(
+            url=f"{CNV_VERSION_EXPLORER_URL}/{api_end_point}?{query_string}",
+            verify=False,
+            timeout=TIMEOUT_10SEC,
+        )
+        response.raise_for_status()
+    except (HTTPError, ConnectionError, Timeout, TooManyRedirects) as ex:
+        LOGGER.error(f"Error occurred: {ex}")
+        return None
+    return response.json()
+
+
+def get_upgrade_path(target_version):
+    return query_version_explorer(
+        api_end_point="GetUpgradePath", query_string=f"targetVersion={target_version}"
+    )
+
+
+def get_shortest_upgrade_path(target_version):
+    """
+    Get the shortest upgrade path to a given CNV target version.
+
+    Parameters:
+    target_version (str): The target version of the upgrade path.
+
+    Returns:
+    dict: The shortest upgrade path to the target version.
+    """
+    base_version = None
+    upgrade_path = None
+    for path in get_upgrade_path(target_version=target_version)["path"]:
+        start_version = path["startVersion"][1:]
+        if "-hotfix" in start_version:  # Skip -hotfix versions
+            continue
+        if base_version:
+            if Version(base_version) < Version(start_version):
+                base_version = path["startVersion"]
+                upgrade_path = path
+        else:
+            base_version = start_version
+    return upgrade_path
+
+
+def get_build_info_by_version(version, errata_status="true"):
+    return query_version_explorer(
+        api_end_point="GetSuccessfulBuildsByVersion",
+        query_string=f"version={version}&errata_status={errata_status}",
+    )
+
+
+def get_iib_images_of_cnv_versions(versions):
+    base_image_url = f"{BREW_REGISTERY_SOURCE}/rh-osbs/iib:"
+    version_images = {}
+    for version in versions:
+        build_info = get_build_info_by_version(version=version)
+        LOGGER.info(f"Build info for version {version}: {build_info}")
+        version_images[version] = (
+            base_image_url + build_info["successful_builds"][0]["iib"]
+        )
+
+    return version_images
+
+
+@contextmanager
+def pause_machine_config_pool(mcp_list):
+    LOGGER.info("Pausing MCP updates while modifying ICSP")
+    with ResourceEditor(patches={mcp: {"spec": {"paused": True}} for mcp in mcp_list}):
+        yield
+
+
+def extract_ocp_version_from_ocp_image(ocp_image_url):
+    """
+    Extract the OCP version from the OCP URL input.
+
+    Expected inputs / output examples:
+      quay.io/openshift-release-dev/ocp-release:4.10.9-x86_64 -> 4.10.9
+      quay.io/openshift-release-dev/ocp-release:4.10.0-rc.6-x86_64 -> 4.10.0-rc.6
+      registry.ci.openshift.org/ocp/release:4.11.0-0.nightly-2022-04-01-172551 -> 4.11.0-0.nightly-2022-04-01-172551
+      registry.ci.openshift.org/ocp/release:4.11.0-0.ci-2022-04-06-165430 -> 4.11.0-0.ci-2022-04-06-165430
+    """
+    ocp_version_match = re.search(r"release:(.*?)(?:-x86_64$|$)", ocp_image_url)
+    ocp_version = ocp_version_match.group(1) if ocp_version_match else None
+    assert (
+        ocp_version
+    ), f"Cannot extract OCP version. OCP image url: {ocp_image_url} is invalid"
+    LOGGER.info(f"OCP version {ocp_version} extracted from ocp image: {ocp_version}")
+    return ocp_version
+
+
+def run_ocp_upgrade_command(ocp_image_url):
+    LOGGER.info(f"Executing OCP upgrade command to image {ocp_image_url}")
+    rc, out, err = run_command(
+        command=[
+            "oc",
+            "adm",
+            "upgrade",
+            "--force=true",
+            "--allow-explicit-upgrade",
+            "--allow-upgrade-with-warnings",
+            "--to-image",
+            ocp_image_url,
+        ],
+        verify_stderr=False,
+    )
+    assert rc, f"OCP upgrade command failed. out: {out}. err: {err}"
+
+
+def perform_cnv_upgrade(
+    admin_client,
+    cnv_image_url,
+    cr_name,
+    hco_namespace,
+    cnv_target_version,
+):
+    hco_version = get_hco_version_name(cnv_target_version=cnv_target_version)
+    LOGGER.info("Updating image in CatalogSource")
+    update_image_in_catalog_source(
+        dyn_client=admin_client,
+        image=cnv_image_url,
+        catalog_source_name=HCO_CATALOG_SOURCE,
+        cr_name=cr_name,
+    )
+    LOGGER.info("Approving CNV InstallPlan")
+    approve_cnv_upgrade_install_plan(
+        dyn_client=admin_client,
+        hco_namespace=hco_namespace.name,
+        hco_target_version=hco_version,
+        is_production_source=False,
+    )
+    LOGGER.info("Waiting for target CSV")
+    target_csv = wait_for_target_csv(
+        admin_client=admin_client,
+        hco_target_version=hco_version,
+        hco_namespace=hco_namespace,
+    )
+    LOGGER.info("Waiting for CSV status to be SUCCEEDED")
+    target_csv.wait_for_status(
+        status=target_csv.Status.SUCCEEDED,
+        timeout=TIMEOUT_10MIN,
+        stop_status=None,
+    )
+    LOGGER.info(f"Wait for HCO version to be updated to {cnv_target_version}.")
+    wait_for_hco_version(
+        client=admin_client,
+        hco_ns_name=hco_namespace.name,
+        cnv_version=cnv_target_version,
+    )
+    LOGGER.info("Wait for HCO stable conditions after upgrade")
+    wait_for_hco_conditions(
+        admin_client=admin_client,
+        hco_namespace=hco_namespace,
+        wait_timeout=TIMEOUT_20MIN,
+    )
+
+
+def wait_for_target_csv(admin_client, hco_namespace, hco_target_version):
+    LOGGER.info(f"Wait for new CSV: {hco_target_version}")
+    csv_sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_10MIN,
+        sleep=1,
+        func=get_csv_by_name,
+        admin_client=admin_client,
+        namespace=hco_namespace.name,
+        csv_name=hco_target_version,
+    )
+    try:
+        for csv in csv_sampler:
+            if csv:
+                return csv
+    except TimeoutExpiredError:
+        data_collector_dict = get_data_collector_dict()
+        collect_resources_yaml_instance(
+            resources_to_collect=[ClusterServiceVersion],
+            base_directory=data_collector_dict,
+        )
+        raise
+
+
+def wait_for_hco_csv_creation(admin_client, hco_namespace, hco_target_version):
+    LOGGER.info(f"Wait for new CSV {hco_target_version} to be created")
+    csv_sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_10MIN,
+        sleep=1,
+        func=get_csv_by_name,
+        admin_client=admin_client,
+        namespace=hco_namespace.name,
+        csv_name=hco_target_version,
+    )
+    try:
+        for csv in csv_sampler:
+            if csv:
+                return csv
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"timeout waiting for target cluster service version: {hco_target_version}"
+        )
+        if py_config.get("data_collector"):
+            data_collector_dict = get_data_collector_dict()
+            collect_resources_yaml_instance(
+                resources_to_collect=[ClusterServiceVersion],
+                base_directory=data_collector_dict["data_collector_base_directory"],
+            )
+        raise
+
+
+def get_mcp_conditions(machine_config_pools):
+    return {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools}
+
+
+def update_icsp(
+    admin_client,
+    cnv_image_url,
+    cnv_registry_source,
+    generated_pulled_secret,
+    is_upgrade_from_stage_source,
+    pull_secret_directory,
+):
+    """
+    Creates a new ImageContentSourcePolicy file with a given CNV image and applies it to the cluster.
+    """
+    source_url = cnv_registry_source["source_map"]
+    pull_secret = None
+    if BREW_REGISTERY_SOURCE in cnv_image_url:
+        source_url = BREW_REGISTERY_SOURCE
+        pull_secret = generated_pulled_secret
+    cnv_mirror_cmd = create_icsp_command(
+        image=cnv_image_url,
+        source_url=source_url,
+        folder_name=pull_secret_directory,
+        pull_secret=pull_secret,
+    )
+    icsp_file_path = generate_icsp_file(
+        folder_name=pull_secret_directory,
+        command=cnv_mirror_cmd,
+    )
+    if is_upgrade_from_stage_source:
+        update_icsp_stage_mirror(icsp_file_path=icsp_file_path)
+    LOGGER.info("pausing MCP updates while modifying ICSP")
+    with ResourceEditor(
+        patches={
+            mcp: {"spec": {"paused": True}}
+            for mcp in cluster_resource(MachineConfigPool).get(dyn_client=admin_client)
+        }
+    ):
+        # Due to the amount of annotations in ICSP yaml, `oc apply` may fail. Existing ICSP is deleted.
+        LOGGER.info("Deleting existing ICSP.")
+        delete_existing_icsp(admin_client=admin_client, name="iib")
+        LOGGER.info("Creating new ICSP.")
+        create_icsp_from_file(icsp_file_path=icsp_file_path)
+
+
+def verify_eus_ocp_upgrade_and_handle_exceptions(
+    admin_client,
+    master_machine_config_pools,
+    master_machine_config_pools_conditions,
+    masters,
+    ocp_version,
+):
+    try:
+        verify_upgrade_ocp(
+            admin_client=admin_client,
+            machine_config_pools_list=master_machine_config_pools,
+            target_ocp_version=ocp_version,
+            initial_mcp_conditions=master_machine_config_pools_conditions,
+            nodes=masters,
+        )
+    except EUS_TO_EUS_EXCEPTIONS as ex:
+        LOGGER.error(f"Error occurred: {ex}")
+        exit_pytest_execution(
+            message=f"Failed: to perform ocp upgrade:" f" {ocp_version}",
+            return_code=EUS_ERROR_CODE,
+        )
+
+
+def perform_cnv_upgrade_and_handle_exceptions(
+    admin_client,
+    cnv_image_url,
+    hco_namespace,
+    hyperconverged_resource_scope_function,
+    cnv_version,
+):
+    log_message = f"Cnv upgrade to version {cnv_version} using image: {cnv_image_url}"
+    LOGGER.info(log_message)
+    try:
+        perform_cnv_upgrade(
+            admin_client=admin_client,
+            cnv_image_url=cnv_image_url,
+            cr_name=hyperconverged_resource_scope_function.name,
+            hco_namespace=hco_namespace,
+            cnv_target_version=cnv_version.lstrip("v"),
+        )
+    except EUS_TO_EUS_EXCEPTIONS as ex:
+        LOGGER.error(f"Error occurred: {ex}")
+        exit_pytest_execution(
+            message=f"Failed: {log_message}", return_code=EUS_ERROR_CODE
         )

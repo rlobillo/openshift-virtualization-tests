@@ -6,6 +6,7 @@ from json import JSONDecodeError
 import pytest
 from ocp_utilities.utils import run_command
 
+from tests.install_upgrade_operators.constants import CNV_VERSION_EXPLORER_URL
 from utilities.constants import HCO_CATALOG_SOURCE, TIMEOUT_10SEC
 from utilities.operator import get_catalog_source
 
@@ -16,10 +17,7 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.fixture(scope="session")
 def cnv_build_info(cnv_current_version):
-    cnv_version_explorer_url = (
-        "http://cnv-version-explorer.apps.cnv2.engineering.redhat.com"
-    )
-    curl_command = f"curl -s -m{TIMEOUT_10SEC} {cnv_version_explorer_url}/GetSuccessfulBuildsByVersion?version\
+    curl_command = f"curl -s -m{TIMEOUT_10SEC} {CNV_VERSION_EXPLORER_URL}/GetSuccessfulBuildsByVersion?version\
 ={cnv_current_version}&errata_status=true"
     return_status, out_value, _ = run_command(command=shlex.split(curl_command))
     LOGGER.info(
@@ -36,7 +34,7 @@ def cnv_build_info(cnv_current_version):
             )
     else:
         pytest.fail(
-            f"Failed API query to 'CNV Version Explorer': {cnv_version_explorer_url}"
+            f"Failed API query to 'CNV Version Explorer': {CNV_VERSION_EXPLORER_URL}"
         )
     if not build_info["successful_builds"]:
         pytest.skip(f"No successful builds available for CNV v{cnv_current_version}")

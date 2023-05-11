@@ -75,10 +75,10 @@ def updated_icsp_hyperconverged(
     is_production_source,
     generated_hyperconverged_icsp,
     machine_config_pools,
-    machine_config_pools_conditions,
+    machine_config_pools_conditions_scope_function,
 ):
     initial_updating_transition_times = get_mcp_updating_transition_times(
-        mcp_conditions=machine_config_pools_conditions
+        mcp_conditions=machine_config_pools_conditions_scope_function
     )
     if is_production_source:
         LOGGER.info(

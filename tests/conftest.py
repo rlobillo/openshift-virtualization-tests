@@ -56,12 +56,14 @@ from ocp_utilities.infra import get_client
 from ocp_utilities.utils import run_command
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
+from packaging.version import Version
 from pytest_testconfig import config as py_config
 
 import utilities.hco
 from tests.utils import (
     VirtualMachineInstanceTypeForTest,
     VirtualMachinePreferenceForTest,
+    get_hco_version_name,
 )
 from utilities.constants import (
     AMD,
@@ -70,6 +72,7 @@ from utilities.constants import (
     CNV_TEST_SERVICE_ACCOUNT,
     CPU_MODEL_LABEL_PREFIX,
     DEFAULT_HCO_CONDITIONS,
+    EUS_ERROR_CODE,
     HCO_SUBSCRIPTION,
     HOSTPATH_CSI_BASIC,
     ICSP_FILTER_BY_OS_LINUX_AMD64,
@@ -107,6 +110,7 @@ from utilities.infra import (
     cluster_sanity,
     create_ns,
     download_file_from_cluster,
+    exit_pytest_execution,
     generate_namespace_name,
     generate_openshift_pull_secret_file,
     get_clusterversion,
@@ -2272,7 +2276,12 @@ def rhel_latest_os_params():
 
 @pytest.fixture(scope="session")
 def hco_target_version(cnv_target_version):
-    return f"kubevirt-hyperconverged-operator.v{cnv_target_version}"
+    return get_hco_version_name(cnv_target_version=cnv_target_version)
+
+
+@pytest.fixture(scope="session")
+def eus_hco_target_version(eus_target_cnv_version):
+    return get_hco_version_name(cnv_target_version=eus_target_cnv_version)
 
 
 @pytest.fixture(scope="session")
@@ -2673,3 +2682,15 @@ def nightly_art_image_url(openshift_current_version, generated_pulled_secret):
 def disabled_default_sources_in_operatorhub_scope_module(admin_client):
     with disable_default_sources_in_operatorhub(admin_client=admin_client):
         yield
+
+
+@pytest.fixture(scope="session")
+def eus_target_cnv_version(cnv_current_version):
+    cnv_current_version = Version(version=cnv_current_version)
+    minor = cnv_current_version.minor
+    if minor % 2:
+        exit_pytest_execution(
+            message=f"EUS upgrade can not be performed from non-eus version: {cnv_current_version}",
+            return_code=EUS_ERROR_CODE,
+        )
+    return Version(version=f"v{cnv_current_version.major}.{minor + 2}.0")

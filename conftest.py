@@ -127,7 +127,9 @@ def pytest_addoption(parser):
 
     # Upgrade addoption
     install_upgrade_group.addoption(
-        "--upgrade", choices=["cnv", "ocp"], help="Run OCP or CNV upgrade tests"
+        "--upgrade",
+        choices=["cnv", "ocp", "eus"],
+        help="Run OCP, CNV or EUS upgrade tests",
     )
 
     # CNV upgrade options
@@ -148,6 +150,13 @@ def pytest_addoption(parser):
         help="OCP image to upgrade to. Images can be found under "
         "https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/",
     )
+
+    # OCP images for EUS-to-EUS upgrade
+    install_upgrade_group.addoption(
+        "--eus-ocp-images",
+        help="Comma-separated OCP images to use for EUS-to-EUS upgrade.",
+    )
+
     # CNV install options:
     install_upgrade_group.addoption(
         "--install",
@@ -283,15 +292,27 @@ def pytest_cmdline_main(config):
             os.path.join(deprecation_tests_dir_path, "test_deprecation_audit_logs.py")
         )
 
-    if config.getoption("upgrade") == "ocp" and not config.getoption("ocp_image"):
+    upgrade_option = config.getoption("upgrade")
+    if upgrade_option == "ocp" and not config.getoption("ocp_image"):
         raise ValueError("Running with --upgrade ocp: Missing --ocp-image")
 
-    if config.getoption("upgrade") == "cnv":
+    if upgrade_option == "cnv":
         if not config.getoption("cnv_version"):
             raise ValueError("Missing --cnv-version")
         if not config.getoption("cnv_image"):
             if config.getoption("cnv_source") != "production":
                 raise ValueError("Missing --cnv-image")
+
+    if upgrade_option == "eus":
+        eus_ocp_images = config.getoption("eus_ocp_images")
+        if not eus_ocp_images:
+            raise ValueError("Missing --eus-ocp-images")
+
+        if len(eus_ocp_images.split(",")) != 2:
+            raise ValueError(
+                "Two OCP images are needed to perform EUS-to-EUS upgrade."
+                f"Provided images: {eus_ocp_images}"
+            )
 
     # Default value is set as this value is used to set test name in
     # tests.upgrade_params.UPGRADE_TEST_DEPENDENCY_NODE_ID which is needed for pytest dependency marker
@@ -320,7 +341,7 @@ def pytest_cmdline_main(config):
         raise ValueError("os matrix and latest os options are mutually exclusive.")
 
     if (
-        config.getoption("upgrade") == "cnv"
+        upgrade_option == "cnv"
         and config.getoption("cnv_source")
         and not config.getoption("cnv_version")
     ):
@@ -405,17 +426,18 @@ def pytest_collection_modifyitems(session, config, items):
 
         cnv_source = config.getoption("--cnv-source")
 
-        (
-            ocp_upgrade_test,
-            cnv_upgrade_test_with_prod_src,
-            cnv_upgrade_test_no_prod_src,
-        ) = (None, None, None)
+        ocp_upgrade_test = None
+        cnv_upgrade_test_with_prod_src = None
+        cnv_upgrade_test_no_prod_src = None
         cnv_upgrade_tests = []
+        eus_upgrade_tests = []
 
         for test in upgrade_tests:
             if "ocp_upgrade" in test.keywords:
                 ocp_upgrade_test = test
-            elif "cnv_upgrade" in test.keywords:
+            if "eus_upgrade" in test.keywords:
+                eus_upgrade_tests.append(test)
+            if "cnv_upgrade" in test.keywords:
                 cnv_upgrade_tests.append(test)
                 if "production_source" in test.name:
                     cnv_upgrade_test_with_prod_src = test
@@ -429,8 +451,13 @@ def pytest_collection_modifyitems(session, config, items):
                 else cnv_upgrade_test_with_prod_src,
                 ocp_upgrade_test,
             ]
+            tests_to_remove.extend(eus_upgrade_tests)
+        elif py_config["upgraded_product"] == "ocp":
+            tests_to_remove = cnv_upgrade_tests
+            tests_to_remove.extend(eus_upgrade_tests)
         else:
             tests_to_remove = cnv_upgrade_tests
+            tests_to_remove.append(ocp_upgrade_test)
 
         for test in tests_to_remove:
             upgrade_tests.remove(test)

@@ -858,6 +858,7 @@ def get_deployments(admin_client, namespace):
 
 
 def get_related_images_name_and_version(csv):
+    LOGGER.info(f"Get all related images names and versions from target CSV {csv.name}")
     related_images = {}
     for item in csv.instance.spec.relatedImages:
         # Example: 'registry.redhat.io/container-native-virtualization/node-maintenance-operator:v2.6.3-1'

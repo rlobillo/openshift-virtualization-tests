@@ -570,3 +570,6 @@ class UpgradeStreams:
     X_STREAM = "x-stream"
     Y_STREAM = "y-stream"
     Z_STREAM = "z-stream"
+
+
+EUS_ERROR_CODE = 98

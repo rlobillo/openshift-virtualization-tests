@@ -11,6 +11,7 @@ from ocp_resources.storage_class import StorageClass
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import py_config
 
+from tests.install_upgrade_operators.product_upgrade.utils import get_mcp_conditions
 from tests.install_upgrade_operators.utils import (
     get_deployment_by_name,
     get_network_addon_config,
@@ -178,8 +179,23 @@ def machine_config_pools():
 
 
 @pytest.fixture()
-def machine_config_pools_conditions(machine_config_pools):
-    return {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools}
+def machine_config_pools_conditions_scope_function(machine_config_pools):
+    return get_mcp_conditions(machine_config_pools=machine_config_pools)
+
+
+@pytest.fixture(scope="module")
+def machine_config_pools_conditions_scope_module(machine_config_pools):
+    return get_mcp_conditions(machine_config_pools=machine_config_pools)
+
+
+@pytest.fixture()
+def master_machine_config_pools_conditions(master_machine_config_pools):
+    return get_mcp_conditions(machine_config_pools=master_machine_config_pools)
+
+
+@pytest.fixture(scope="module")
+def worker_machine_config_pools_conditions(worker_machine_config_pools):
+    return get_mcp_conditions(machine_config_pools=worker_machine_config_pools)
 
 
 @pytest.fixture()

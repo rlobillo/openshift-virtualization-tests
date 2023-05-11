@@ -172,3 +172,7 @@ class VirtualMachinePreferenceForTest(
             yaml_file=yaml_file,
             **kwargs,
         )
+
+
+def get_hco_version_name(cnv_target_version):
+    return f"kubevirt-hyperconverged-operator.v{cnv_target_version}"
