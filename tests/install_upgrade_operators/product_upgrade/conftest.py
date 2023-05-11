@@ -38,6 +38,7 @@ from tests.install_upgrade_operators.product_upgrade.utils import (
 from tests.install_upgrade_operators.utils import wait_for_operator_condition
 from utilities.constants import (
     HCO_CATALOG_SOURCE,
+    HOTFIX_STR,
     ICSP_FILE,
     TIMEOUT_10MIN,
     TIMEOUT_180MIN,
@@ -95,13 +96,20 @@ def updated_image_content_source_policy(
     machine_config_pools_conditions_scope_function,
     cnv_image_url,
     cnv_image_name,
+    cnv_source,
     cnv_registry_source,
     pull_secret_directory,
     generated_pulled_secret,
+    is_production_source,
     is_disconnected_cluster,
 ):
     if is_disconnected_cluster:
         LOGGER.warning("Skip applying ICSP in a disconnected setup.")
+
+    if is_production_source or cnv_source == HOTFIX_STR:
+        LOGGER.info(
+            "ICSP updates skipped as upgrading using production source/upgrade to hotfix"
+        )
         return
     icsp_file = get_generated_icsp(
         image_url=cnv_image_url,

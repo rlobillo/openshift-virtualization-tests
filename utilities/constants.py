@@ -568,6 +568,9 @@ class NamespacesNames:
     NVIDIA_GPU_OPERATOR = "nvidia-gpu-operator"
 
 
+HOTFIX_STR = "hotfix"
+
+
 class UpgradeStreams:
     X_STREAM = "x-stream"
     Y_STREAM = "y-stream"

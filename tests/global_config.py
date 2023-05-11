@@ -80,6 +80,9 @@ cnv_registry_sources = {
         "cnv_subscription_source": HCO_CATALOG_SOURCE,
         "source_map": BREW_REGISTERY_SOURCE,
     },
+    "hotfix": {
+        "cnv_subscription_source": HCO_CATALOG_SOURCE,
+    },
     "production": {
         "cnv_subscription_source": PRODUCTION_CATALOG_SOURCE,
     },

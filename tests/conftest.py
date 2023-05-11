@@ -74,6 +74,7 @@ from utilities.constants import (
     EUS_ERROR_CODE,
     HCO_SUBSCRIPTION,
     HOSTPATH_CSI_BASIC,
+    HOTFIX_STR,
     ICSP_FILTER_BY_OS_LINUX_AMD64,
     INTEL,
     KMP_ENABLED_LABEL,
@@ -2188,19 +2189,9 @@ def cnv_upgrade_stream(admin_client, pytestconfig, cnv_current_version, is_eus_u
         cnv_current_version: The current CNV version.
     """
     if not is_eus_upgrade:
-        current_version = packaging.version.parse(version=cnv_current_version)
-        target_version = packaging.version.parse(
-            version=pytestconfig.option.cnv_version
-        )
-        if target_version <= current_version:
-            # Upgrade only if a newer CNV version is requested
-            raise ValueError(
-                f"Cannot upgrade to older/identical versions,"
-                f"current: {cnv_current_version} target: {target_version}"
-            )
-
+        target_version = pytestconfig.option.cnv_version
         upgrade_stream = determine_upgrade_stream(
-            current_version=current_version, target_version=target_version
+            current_version=cnv_current_version, target_version=target_version
         )
 
         LOGGER.info(
@@ -2208,21 +2199,33 @@ def cnv_upgrade_stream(admin_client, pytestconfig, cnv_current_version, is_eus_u
             f"Current version: {cnv_current_version},\n"
             f"Target version: {target_version},\n"
             f"Upgrade stream: {upgrade_stream},\n"
-            f"Target channel: {target_version.major}.{target_version.minor}"
         )
         return upgrade_stream
 
 
 def determine_upgrade_stream(current_version, target_version):
-    if current_version.major < target_version.major:
+    current_cnv_version = packaging.version.parse(version=current_version.split("-")[0])
+    target_cnv_version = packaging.version.parse(version=target_version.split("-")[0])
+
+    if current_cnv_version.major < target_cnv_version.major:
         return UpgradeStreams.X_STREAM
-    elif current_version.minor < target_version.minor:
+    elif current_cnv_version.minor < target_cnv_version.minor:
         return UpgradeStreams.Y_STREAM
-    elif current_version.micro < target_version.micro:
+    elif current_cnv_version.micro < target_cnv_version.micro:
+        return UpgradeStreams.Z_STREAM
+    elif HOTFIX_STR in current_version:
+        # if we reach here, this is an upgrade out of hotfix to next z-stream
         return UpgradeStreams.Z_STREAM
     else:
+        if target_cnv_version <= current_cnv_version:
+            # Upgrade only if a newer CNV version is requested
+            raise ValueError(
+                f"Cannot upgrade to older/identical versions,"
+                f"current: {cnv_current_version} target: {target_cnv_version}"
+            )
         raise ValueError(
-            f"unknown upgrade stream, current: {current_version} target: {target_version}"
+            f"Unknown upgrade stream. Current cnv version: {current_cnv_version}, "
+            f"target cnv version: {target_cnv_version}."
         )
 
 
