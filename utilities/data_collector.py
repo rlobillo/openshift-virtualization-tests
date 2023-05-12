@@ -41,7 +41,9 @@ def collect_alerts_data(prometheus):
 
 def collect_mcp_information():
     data_collector_dict = get_data_collector_dict()
-    base_directory = data_collector_dict["data_collector_base_directory"]
+    base_directory = get_data_collector_base_dir(
+        data_collector_dict=data_collector_dict
+    )
     LOGGER.warning("Collecting MachineConfigPool data for triage.")
     collect_resources_yaml_instance(
         resources_to_collect=[MachineConfigPool, Node], base_directory=base_directory
@@ -60,24 +62,21 @@ def collect_mcp_information():
     collect_pods_data(pods_list=pods_to_collect, base_directory=base_directory)
 
 
-def collect_cnv_information(get_crds=True):
+def collect_cnv_information():
     data_collector_dict = get_data_collector_dict()
     base_directory = get_data_collector_base_dir(
         data_collector_dict=data_collector_dict
     )
-    LOGGER.warning("Collecting CNV data for triage.")
-    if get_crds:
-        LOGGER.info("Collecting CRDs:")
-        collect_resources_yaml_instance(
-            resources_to_collect=[HyperConverged, KubeVirt],
-            base_directory=base_directory,
-        )
-    pods_to_collect = [
-        pod
-        for pod in cluster_resource(Pod).get(
-            dyn_client=get_client(), namespace=py_config["hco_namespace"]
-        )
-    ]
+    LOGGER.warning("Collecting CNV pod and HCO data for triage.")
+    collect_resources_yaml_instance(
+        resources_to_collect=[HyperConverged, KubeVirt], base_directory=base_directory
+    )
+
+    pods_to_collect = []
+    for pod in cluster_resource(Pod).get(
+        dyn_client=get_client(), namespace=py_config["hco_namespace"]
+    ):
+        pods_to_collect.extend(pod)
     collect_pods_data(pods_list=pods_to_collect, base_directory=base_directory)
 
 

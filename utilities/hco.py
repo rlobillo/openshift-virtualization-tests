@@ -27,6 +27,7 @@ from utilities.constants import (
     TLS_SECURITY_PROFILE,
     StorageClassNames,
 )
+from utilities.data_collector import collect_cnv_information
 from utilities.ssp import (
     verify_ssp_pod_is_running,
     wait_for_at_least_one_auto_update_data_import_cron,
@@ -139,17 +140,21 @@ def wait_for_hco_conditions(
                 expected_conditions=EXPECTED_STATUS_CONDITIONS[resource],
                 consecutive_checks_count=consecutive_checks_count,
             )
-    utilities.infra.wait_for_consistent_resource_conditions(
-        dynamic_client=admin_client,
-        namespace=hco_namespace.name,
-        expected_conditions=expected_conditions or DEFAULT_HCO_CONDITIONS,
-        resource_kind=HyperConverged,
-        condition_key1=condition_key1,
-        condition_key2=condition_key2,
-        total_timeout=wait_timeout,
-        polling_interval=sleep,
-        consecutive_checks_count=consecutive_checks_count,
-    )
+    try:
+        utilities.infra.wait_for_consistent_resource_conditions(
+            dynamic_client=admin_client,
+            namespace=hco_namespace.name,
+            expected_conditions=expected_conditions or DEFAULT_HCO_CONDITIONS,
+            resource_kind=HyperConverged,
+            condition_key1=condition_key1,
+            condition_key2=condition_key2,
+            total_timeout=wait_timeout,
+            polling_interval=sleep,
+            consecutive_checks_count=consecutive_checks_count,
+        )
+    except TimeoutExpiredError:
+        collect_cnv_information()
+        raise
 
 
 def wait_for_ds(ds):

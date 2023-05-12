@@ -33,6 +33,7 @@ from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.namespace import Namespace
+from ocp_resources.node import Node
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
 from ocp_resources.project import Project, ProjectRequest
@@ -48,7 +49,10 @@ from ocp_utilities.infra import (
     get_client,
 )
 from ocp_utilities.utils import run_command
-from ocp_wrapper_data_collector.data_collector import write_to_file
+from ocp_wrapper_data_collector.data_collector import (
+    collect_resources_yaml_instance,
+    write_to_file,
+)
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
@@ -66,7 +70,7 @@ from utilities.constants import (
     TIMEOUT_10MIN,
     NamespacesNames,
 )
-from utilities.data_collector import get_data_collector_dict
+from utilities.data_collector import collect_cnv_information, get_data_collector_dict
 from utilities.exceptions import UtilityPodNotFoundError
 from utilities.storage import get_images_server_url
 
@@ -738,15 +742,19 @@ def exit_pytest_execution(
         filename (str, optional. Default: None): filename where the given message will be saved
         junitxml_property (pytest plugin): record_testsuite_property
     """
+    data_collector_dict = get_data_collector_dict()
+    base_directory = data_collector_dict["data_collector_base_directory"]
     if filename:
-        data_collector_dict = get_data_collector_dict()
-        base_directory = data_collector_dict["data_collector_base_directory"]
         write_to_file(
             file_name=filename,
             content=message,
             extra_dir_name="pytest_exit_errors",
             base_directory=base_directory,
         )
+    collect_resources_yaml_instance(
+        resources_to_collect=[Node], base_directory=base_directory
+    )
+    collect_cnv_information()
     if junitxml_property:
         junitxml_property(name="exit_code", value=return_code)
     pytest.exit(msg=message, returncode=return_code)
