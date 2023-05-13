@@ -722,7 +722,7 @@ def cluster_sanity(
     except (ClusterSanityError, NodeUnschedulableError, NodeNotReadyError) as ex:
         exit_pytest_execution(
             filename=exceptions_filename,
-            message=ex.err_str,
+            message=str(ex),
             junitxml_property=junitxml_property,
         )
 
