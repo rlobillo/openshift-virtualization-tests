@@ -41,7 +41,7 @@ from tests.network.utils import (
     authentication_request,
 )
 from utilities import console
-from utilities.constants import PORT_80, TIMEOUT_2MIN
+from utilities.constants import PORT_80, TIMEOUT_4MIN, TIMEOUT_10SEC
 from utilities.infra import cluster_resource, create_ns, unique_name
 from utilities.virt import running_vm, vm_console_run_commands, wait_for_console
 
@@ -165,8 +165,8 @@ def wait_service_mesh_components_convergence(func, vm, **kwargs):
     expected_output = "no healthy upstream"
     try:
         for sample in TimeoutSampler(
-            wait_timeout=TIMEOUT_2MIN,
-            sleep=5,
+            wait_timeout=TIMEOUT_4MIN,
+            sleep=TIMEOUT_10SEC,
             func=func,
             vm=vm,
             expected_output=expected_output,

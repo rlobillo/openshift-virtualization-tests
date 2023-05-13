@@ -370,7 +370,7 @@ def verify_console_command_output(
             vmc.expect(expected_output, timeout=timeout)
             return expected_output
         except pexpect.exceptions.TIMEOUT:
-            return vmc.before.decode("utf-8")
+            return vmc.before
 
 
 def vm_for_brcnv_tests(
