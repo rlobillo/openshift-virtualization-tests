@@ -17,6 +17,7 @@ import utilities.network
 from tests.install_upgrade_operators.must_gather.utils import (
     MUST_GATHER_VM_NAME_PREFIX,
     collect_must_gather,
+    get_must_gather_dir,
 )
 from tests.install_upgrade_operators.utils import create_vms
 from utilities.constants import LINUX_BRIDGE
@@ -34,34 +35,34 @@ LONG_VM_NAME = "v" * 63
 
 
 @pytest.fixture(scope="module")
-def must_gather_tmpdir(tmpdir_factory):
-    return tmpdir_factory.mktemp("must_gather_scope_module")
+def must_gather_tmpdir_scope_module(tmpdir_factory):
+    return get_must_gather_dir(directory_name="must_gather_scope_module")
 
 
 @pytest.fixture()
 def must_gather_tmpdir_scope_function(request, tmpdir_factory):
-    return tmpdir_factory.mktemp(f"must_gather_{request.node.callspec.id}")
+    return get_must_gather_dir(directory_name=f"must_gather_{request.node.callspec.id}")
 
 
 @pytest.fixture(scope="class")
 def collected_cluster_must_gather(
-    must_gather_tmpdir,
+    must_gather_tmpdir_scope_module,
     must_gather_image_url,
     must_gather_vm,
 ):
     yield collect_must_gather(
-        must_gather_tmpdir=must_gather_tmpdir,
+        must_gather_tmpdir=must_gather_tmpdir_scope_module,
         must_gather_image_url=must_gather_image_url,
     )
 
 
 @pytest.fixture(scope="class")
 def collected_vm_details_must_gather(
-    must_gather_tmpdir,
+    must_gather_tmpdir_scope_module,
     must_gather_image_url,
 ):
     yield collect_must_gather(
-        must_gather_tmpdir=must_gather_tmpdir,
+        must_gather_tmpdir=must_gather_tmpdir_scope_module,
         must_gather_image_url=must_gather_image_url,
         flag_names=["vms_details"],
     )
@@ -403,11 +404,11 @@ def must_gather_long_name_vm(node_gather_unprivileged_namespace, unprivileged_cl
 
 @pytest.fixture(scope="class")
 def gathered_images(
-    must_gather_tmpdir,
+    must_gather_tmpdir_scope_module,
     must_gather_image_url,
 ):
     return collect_must_gather(
-        must_gather_tmpdir=must_gather_tmpdir,
+        must_gather_tmpdir=must_gather_tmpdir_scope_module,
         must_gather_image_url=must_gather_image_url,
         flag_names=["images"],
     )
@@ -415,11 +416,11 @@ def gathered_images(
 
 @pytest.fixture(scope="class")
 def gathered_instancetypes(
-    must_gather_tmpdir,
+    must_gather_tmpdir_scope_module,
     must_gather_image_url,
 ):
     return collect_must_gather(
-        must_gather_tmpdir=must_gather_tmpdir,
+        must_gather_tmpdir=must_gather_tmpdir_scope_module,
         must_gather_image_url=must_gather_image_url,
         flag_names=["instancetypes"],
     )

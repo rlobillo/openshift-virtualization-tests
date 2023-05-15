@@ -13,6 +13,7 @@ from ocp_utilities.must_gather import run_must_gather
 from openshift.dynamic.client import ResourceField
 
 from utilities.constants import NamespacesNames
+from utilities.data_collector import get_data_collector_dict
 from utilities.infra import ResourceMismatch, cluster_resource
 
 
@@ -489,3 +490,9 @@ def get_vm_list_for_validation(
         "vms_collected": vm_list_collected,
         "vms_not_collected": vm_list_not_collected,
     }
+
+
+def get_must_gather_dir(directory_name):
+    data_collector_dict = get_data_collector_dict()
+    base_directory = data_collector_dict["data_collector_base_directory"]
+    return os.path.join(base_directory, directory_name)
