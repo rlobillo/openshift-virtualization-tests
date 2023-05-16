@@ -44,11 +44,10 @@ def must_gather_tmpdir_scope_function(request, tmpdir_factory):
     return get_must_gather_dir(directory_name=f"must_gather_{request.node.callspec.id}")
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def collected_cluster_must_gather(
     must_gather_tmpdir_scope_module,
     must_gather_image_url,
-    must_gather_vm,
 ):
     yield collect_must_gather(
         must_gather_tmpdir=must_gather_tmpdir_scope_module,
@@ -229,7 +228,10 @@ def vm_interface_name(nad_mac_address, must_gather_vm):
 
 @pytest.fixture()
 def extracted_data_from_must_gather_file(
-    request, collected_vm_details_must_gather, must_gather_vm
+    request,
+    collected_vm_details_must_gather,
+    must_gather_vm,
+    nftables_ruleset_from_utility_pods,
 ):
     virt_launcher = must_gather_vm.vmi.virt_launcher_pod
     namespace = virt_launcher.namespace
@@ -296,10 +298,9 @@ def collected_nft_files_must_gather(
 
 @pytest.fixture()
 def nftables_from_utility_pods(workers_utility_pods):
-    nft_command = "nft list tables 2>/dev/null"
     return {
         pod.node.name: pod.execute(
-            command=shlex.split(f"bash -c {shlex.quote(nft_command)}")
+            command=shlex.split(f"bash -c {shlex.quote('nft list tables 2>/dev/null')}")
         ).splitlines()
         for pod in workers_utility_pods
     }
@@ -447,4 +448,28 @@ def resource_types_and_pathes_dict(must_gather_preference, must_gather_instance_
         VirtualMachinePreference: f"namespaces/{must_gather_instance_type.namespace}"
         f"/{Resource.ApiGroup.INSTANCETYPE_KUBEVIRT_IO}"
         f"/virtualmachinepreferences/{must_gather_preference.name}.yaml",
+    }
+
+
+@pytest.fixture(scope="class")
+def collected_cluster_must_gather_with_vms(
+    must_gather_tmpdir_scope_module,
+    must_gather_image_url,
+    must_gather_vm,
+):
+    yield collect_must_gather(
+        must_gather_tmpdir=must_gather_tmpdir_scope_module,
+        must_gather_image_url=must_gather_image_url,
+    )
+
+
+@pytest.fixture(scope="class")
+def nftables_ruleset_from_utility_pods(workers_utility_pods):
+    return {
+        pod.node.name: pod.execute(
+            command=shlex.split(
+                f"bash -c {shlex.quote('nft list ruleset 2>/dev/null')}"
+            )
+        ).splitlines()
+        for pod in workers_utility_pods
     }

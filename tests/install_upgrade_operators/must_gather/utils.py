@@ -21,7 +21,9 @@ LOGGER = logging.getLogger(__name__)
 MUST_GATHER_VM_NAME_PREFIX = "must-gather-vm"
 VM_FILE_SUFFIX = ["bridge.txt", "ip.txt", "ruletables.txt", "dumpxml.xml"]
 VALIDATE_UID_NAME = (("metadata", "uid"), ("metadata", "name"))
-
+VALIDATE_FIELDS = (("spec",),) + VALIDATE_UID_NAME
+TABLE_IP_FILTER = "table ip filter"
+TABLE_IP_NAT = "table ip nat"
 
 # TODO: this is a workaround for an openshift bug
 # An issue was opened in openshift for this:
@@ -310,7 +312,7 @@ def collect_must_gather(
     return get_must_gather_output_dir(must_gather_path=must_gather_tmpdir)
 
 
-def validate_files_collected(base_path, vm_list):
+def validate_files_collected(base_path, vm_list, nftables_ruleset_from_utility_pods):
     errors = defaultdict(dict)
     for vm in vm_list:
         virt_launcher = vm.vmi.virt_launcher_pod
@@ -335,7 +337,16 @@ def validate_files_collected(base_path, vm_list):
             for file_name in files_collected:
                 file_size = os.stat(file_name).st_size
                 if file_size < 2:
-                    empty_files.append(f"file {file_name}: size {file_size}")
+                    if (
+                        "ruletables.txt" in file_name
+                        and not nftables_ruleset_from_utility_pods.values()
+                    ):
+                        LOGGER.warning(
+                            f"For file: {file_name}, found empty file, while nftables"
+                            f" output: {nftables_ruleset_from_utility_pods}"
+                        )
+                    else:
+                        empty_files.append(f"file {file_name}: size {file_size}")
             if empty_files:
                 errors["empty_file"][vm.name] = empty_files
         else:
@@ -397,6 +408,7 @@ def validate_must_gather_vm_file_collection(
     expected,
     must_gather_vm,
     must_gather_vms_from_alternate_namespace,
+    nftables_ruleset_from_utility_pods,
 ):
     vm_list = get_vm_list_for_validation(
         expected=expected,
@@ -410,6 +422,7 @@ def validate_must_gather_vm_file_collection(
     validate_files_collected(
         base_path=collected_vm_details_must_gather_with_params,
         vm_list=vm_list["vms_collected"],
+        nftables_ruleset_from_utility_pods=nftables_ruleset_from_utility_pods,
     )
     not_collected_vm_names = [vm.name for vm in vm_list["vms_not_collected"]]
     LOGGER.info(
@@ -419,6 +432,7 @@ def validate_must_gather_vm_file_collection(
         validate_files_collected(
             base_path=collected_vm_details_must_gather_with_params,
             vm_list=vm_list["vms_not_collected"],
+            nftables_ruleset_from_utility_pods=nftables_ruleset_from_utility_pods,
         )
     assert all(
         entry in str(exeption_found.value)

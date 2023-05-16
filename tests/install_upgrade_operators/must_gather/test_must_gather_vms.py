@@ -2,11 +2,17 @@ import logging
 import re
 
 import pytest
+from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
+from ocp_resources.virtual_machine import VirtualMachine
 
 from tests.install_upgrade_operators.must_gather.utils import (
+    TABLE_IP_FILTER,
+    TABLE_IP_NAT,
+    VALIDATE_FIELDS,
     assert_files_exists_for_running_vms,
     assert_must_gather_stopped_vm_yaml_file_collection,
     assert_path_not_exists_for_stopped_vms,
+    check_list_of_resources,
     validate_files_collected,
 )
 
@@ -15,6 +21,51 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.mark.usefixtures("collected_vm_details_must_gather")
+class TestMustGatherClusterWithVMs:
+    @pytest.mark.parametrize(
+        ("resource_type", "resource_path", "checks"),
+        [
+            pytest.param(
+                NetworkAttachmentDefinition,
+                "namespaces/{namespace}/"
+                f"{NetworkAttachmentDefinition.ApiGroup.K8S_CNI_CNCF_IO}/"
+                "network-attachment-definitions/{name}.yaml",
+                VALIDATE_FIELDS,
+                marks=(pytest.mark.polarion("CNV-2720")),
+                id="test_network_attachment_definitions_resources",
+            ),
+            pytest.param(
+                VirtualMachine,
+                "namespaces/{namespace}/"
+                f"{VirtualMachine.ApiGroup.KUBEVIRT_IO}/virtualmachines/custom"
+                "/{name}.yaml",
+                VALIDATE_FIELDS,
+                marks=(pytest.mark.polarion("CNV-3043")),
+                id="test_virtualmachine_resources",
+            ),
+        ],
+        indirect=["resource_type"],
+    )
+    def test_resource_type(
+        self,
+        admin_client,
+        collected_cluster_must_gather_with_vms,
+        resource_type,
+        resource_path,
+        checks,
+    ):
+        check_list_of_resources(
+            dyn_client=admin_client,
+            resource_type=resource_type,
+            temp_dir=collected_cluster_must_gather_with_vms,
+            resource_path=resource_path,
+            checks=checks,
+        )
+
+
+@pytest.mark.usefixtures(
+    "collected_vm_details_must_gather", "nftables_ruleset_from_utility_pods"
+)
 class TestMustGatherVmDetails:
     @pytest.mark.parametrize(
         "extracted_data_from_must_gather_file, format_regex",
@@ -36,12 +87,12 @@ class TestMustGatherVmDetails:
             ),
             pytest.param(
                 {"file_suffix": "ruletables.txt", "section_title": None},
-                "table ip filter",
+                TABLE_IP_FILTER,
                 marks=(pytest.mark.polarion("CNV-2737"),),
             ),
             pytest.param(
                 {"file_suffix": "ruletables.txt", "section_title": None},
-                "table ip nat",
+                TABLE_IP_NAT,
                 marks=(pytest.mark.polarion("CNV-2741"),),
             ),
             pytest.param(
@@ -64,6 +115,7 @@ class TestMustGatherVmDetails:
         nad_mac_address,
         vm_interface_name,
         extracted_data_from_must_gather_file,
+        nftables_ruleset_from_utility_pods,
         format_regex,
     ):
         if "name" in format_regex and "namespace" in format_regex:
@@ -79,15 +131,30 @@ class TestMustGatherVmDetails:
             f"{re.search(format_regex, extracted_data_from_must_gather_file, re.MULTILINE | re.IGNORECASE)}"
         )
         # Make sure that gathered data roughly matches expected format.
-        assert re.search(
+        matches = re.search(
             format_regex,
             extracted_data_from_must_gather_file,
             re.MULTILINE | re.IGNORECASE,
-        ), (
-            "Gathered data are not matching expected format.\n"
-            f"Expected format:\n{format_regex}\n "
-            f"Gathered data:\n{extracted_data_from_must_gather_file}"
         )
+
+        if not matches:
+            if format_regex in (TABLE_IP_NAT, TABLE_IP_FILTER):
+                if nftables_ruleset_from_utility_pods.values():
+                    assert extracted_data_from_must_gather_file, (
+                        f"{format_regex} does not contains nftables output: "
+                        f"{nftables_ruleset_from_utility_pods}, file is empty"
+                    )
+                else:
+                    LOGGER.warning(
+                        f"For vm: {must_gather_vm.name} data collected from virt launcher associated with section "
+                        f"{format_regex}: {extracted_data_from_must_gather_file} while nftables output collected from "
+                        f"the cluster is: {nftables_ruleset_from_utility_pods}"
+                    )
+            else:
+                raise AssertionError(
+                    f"Gathered data are not matching expected format.\nExpected format:\n{format_regex}\n "
+                    f"Gathered data:\n{extracted_data_from_must_gather_file}"
+                )
 
 
 @pytest.mark.usefixtures("must_gather_stopped_vms")
@@ -127,8 +194,10 @@ class TestMustGatherVmLongNameDetails:
         self,
         must_gather_long_name_vm,
         collected_vm_details_must_gather,
+        nftables_ruleset_from_utility_pods,
     ):
         validate_files_collected(
             base_path=collected_vm_details_must_gather,
             vm_list=[must_gather_long_name_vm],
+            nftables_ruleset_from_utility_pods=nftables_ruleset_from_utility_pods,
         )
