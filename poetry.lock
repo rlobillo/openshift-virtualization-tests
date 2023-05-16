@@ -963,13 +963,13 @@ six = "*"
 
 [[package]]
 name = "openshift-python-utilities"
-version = "4.12.20"
+version = "4.12.22"
 description = "A utilities repository for https://github.com/RedHatQE/openshift-python-wrapper"
 category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "openshift-python-utilities-4.12.20.tar.gz", hash = "sha256:0784479844b25c1413fec4a6139ae84e3fdb83c5766909e9c81b0d64c5a5eff0"},
+    {file = "openshift-python-utilities-4.12.22.tar.gz", hash = "sha256:fedfe3a651212006e3b793919366cd5600022285a21162ea46d84b584ae75cbc"},
 ]
 
 [package.dependencies]
@@ -982,13 +982,13 @@ PyYAML = "*"
 
 [[package]]
 name = "openshift-python-wrapper"
-version = "4.12.33"
+version = "4.12.35"
 description = "Wrapper around https://github.com/openshift/openshift-restclient-python"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "openshift-python-wrapper-4.12.33.tar.gz", hash = "sha256:33dbc2e5291f53a5d5cbe49c1f7703f29611a7e70fa253dac04566f126234526"},
+    {file = "openshift-python-wrapper-4.12.35.tar.gz", hash = "sha256:3b4dc5a35cdc904e01c8f0b5e529cc602615d14fa03ac11b848439cb9cb32c87"},
 ]
 
 [package.dependencies]
