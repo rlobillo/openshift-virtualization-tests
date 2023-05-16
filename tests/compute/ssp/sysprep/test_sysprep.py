@@ -15,7 +15,7 @@ from pytest_testconfig import py_config
 
 from tests.compute.utils import get_windows_timezone
 from tests.os_params import WINDOWS_2019, WINDOWS_2019_OS, WINDOWS_2019_TEMPLATE_LABELS
-from utilities.constants import TIMEOUT_5MIN
+from utilities.constants import TCP_TIMEOUT_30SEC, TIMEOUT_5MIN
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     migrate_vm_and_verify,
@@ -56,9 +56,9 @@ def verify_changes_from_autounattend(vm, timezone, hostname):
 
     # hostname
     LOGGER.info(f"Verifying hostname change from answer file in vm {vm.name}")
-    actual_hostname = run_ssh_commands(host=vm.ssh_exec, commands=["hostname"])[
-        0
-    ].strip()
+    actual_hostname = run_ssh_commands(
+        host=vm.ssh_exec, commands=["hostname"], tcp_timeout=TCP_TIMEOUT_30SEC
+    )[0].strip()
     assert (
         actual_hostname == hostname
     ), f"Incorrect hostname, expected {hostname}, found {actual_hostname}"
@@ -157,6 +157,7 @@ def sealed_vm(sysprep_vm):
             "%WINDIR%\\system32\\sysprep\\sysprep.exe /generalize /quit /oobe /mode:vm",
             posix=False,
         ),
+        tcp_timeout=TCP_TIMEOUT_30SEC,
     )
 
 

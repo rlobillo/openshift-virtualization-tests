@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import json
 import logging
 import re
@@ -23,7 +21,9 @@ from tests.compute.utils import get_windows_timezone
 from utilities.constants import (
     OS_FLAVOR_RHEL,
     OS_FLAVOR_WINDOWS,
+    TCP_TIMEOUT_30SEC,
     TIMEOUT_3MIN,
+    TIMEOUT_15SEC,
     TIMEOUT_90SEC,
 )
 from utilities.infra import raise_multiple_exceptions, run_virtctl_command
@@ -39,6 +39,7 @@ def reboot_vm(vm):
         run_ssh_commands(
             host=vm.ssh_exec,
             commands=shlex.split("powershell restart-computer -force"),
+            tcp_timeout=TCP_TIMEOUT_30SEC,
         )[0]
     # When a reboot command is executed, a resources.pod.ExecOnPodError exception is raised:
     # "connection reset by peer"
@@ -146,10 +147,11 @@ def check_windows_vm_hvinfo(vm):
 
     sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_90SEC,
-        sleep=15,
+        sleep=TIMEOUT_15SEC,
         func=run_ssh_commands,
         host=vm.ssh_exec,
         commands=[HVINFO_PATH],
+        tcp_timeout=TCP_TIMEOUT_30SEC,
     )
     for sample in sampler:
         output = sample[0]
@@ -217,7 +219,9 @@ def add_windows_license(vm, windows_license):
     cmd = shlex.split(
         f"cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /ipk {windows_license}"
     )
-    addition_status = run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0]
+    addition_status = run_ssh_commands(
+        host=vm.ssh_exec, commands=cmd, tcp_timeout=TCP_TIMEOUT_30SEC
+    )[0]
     assert re.match(
         r"Installed product key [a-z0-9-]+ successfully.",
         addition_status,
@@ -228,7 +232,9 @@ def add_windows_license(vm, windows_license):
 def activate_windows_online(vm):
     def _activate_windows(vm):
         cmd = shlex.split("cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /ato")
-        online_activation_status = run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0]
+        online_activation_status = run_ssh_commands(
+            host=vm.ssh_exec, commands=cmd, tcp_timeout=TCP_TIMEOUT_30SEC
+        )[0]
         return re.match(
             r"Activating Windows\(R\), (ServerStandard|Professional|Enterprise) edition "
             r"\(.*\) \.+.*Product activated successfully",
@@ -258,7 +264,9 @@ def is_windows_activated(vm):
     cmd = shlex.split("cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /xpr")
     return (
         "The machine is permanently activated"
-        in run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0]
+        in run_ssh_commands(
+            host=vm.ssh_exec, commands=cmd, tcp_timeout=TCP_TIMEOUT_30SEC
+        )[0]
     )
 
 
@@ -550,7 +558,9 @@ def validate_user_info_virtctl_vs_windows_os(vm):
                 return sample
 
     virtctl_info, cnv_info, libvirt_info = _user_info_sampler_win(_vm=vm)
-    windows_info = run_ssh_commands(host=vm.ssh_exec, commands=["quser"])[0]
+    windows_info = run_ssh_commands(
+        host=vm.ssh_exec, commands=["quser"], tcp_timeout=TCP_TIMEOUT_30SEC
+    )[0]
     # Match timezone to VM's timezone and not use UTC
     virtctl_time = virtctl_info["loginTime"] - _get_vm_timezone_diff()
     data_mismatch = []
@@ -691,7 +701,9 @@ def get_windows_os_info(ssh_exec):
     ga_ver_cmd = shlex.split(
         r'wmic datafile "C:\\\\Program Files\\\\Qemu-ga\\\\qemu-ga.exe" get Version /value'
     )
-    ga_ver = run_ssh_commands(host=ssh_exec, commands=ga_ver_cmd)[0].strip()
+    ga_ver = run_ssh_commands(
+        host=ssh_exec, commands=ga_ver_cmd, tcp_timeout=TCP_TIMEOUT_30SEC
+    )[0].strip()
     hostname = wmic_os_get_value(ssh_exec=ssh_exec, _key="CSName")
     timezone = get_windows_timezone(ssh_exec=ssh_exec)
 
@@ -710,7 +722,9 @@ def get_windows_os_dict(ssh_exec):
     kernel_release = wmic_os_get_value(ssh_exec=ssh_exec, _key="BuildNumber")
     version = wmic_os_get_value(ssh_exec=ssh_exec, _key="Caption")
     win_2012_ver = "2012r2" if "2012" in version else None
-    reg_product_name = run_ssh_commands(host=ssh_exec, commands=reg_product_name_cmd)[0]
+    reg_product_name = run_ssh_commands(
+        host=ssh_exec, commands=reg_product_name_cmd, tcp_timeout=TCP_TIMEOUT_30SEC
+    )[0]
     kernel_version = wmic_os_get_value(ssh_exec=ssh_exec, _key="Version")
     machine = wmic_os_get_value(ssh_exec=ssh_exec, _key="OSArchitecture")
     return {
@@ -727,7 +741,9 @@ def get_windows_os_dict(ssh_exec):
 
 def wmic_os_get_value(ssh_exec, _key):
     cmd_out = run_ssh_commands(
-        host=ssh_exec, commands=shlex.split(f"wmic os get {_key} /value")
+        host=ssh_exec,
+        commands=shlex.split(f"wmic os get {_key} /value"),
+        tcp_timeout=TCP_TIMEOUT_30SEC,
     )[0]
     # WMIC command returns value in <key>=<value> format
     return cmd_out.strip().split("=", 1)[1]
@@ -815,15 +831,21 @@ def get_linux_fs_info(ssh_exec):
 
 def get_windows_fs_info(ssh_exec):
     disk_name_cmd = shlex.split("fsutil volume list")
-    disk_name = run_ssh_commands(host=ssh_exec, commands=disk_name_cmd)[0]
+    disk_name = run_ssh_commands(
+        host=ssh_exec, commands=disk_name_cmd, tcp_timeout=TCP_TIMEOUT_30SEC
+    )[0]
     disk_space_cmd = shlex.split("fsutil volume diskfree C:")
     disk_space = (
-        run_ssh_commands(host=ssh_exec, commands=disk_space_cmd)[0]
+        run_ssh_commands(
+            host=ssh_exec, commands=disk_space_cmd, tcp_timeout=TCP_TIMEOUT_30SEC
+        )[0]
         .strip()
         .split("\r\n")
     )
     fs_type_cmd = shlex.split("fsutil fsinfo volumeinfo C:")
-    fs_type = run_ssh_commands(host=ssh_exec, commands=fs_type_cmd)[0]
+    fs_type = run_ssh_commands(
+        host=ssh_exec, commands=fs_type_cmd, tcp_timeout=TCP_TIMEOUT_30SEC
+    )[0]
 
     windows_info = f"{disk_name} {windows_disk_space_parser(disk_space)} {fs_type}"
     windows_fs_info = re.search(

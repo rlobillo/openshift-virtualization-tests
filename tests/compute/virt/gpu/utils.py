@@ -6,6 +6,7 @@ from utilities.constants import (
     GPU_DEVICE_ID,
     NVIDIA_GRID_DRIVER_NAME,
     OS_FLAVOR_WINDOWS,
+    TCP_TIMEOUT_30SEC,
     TIMEOUT_3MIN,
     VGPU_DEVICE_NAME,
     NamespacesNames,
@@ -31,6 +32,7 @@ def get_gpu_device_name_from_windows_vm(vm):
     return run_ssh_commands(
         host=vm.ssh_exec,
         commands=[shlex.split("wmic path win32_VideoController get name")],
+        tcp_timeout=TCP_TIMEOUT_30SEC,
     )[0]
 
 
@@ -124,6 +126,7 @@ def install_nvidia_drivers_on_windows_vm(vm):
                 posix=False,
             )
         ],
+        tcp_timeout=TCP_TIMEOUT_30SEC,
     )
     # Wait for Running VM, as only vGPU VM Reboots after installing NVIDIA GRID Drivers.
     if fetch_gpu_device_name_from_vm_instance(vm=vm) == VGPU_DEVICE_NAME:

@@ -10,6 +10,7 @@ from tests.compute.utils import (
     kill_processes_by_name_linux,
     start_and_fetch_processid_on_linux_vm,
 )
+from utilities.constants import TCP_TIMEOUT_30SEC
 from utilities.hco import update_hco_annotations
 from utilities.infra import is_jira_open
 from utilities.virt import (
@@ -108,6 +109,7 @@ def get_stress_ng_pid(ssh_exec, windows=False):
     return run_ssh_commands(
         host=ssh_exec,
         commands=shlex.split(command),
+        tcp_timeout=TCP_TIMEOUT_30SEC,
     )[0]
 
 
@@ -135,4 +137,5 @@ def start_stress_on_vm(vm, stress_command):
     run_ssh_commands(
         host=vm.ssh_exec,
         commands=shlex.split(command),
+        tcp_timeout=TCP_TIMEOUT_30SEC,
     )

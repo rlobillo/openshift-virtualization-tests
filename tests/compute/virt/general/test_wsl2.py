@@ -14,7 +14,7 @@ from ocp_resources.utils import TimeoutSampler
 from ocp_utilities.utils import run_ssh_commands
 from pytest_testconfig import config as py_config
 
-from utilities.constants import INTEL, TIMEOUT_1MIN, Images
+from utilities.constants import INTEL, TCP_TIMEOUT_30SEC, TIMEOUT_1MIN, Images
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     get_windows_os_dict,
@@ -40,7 +40,11 @@ def get_wsl_pid(vm):
     wsl.exe                       8816 Console                    1      4,144 K
     ....
     """
-    res = run_ssh_commands(host=vm.ssh_exec, commands=shlex.split("tasklist"))
+    res = run_ssh_commands(
+        host=vm.ssh_exec,
+        commands=shlex.split("tasklist"),
+        tcp_timeout=TCP_TIMEOUT_30SEC,
+    )
     wsl_pid = re.search(r"wsl.exe.*?(\d+).*?", res[0])
     assert wsl_pid, f"Missing pid for wsl.exe, task list: \n{res[0]}"
     return wsl_pid.group(1)
@@ -55,6 +59,7 @@ def get_windows_vm_resource_usage(vm):
     usage = run_ssh_commands(
         host=vm.ssh_exec,
         commands=shlex.split("python C:\\\\tools\\\\cpu_mem_usage.py"),
+        tcp_timeout=TCP_TIMEOUT_30SEC,
     )[0]
     LOGGER.info(f"Windows VM CPU and Memory usage: {usage}")
     out = re.search(r".*CPU usage: (?P<cpu>.*),.*\(RAM\):(?P<ram>.*)", usage)

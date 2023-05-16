@@ -17,7 +17,7 @@ from tests.compute.utils import get_virt_launcher_processes_memory_overuse
 from tests.compute.virt.constants import STRESS_CPU_MEM_IO_COMMAND
 from tests.compute.virt.utils import start_stress_on_vm
 from tests.os_params import WINDOWS_10_TEMPLATE_LABELS
-from utilities.constants import TIMEOUT_15MIN, Images
+from utilities.constants import TCP_TIMEOUT_30SEC, TIMEOUT_15MIN, Images
 from utilities.infra import cluster_resource
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
@@ -84,6 +84,7 @@ def start_file_transfer(vm):
         commands=shlex.split(
             f"{'wsl' if 'windows' in vm.name else ''} dd if=/dev/zero of={file_name} bs=100M count=1"
         ),
+        tcp_timeout=TCP_TIMEOUT_30SEC,
     )
 
     transfer = Process(target=_transfer_loop)

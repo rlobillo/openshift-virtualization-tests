@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Common templates test tablet input device.
 https://github.com/kubevirt/kubevirt/pull/1987
@@ -17,6 +15,7 @@ from pytest_testconfig import config as py_config
 from tests.compute.ssp.constants import VIRTIO
 from tests.compute.ssp.supported_os.common_templates import utils
 from tests.os_params import WINDOWS_LATEST, WINDOWS_LATEST_LABELS, WINDOWS_LATEST_OS
+from utilities.constants import TCP_TIMEOUT_30SEC
 from utilities.virt import get_windows_os_dict
 
 
@@ -39,6 +38,7 @@ def check_windows_vm_tablet_device(vm, driver_state):
     windows_driver_query = run_ssh_commands(
         host=vm.ssh_exec,
         commands=shlex.split("%systemroot%\\\\system32\\\\driverquery /fo list /v"),
+        tcp_timeout=TCP_TIMEOUT_30SEC,
     )[0]
 
     assert re.search(

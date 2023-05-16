@@ -18,6 +18,7 @@ from tests.os_params import (
 from utilities.constants import (
     OS_FLAVOR_RHEL,
     OS_FLAVOR_WINDOWS,
+    TCP_TIMEOUT_30SEC,
     TIMEOUT_2MIN,
     TIMEOUT_5MIN,
     TIMEOUT_30MIN,
@@ -95,7 +96,10 @@ def restarted_persistence_vm(request, persistence_vm):
 def run_os_command(vm, command):
     try:
         return run_ssh_commands(
-            host=vm.ssh_exec, commands=shlex.split(command), timeout=5
+            host=vm.ssh_exec,
+            commands=shlex.split(command),
+            timeout=5,
+            tcp_timeout=TCP_TIMEOUT_30SEC,
         )[0]
     except ProxyCommandFailure:
         # On RHEL on successful reboot command execution ssh gets stuck

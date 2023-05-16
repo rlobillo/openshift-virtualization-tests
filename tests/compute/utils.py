@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import logging
 import shlex
 
@@ -11,7 +10,13 @@ from ocp_utilities.utils import run_ssh_commands
 
 from tests.compute.contants import DISK_SERIAL, RHSM_SECRET_NAME
 from tests.compute.virt.constants import VIRT_PROCESS_MEMORY_LIMITS
-from utilities.constants import RHSM_PASSWD, RHSM_USER, TIMEOUT_5MIN, TIMEOUT_10SEC
+from utilities.constants import (
+    RHSM_PASSWD,
+    RHSM_USER,
+    TCP_TIMEOUT_30SEC,
+    TIMEOUT_5MIN,
+    TIMEOUT_10SEC,
+)
 from utilities.infra import base64_encode_str, cluster_resource
 from utilities.virt import (
     migrate_vm_and_verify,
@@ -41,7 +46,9 @@ def get_windows_timezone(ssh_exec, get_standard_name=False):
     timezone_cmd = shlex.split(
         f'powershell -command "Get-TimeZone {standard_name_cmd}"'
     )
-    return run_ssh_commands(host=ssh_exec, commands=[timezone_cmd])[0]
+    return run_ssh_commands(
+        host=ssh_exec, commands=[timezone_cmd], tcp_timeout=TCP_TIMEOUT_30SEC
+    )[0]
 
 
 def start_and_fetch_processid_on_windows_vm(vm, process_name):
@@ -49,6 +56,7 @@ def start_and_fetch_processid_on_windows_vm(vm, process_name):
     run_ssh_commands(
         host=vm.ssh_exec,
         commands=shlex.split(f"wmic process call create {process_name}"),
+        tcp_timeout=TCP_TIMEOUT_30SEC,
     )
     return fetch_pid_from_windows_vm(vm=vm, process_name=process_name)
 
@@ -57,7 +65,9 @@ def fetch_pid_from_windows_vm(vm, process_name):
     cmd = shlex.split(
         rf"wmic process where (Name=\'{process_name}\') get processid /value"
     )
-    cmd_res = run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0].strip()
+    cmd_res = run_ssh_commands(
+        host=vm.ssh_exec, commands=cmd, tcp_timeout=TCP_TIMEOUT_30SEC
+    )[0].strip()
     assert cmd_res, f"Process '{process_name}' not found in output: {cmd_res}"
     return int(cmd_res.split("=")[-1])
 
@@ -139,7 +149,7 @@ def kill_processes_by_name_linux(vm, process_name, check_rc=True):
 
 def kill_processes_by_name_windows(vm, process_name):
     cmd = shlex.split(f"taskkill /F /IM {process_name}")
-    run_ssh_commands(host=vm.ssh_exec, commands=cmd)
+    run_ssh_commands(host=vm.ssh_exec, commands=cmd, tcp_timeout=TCP_TIMEOUT_30SEC)
 
 
 def verify_pods_priority_class_value(pods, expected_value):
@@ -298,7 +308,9 @@ def assert_windows_efi(vm):
     Verify guest OS is using EFI.
     """
     out = run_ssh_commands(
-        host=vm.ssh_exec, commands=shlex.split("bcdedit | findstr EFI")
+        host=vm.ssh_exec,
+        commands=shlex.split("bcdedit | findstr EFI"),
+        tcp_timeout=TCP_TIMEOUT_30SEC,
     )[0]
     assert (
         "\\EFI\\Microsoft\\Boot\\bootmgfw.efi" in out

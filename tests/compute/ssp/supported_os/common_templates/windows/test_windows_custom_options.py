@@ -11,7 +11,7 @@ from ocp_utilities.utils import run_ssh_commands
 from pytest_testconfig import py_config
 
 from tests.compute.ssp.constants import VIRTIO
-from utilities.constants import LINUX_BRIDGE, TIMEOUT_12MIN
+from utilities.constants import LINUX_BRIDGE, TCP_TIMEOUT_30SEC, TIMEOUT_12MIN
 from utilities.network import network_device, network_nad
 from utilities.storage import get_storage_class_dict_from_matrix
 from utilities.virt import (
@@ -115,6 +115,7 @@ def initialize_and_format_windows_drive(
             ]
         ],
         get_pty=True,
+        tcp_timeout=TCP_TIMEOUT_30SEC,
     )
 
 
