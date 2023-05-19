@@ -6,6 +6,9 @@ from utilities.constants import Images
 from utilities.virt import VirtualMachineForTests, running_vm
 
 
+pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
+
+
 @pytest.fixture(scope="class")
 def rhel_vm_with_instance_type_and_preference(
     namespace, admin_client, instance_type_for_test_scope_class, vm_preference_for_test
