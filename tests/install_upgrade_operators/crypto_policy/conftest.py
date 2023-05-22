@@ -30,7 +30,7 @@ from utilities.constants import (
     SSP_KUBEVIRT_HYPERCONVERGED,
     TLS_SECURITY_PROFILE,
 )
-from utilities.infra import MissingResourceException
+from utilities.infra import MissingResourceException, is_jira_open
 
 
 LOGGER = logging.getLogger(__name__)
@@ -107,14 +107,21 @@ def updated_api_server_crypto_policy(
 def services_to_check_connectivity(hco_namespace):
     services_list = []
     missing_services = []
-    for service_name in [
+    services_name_list = [
         "virt-api",
         "ssp-operator-service",
         "ssp-operator-metrics",
         "virt-template-validator",
         "kubemacpool-service",
         "cdi-api",
-    ]:
+        "hostpath-provisioner-operator-service",
+    ]
+    if is_jira_open(jira_id="CNV-28716"):
+        services_name_list.remove("virt-template-validator")
+        LOGGER.info(
+            f"Remove service: virt-template-validator. Services for connectivity check : {services_name_list}"
+        )
+    for service_name in services_name_list:
         service = cluster_resource(Service)(
             name=service_name, namespace=hco_namespace.name
         )
