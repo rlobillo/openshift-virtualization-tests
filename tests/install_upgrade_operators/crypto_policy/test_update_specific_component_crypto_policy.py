@@ -32,6 +32,8 @@ from utilities.hco import (
     update_hco_annotations,
     wait_for_hco_conditions,
 )
+from utilities.infra import is_jira_open
+from utilities.ssp import verify_ssp_pod_is_running
 
 
 LOGGER = logging.getLogger(__name__)
@@ -78,6 +80,7 @@ def updated_cr_with_custom_crypto_policy(
     resource = request.param["resource"]
     value = request.param["value"]
     tls_policy = {**value, **TLS_POLICIES_WITHOUT_CUSTOM_POLICY}
+    ssp_jira_status = is_jira_open(jira_id="CNV-23504")
     with update_hco_annotations(
         resource=hyperconverged_resource_scope_function,
         path=request.param["key"],
@@ -92,7 +95,17 @@ def updated_cr_with_custom_crypto_policy(
                 **{"TaintedConfiguration": Resource.Condition.Status.TRUE},
             },
         )
+        if resource == SSP and ssp_jira_status:
+            verify_ssp_pod_is_running(
+                dyn_client=admin_client,
+                hco_namespace=hco_namespace,
+            )
         yield {"resource": resource, "tls_policy": value}
+    if resource == SSP and ssp_jira_status:
+        verify_ssp_pod_is_running(
+            dyn_client=admin_client,
+            hco_namespace=hco_namespace,
+        )
     assert not is_hco_tainted(
         admin_client=admin_client, hco_namespace=hco_namespace.name
     )
