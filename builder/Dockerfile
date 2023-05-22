@@ -38,7 +38,6 @@ RUN python3 -m pip install pip --upgrade \
     && ${POETRY_HOME}/bin/poetry config cache-dir /cnv-tests \
     && ${POETRY_HOME}/bin/poetry config virtualenvs.in-project true \
     && ${POETRY_HOME}/bin/poetry config --list \
-    && ${POETRY_HOME}/bin/poetry env remove --all \
     && ${POETRY_HOME}/bin/poetry install \
     && ${POETRY_HOME}/bin/poetry export --without-hashes -n \
     && if [[ -n "${OPENSHIFT_PYTHON_WRAPPER_COMMIT}" ]];   then ${POETRY_HOME}/bin/poetry run pip install git+https://github.com/RedHatQE/openshift-python-wrapper.git@$OPENSHIFT_PYTHON_WRAPPER_COMMIT -U; fi \
