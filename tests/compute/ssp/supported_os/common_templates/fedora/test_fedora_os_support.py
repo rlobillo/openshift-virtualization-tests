@@ -204,7 +204,6 @@ class TestCommonTemplatesFedora:
     def test_efi_secureboot_enabled_by_default(
         self,
         skip_upstream,
-        skip_if_os_version_below_fedora37,
         namespace,
         fedora_os_matrix__class__,
         golden_image_data_volume_multi_fedora_os_multi_storage_scope_class,

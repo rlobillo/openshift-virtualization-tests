@@ -176,6 +176,7 @@ LICENSE_STR = "license"
 rhel_os_matrix = [
     {
         "rhel-6-10": {
+            OS_VERSION_STR: "6.10",
             IMAGE_NAME_STR: Images.Rhel.RHEL6_IMG,
             IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL6_IMG),
             DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
@@ -188,6 +189,7 @@ rhel_os_matrix = [
     },
     {
         "rhel-7-8": {
+            OS_VERSION_STR: "7.8",
             IMAGE_NAME_STR: Images.Rhel.RHEL7_8_IMG,
             IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_8_IMG),
             DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
@@ -200,6 +202,7 @@ rhel_os_matrix = [
     },
     {
         "rhel-7-9": {
+            OS_VERSION_STR: "7.9",
             IMAGE_NAME_STR: Images.Rhel.RHEL7_9_IMG,
             IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL7_9_IMG),
             DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
@@ -212,6 +215,7 @@ rhel_os_matrix = [
     },
     {
         "rhel-8-6": {
+            OS_VERSION_STR: "8.6",
             IMAGE_NAME_STR: Images.Rhel.RHEL8_6_IMG,
             IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_6_IMG),
             DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
@@ -224,6 +228,7 @@ rhel_os_matrix = [
     },
     {
         "rhel-8-7": {
+            OS_VERSION_STR: "8.7",
             IMAGE_NAME_STR: Images.Rhel.RHEL8_7_IMG,
             IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL8_7_IMG),
             DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
@@ -237,6 +242,7 @@ rhel_os_matrix = [
     },
     {
         "rhel-9-0": {
+            OS_VERSION_STR: "9.0",
             IMAGE_NAME_STR: Images.Rhel.RHEL9_0_IMG,
             IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL9_0_IMG),
             DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,
@@ -249,6 +255,7 @@ rhel_os_matrix = [
     },
     {
         "rhel-9-1": {
+            OS_VERSION_STR: "9.1",
             IMAGE_NAME_STR: Images.Rhel.RHEL9_1_IMG,
             IMAGE_PATH_STR: os.path.join(Images.Rhel.DIR, Images.Rhel.RHEL9_1_IMG),
             DV_SIZE_STR: Images.Rhel.DEFAULT_DV_SIZE,

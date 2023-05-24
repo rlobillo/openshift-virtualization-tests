@@ -294,14 +294,10 @@ def skip_guest_agent_on_rhel6(rhel_os_matrix__class__):
 
 @pytest.fixture()
 def skip_if_os_version_below_rhel9(rhel_os_matrix__class__):
-    if version.parse([*rhel_os_matrix__class__][0]) < version.parse("rhel-9"):
+    current_rhel_name = [*rhel_os_matrix__class__][0]
+    os_ver_str = rhel_os_matrix__class__[current_rhel_name]["os_version"]
+    if version.parse(os_ver_str) < version.parse("9"):
         pytest.skip("EFI is not enabled by default before RHEL9")
-
-
-@pytest.fixture()
-def skip_if_os_version_below_fedora37(fedora_os_matrix__class__):
-    if version.parse([*fedora_os_matrix__class__][0]) < version.parse("fedora-37"):
-        pytest.skip("EFI is not enabled by default before FEDORA37")
 
 
 @pytest.fixture()
