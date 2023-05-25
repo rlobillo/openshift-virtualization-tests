@@ -97,24 +97,26 @@ def wait_for_install_plan(
                 subscription.instance.status.installplan, "name", None
             )
             for ip in install_plan_samples:
-                # Delete unapproved install plans associated with the production catalog source to
-                # generate a custom catalog source install plan for upgrade automation. Approving
-                # the production catalog source install plan would fail, because its disabled.
+                # If we find a not-approved install plan that is associated with production catalogsource, we need
+                # to delete it. Deleting the install plan associated with production catalogsource, would cause
+                # install plan associated with custom catalog source to generate. Upgrade automation is supposed to
+                # upgrade cnv using custom catalogsource, to a specified version. Approving install plan associated
+                # with the production catalogsource would also lead to failure as production catalogsource has been
+                # disabled at this point.
+                ip_instance = ip.instance
                 if not is_production_source:
-                    install_plan_instance = ip.instance
                     if (
-                        not install_plan_instance.spec.approved
-                        and install_plan_instance.status.bundleLookups[0][
-                            "catalogSourceRef"
-                        ]["name"]
+                        not ip_instance.spec.approved
+                        and ip_instance.status
+                        and ip_instance.status.bundleLookups[0]
+                        .get("catalogSourceRef")
+                        .get("name")
                         == PRODUCTION_CATALOG_SOURCE
                     ):
                         ip.delete(wait=True)
                         continue
-
-                # Return the target install plan if found.
                 if (
-                    hco_target_version == ip.instance.spec.clusterServiceVersionNames[0]
+                    hco_target_version == ip_instance.spec.clusterServiceVersionNames[0]
                     and ip.name == install_plan_name_in_subscription
                 ):
                     return ip
