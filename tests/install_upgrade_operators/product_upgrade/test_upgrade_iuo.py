@@ -19,6 +19,7 @@ from tests.upgrade_params import (
     IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
 )
 from utilities.constants import DEPENDENCY_SCOPE_SESSION, KUBELET_READY_CONDITION
+from utilities.data_collector import collect_alerts_data, collect_cnv_information
 
 
 LOGGER = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ pytestmark = pytest.mark.usefixtures(
     "nodes_taints_before_upgrade",
     "nodes_labels_before_upgrade",
 )
-
+ALERT_ERROR = "Following alerts were fired during upgrade:"
 DEPENDENCIES_NODE_ID_PREFIX = f"{os.path.abspath(__file__)}::TestUpgradeIUO"
 
 NODE_READY_ORDERING_NODE_ID = (
@@ -54,11 +55,10 @@ class TestUpgradeIUO:
             prometheus=prometheus,
             fired_alerts_during_upgrade=fired_alerts_during_ocp_upgrade,
         )
-
-        assert not fired_alerts_during_ocp_upgrade, (
-            f"Following alerts were fired during ocp upgrade:"
-            f" {fired_alerts_during_ocp_upgrade}"
-        )
+        if fired_alerts_during_ocp_upgrade:
+            collect_alerts_data(prometheus=prometheus)
+            collect_cnv_information()
+            raise AssertionError(f"{ALERT_ERROR}: {fired_alerts_during_ocp_upgrade}")
 
     @pytest.mark.polarion("CNV-9079")
     @pytest.mark.order(before=IUO_CNV_POD_ORDERING_NODE_ID)
@@ -73,10 +73,10 @@ class TestUpgradeIUO:
             prometheus=prometheus,
             fired_alerts_during_upgrade=fired_alerts_during_cnv_upgrade,
         )
-
-        assert (
-            not fired_alerts_during_cnv_upgrade
-        ), f"Following alerts were fired during upgrade: {fired_alerts_during_cnv_upgrade}"
+        if fired_alerts_during_cnv_upgrade:
+            collect_alerts_data(prometheus=prometheus)
+            collect_cnv_information()
+            raise AssertionError(f"{ALERT_ERROR}: {fired_alerts_during_cnv_upgrade}")
 
     @pytest.mark.polarion("CNV-4509")
     @pytest.mark.order(before=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
