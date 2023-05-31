@@ -2,6 +2,7 @@
 vGPU VM
 """
 import pytest
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 from tests.compute.virt.gpu.utils import wait_for_manager_pods_deployed
 from utilities.constants import (
@@ -10,6 +11,8 @@ from utilities.constants import (
     MDEV_NAME,
     MDEV_TYPE,
     NVIDIA_VGPU_MANAGER_DS,
+    TIMEOUT_5SEC,
+    TIMEOUT_20SEC,
     VGPU_DEVICE_NAME,
     VGPU_GRID_T4_16Q_NAME,
 )
@@ -46,9 +49,16 @@ def non_existent_mdev_bus_nodes(workers_utility_pods, vgpu_ready_nodes):
     non_existent_mdev_bus_nodes = []
     for node in vgpu_ready_nodes:
         pod_exec = ExecCommandOnPod(utility_pods=workers_utility_pods, node=node)
-        if desired_bus not in pod_exec.exec(
-            command=f"ls /sys/class | grep {desired_bus} || true"
-        ):
+        try:
+            for sample in TimeoutSampler(
+                wait_timeout=TIMEOUT_20SEC,
+                sleep=TIMEOUT_5SEC,
+                func=pod_exec.exec,
+                command=f"ls /sys/class | grep {desired_bus} || true",
+            ):
+                if sample:
+                    return
+        except TimeoutExpiredError:
             non_existent_mdev_bus_nodes.append(node.name)
     if non_existent_mdev_bus_nodes:
         pytest.fail(
