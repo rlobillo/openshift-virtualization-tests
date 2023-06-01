@@ -38,13 +38,9 @@ def cnv_build_info(cnv_current_version):
         pytest.fail(
             f"Failed API query to 'CNV Version Explorer': {cnv_version_explorer_url}"
         )
-    yield build_info["successful_builds"][0]
-
-
-@pytest.fixture()
-def skip_if_no_builds_available(cnv_build_info, cnv_current_version):
-    if not cnv_build_info:
+    if not build_info["successful_builds"]:
         pytest.skip(f"No successful builds available for CNV v{cnv_current_version}")
+    yield build_info["successful_builds"][0]
 
 
 @pytest.fixture()
@@ -83,7 +79,6 @@ def csv_related_images(csv_scope_session):
 
 @pytest.mark.polarion("CNV-9982")
 def test_validate_stage_images(
-    skip_if_no_builds_available,
     skip_if_errata_not_in_qe,
     skip_if_cluster_cnv_build_differs_from_errata_build,
     generated_pulled_secret,
