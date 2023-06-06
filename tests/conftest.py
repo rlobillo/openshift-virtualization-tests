@@ -668,6 +668,20 @@ def nodes_active_nics(
             if re.findall(r"v\d+$", iface_name):
                 continue
 
+            # If the interface is a bridge with physical ports, then these ports should be labeled as occupied.
+            for bridge_port in _bridge_ports(node_interface=node_iface):
+                if (
+                    bridge_port in node_physical_nics[node.name]
+                    and bridge_port not in nodes_nics[node.name]["occupied"]
+                ):
+                    LOGGER.warning(
+                        f"{node.name}:{bridge_port} is a port of {iface_name} bridge - adding it to the node's "
+                        "occupied interfaces list."
+                    )
+                    nodes_nics[node.name]["occupied"].append(bridge_port)
+                    if bridge_port in nodes_nics[node.name]["available"]:
+                        nodes_nics[node.name]["available"].remove(bridge_port)
+
             if iface_name in nodes_nics[node.name]["occupied"]:
                 continue
 
