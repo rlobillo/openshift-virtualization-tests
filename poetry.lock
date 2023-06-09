@@ -1937,14 +1937,14 @@ files = [
 
 [[package]]
 name = "websocket-client"
-version = "1.5.2"
+version = "1.5.3"
 description = "WebSocket client for Python with low level API options"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "websocket-client-1.5.2.tar.gz", hash = "sha256:c7d67c13b928645f259d9b847ab5b57fd2d127213ca41ebd880de1f553b7c23b"},
-    {file = "websocket_client-1.5.2-py3-none-any.whl", hash = "sha256:f8c64e28cd700e7ba1f04350d66422b6833b82a796b525a51e740b8cc8dab4b1"},
+    {file = "websocket-client-1.5.3.tar.gz", hash = "sha256:b96f3bce3e54e3486ebe6504bc22bd4c140392bd2eb71764db29be8f2639aa65"},
+    {file = "websocket_client-1.5.3-py3-none-any.whl", hash = "sha256:3566f8467cd350874c4913816355642a4942f6c1ed1e9406e3d42fae6d6c072a"},
 ]
 
 [package.extras]
@@ -1983,4 +1983,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "3dcf72de99e55b90f951ae4e57caebe1ad58e82e193446e2b2ffd9eb39b1d433"
+content-hash = "3daf835d2c0130877f4aa0f4d14d8ed8df65c79c9810d75263dbe38f658d3b3e"
