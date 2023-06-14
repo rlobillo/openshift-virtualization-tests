@@ -4,7 +4,7 @@ from ocp_resources.resource import ResourceEditor
 from ocp_utilities.infra import cluster_resource
 
 from tests.compute.virt.constants import MIGRATION_POLICY_VM_LABEL
-from utilities.infra import is_bug_open, label_project
+from utilities.infra import label_project
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -53,9 +53,7 @@ def create_migration_policy(request):
         allow_auto_converge=request.param.get("allowAutoConverge"),
         bandwidth_per_migration=request.param.get("bandwidthPerMigration"),
         completion_timeout_per_gb=request.param.get("completionTimeoutPerGiB"),
-        allow_post_copy=None
-        if is_bug_open(bug_id=2152875)
-        else request.param.get("allowPostCopy"),
+        allow_post_copy=None,
         namespace_selector=request.param.get("namespaceSelector"),
         vmi_selector=request.param.get("virtualMachineInstanceSelector"),
     ) as mp:
