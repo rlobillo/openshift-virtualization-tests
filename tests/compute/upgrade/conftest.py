@@ -288,8 +288,8 @@ def run_strategy_golden_image_rwx_data_source(
 
 
 @pytest.fixture(scope="session")
-def skip_on_zstream(cnv_upgrade_info):
-    if cnv_upgrade_info == UpgradeStreams.Z_STREAM:
+def skip_on_zstream(cnv_upgrade_stream):
+    if cnv_upgrade_stream == UpgradeStreams.Z_STREAM:
         pytest.skip("This test is not supported for z-stream upgrade")
 
 
