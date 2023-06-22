@@ -12,9 +12,10 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 
 import utilities.storage
 from tests.storage import utils
+from tests.storage.utils import import_image_to_dv
 from utilities.constants import CDI_UPLOADPROXY, Images, StorageClassNames
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import cluster_resource, get_cert
+from utilities.infra import cluster_resource
 from utilities.storage import (
     cdi_feature_gate_list_with_added_feature,
     check_cdi_feature_gate_enabled,
@@ -45,6 +46,7 @@ def cdiconfig_update(
     storage_ns_name,
     dv_name,
     client,
+    https_server_certificate,
     images_https_server_name="",
     run_vm=False,
     tmpdir=None,
@@ -62,10 +64,11 @@ def cdiconfig_update(
 
         if run_vm:
             if source == "http":
-                with utils.import_image_to_dv(
+                with import_image_to_dv(
                     dv_name=dv_name,
                     images_https_server_name=images_https_server_name,
                     storage_ns_name=storage_ns_name,
+                    https_server_certificate=https_server_certificate,
                 ) as dv:
                     _create_vm_check_disk_count(dv=dv)
             elif source == "upload":
@@ -93,6 +96,7 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
     cdi_config,
     namespace,
     unprivileged_client,
+    https_server_certificate,
 ):
     cdiconfig_update(
         source="upload",
@@ -105,6 +109,7 @@ def test_cdiconfig_scratchspace_fs_upload_to_block(
         run_vm=True,
         tmpdir=tmpdir,
         client=unprivileged_client,
+        https_server_certificate=https_server_certificate,
     )
 
 
@@ -116,6 +121,7 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
     cdi_config,
     namespace,
     unprivileged_client,
+    https_server_certificate,
 ):
     cdiconfig_update(
         source="http",
@@ -127,6 +133,7 @@ def test_cdiconfig_scratchspace_fs_import_to_block(
         images_https_server_name=get_images_server_url(schema="https"),
         run_vm=True,
         client=unprivileged_client,
+        https_server_certificate=https_server_certificate,
     )
 
 
@@ -138,6 +145,7 @@ def test_cdiconfig_status_scratchspace_update_with_spec(
     cdi_config,
     namespace,
     unprivileged_client,
+    https_server_certificate,
 ):
     cdiconfig_update(
         source="http",
@@ -147,6 +155,7 @@ def test_cdiconfig_status_scratchspace_update_with_spec(
         storage_class_type=available_hpp_storage_class.name,
         storage_ns_name=namespace.name,
         client=unprivileged_client,
+        https_server_certificate=https_server_certificate,
     )
 
 
@@ -158,6 +167,7 @@ def test_cdiconfig_scratch_space_not_default(
     cdi_config,
     namespace,
     unprivileged_client,
+    https_server_certificate,
 ):
     cdiconfig_update(
         source="http",
@@ -169,6 +179,7 @@ def test_cdiconfig_scratch_space_not_default(
         storage_ns_name=namespace.name,
         run_vm=True,
         client=unprivileged_client,
+        https_server_certificate=https_server_certificate,
     )
 
 
@@ -233,6 +244,7 @@ def test_cdiconfig_changing_storage_class_default(
     namespace,
     default_sc_as_fallback_for_scratch,
     cdi_config,
+    https_server_certificate,
 ):
     with utils.update_default_sc(
         default=False, storage_class=default_sc_as_fallback_for_scratch
@@ -247,7 +259,7 @@ def test_cdiconfig_changing_storage_class_default(
             with cluster_resource(ConfigMap)(
                 name="https-cert-configmap",
                 namespace=namespace.name,
-                data={"tlsregistry.crt": get_cert(server_type="https_cert")},
+                data={"tlsregistry.crt": https_server_certificate},
             ) as configmap:
                 with utilities.storage.create_dv(
                     source="http",

@@ -665,11 +665,11 @@ def pytest_sessionstart(session):
     # Set py_config["servers"]
     # Send --tc=server_url:<url> to override servers URL
     if not skip_if_pytest_flags_exists(pytest_config=session.config):
-        server = py_config["server_url"] or get_cnv_qe_server_url(
+        py_config["server_url"] = py_config["server_url"] or get_cnv_qe_server_url(
             cluster_host_url=get_client().configuration.host
         )
         py_config["servers"] = {
-            name: _server.format(server=server)
+            name: _server.format(server=py_config["server_url"])
             for name, _server in py_config["servers"].items()
         }
 

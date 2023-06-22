@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Pytest conftest file for CNV CDI tests
 """
@@ -7,6 +5,7 @@ Pytest conftest file for CNV CDI tests
 import base64
 import logging
 import os
+import ssl
 
 import pytest
 from ocp_resources.cdi import CDI
@@ -22,7 +21,7 @@ from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
-from tests.storage.constants import HPP_STORAGE_CLASSES
+from tests.storage.constants import HPP_STORAGE_CLASSES, REGISTRY_STR
 from tests.storage.utils import (
     HttpService,
     check_snapshot_indication,
@@ -42,12 +41,7 @@ from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
     hco_cr_jsonpatch_annotations_dict,
 )
-from utilities.infra import (
-    INTERNAL_HTTP_SERVER_ADDRESS,
-    cluster_resource,
-    get_cert,
-    is_jira_open,
-)
+from utilities.infra import INTERNAL_HTTP_SERVER_ADDRESS, cluster_resource, is_jira_open
 from utilities.storage import (
     HttpDeployment,
     create_cirros_dv_for_snapshot_dict,
@@ -224,12 +218,17 @@ def new_route_created(hco_namespace):
     route.delete(wait=True)
 
 
+@pytest.fixture(scope="session")
+def https_server_certificate():
+    yield ssl.get_server_certificate(addr=(py_config["server_url"], 443))
+
+
 @pytest.fixture()
-def https_config_map(request, namespace):
+def https_config_map(request, namespace, https_server_certificate):
     data = (
         {"ca.pem": request.param["data"]}
         if hasattr(request, "param")
-        else {"ca.pem": get_cert(server_type="https_cert")}
+        else {"ca.pem": https_server_certificate}
     )
     with cluster_resource(ConfigMap)(
         name="https-cert",
@@ -240,11 +239,11 @@ def https_config_map(request, namespace):
 
 
 @pytest.fixture()
-def registry_config_map(namespace):
+def registry_config_map(namespace, https_server_certificate):
     with cluster_resource(ConfigMap)(
-        name="registry-cert",
+        name=f"{REGISTRY_STR}-cert",
         namespace=namespace.name,
-        data={"tlsregistry.crt": get_cert(server_type="registry_cert")},
+        data={"tlsregistry.crt": https_server_certificate},
     ) as configmap:
         yield configmap
 

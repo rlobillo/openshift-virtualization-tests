@@ -13,7 +13,13 @@ from pytest_testconfig import config as py_config
 
 import utilities.storage
 from tests.storage import utils
-from tests.storage.utils import get_importer_pod, wait_for_importer_container_message
+from tests.storage.constants import REGISTRY_STR
+from tests.storage.utils import (
+    check_disk_count_in_vm,
+    create_vm_from_dv,
+    get_importer_pod,
+    wait_for_importer_container_message,
+)
 from utilities.constants import (
     CNV_TESTS_CONTAINER,
     OS_FLAVOR_CIRROS,
@@ -24,8 +30,8 @@ from utilities.constants import (
     Images,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import cluster_resource, get_cert, is_jira_open
-from utilities.storage import ErrorMsg
+from utilities.infra import cluster_resource, is_jira_open
+from utilities.storage import ErrorMsg, create_dv
 from utilities.virt import VirtualMachineForTests, running_vm
 
 
@@ -39,7 +45,7 @@ PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE = "cirros-registry-disk-demo:latest"
 PRIVATE_REGISTRY_CIRROS_RAW_IMAGE = "cirros.raw:latest"
 PRIVATE_REGISTRY_CIRROS_QCOW2_IMAGE = "cirros.qcow2:latest"
 REGISTRY_TLS_SELF_SIGNED_SERVER = py_config["servers"]["registry_server"]
-REGISTRY_STR = "registry"
+REGISTRY_CERT_NAME = f"{REGISTRY_STR}.crt"
 REGISTRY_HTTPS_PORT = 8443
 REGISTRY_HTTP_PORT = 5000
 
@@ -82,27 +88,24 @@ def insecure_registry(
 
 
 @pytest.fixture()
-def configmap_with_cert(namespace):
+def configmap_with_cert(namespace, https_server_certificate):
     with cluster_resource(ConfigMap)(
-        name="registry-cm-cert",
+        name=f"{REGISTRY_STR}-cm-cert",
         namespace=namespace.name,
-        data={
-            py_config["servers"]["registry_cert"]: get_cert(server_type="registry_cert")
-        },
+        data={REGISTRY_CERT_NAME: https_server_certificate},
     ) as configmap:
         yield configmap
 
 
 @pytest.fixture()
 def update_configmap_with_cert(request, configmap_with_cert):
-    cert_name = py_config["servers"]["registry_cert"]
     injected_content = request.param["injected_content"]
     ResourceEditor(
         {
             configmap_with_cert: {
                 "data": {
-                    cert_name: f"{configmap_with_cert.data[cert_name][:50]}{injected_content}"
-                    f"{configmap_with_cert.data[cert_name][50:]}"
+                    REGISTRY_CERT_NAME: f"{configmap_with_cert.data[REGISTRY_CERT_NAME][:50]}{injected_content}"
+                    f"{configmap_with_cert.data[REGISTRY_CERT_NAME][50:]}"
                 }
             }
         }
@@ -151,8 +154,8 @@ def test_private_registry_cirros(
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
         dv.wait_for_dv_success()
-        with utils.create_vm_from_dv(dv=dv) as vm_dv:
-            utils.check_disk_count_in_vm(vm=vm_dv)
+        with create_vm_from_dv(dv=dv) as vm_dv:
+            check_disk_count_in_vm(vm=vm_dv)
 
 
 @pytest.mark.sno
@@ -248,7 +251,7 @@ def test_public_registry_multiple_data_volume(
 
         for vm in vms:
             running_vm(vm=vm, wait_for_interfaces=False)
-            utils.check_disk_count_in_vm(vm=vm)
+            check_disk_count_in_vm(vm=vm)
     finally:
         for rcs in vms + dvs:
             rcs.delete(wait=True)
@@ -280,8 +283,8 @@ def test_private_registry_insecured_configmap(
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
         dv.wait_for_dv_success()
-        with utils.create_vm_from_dv(dv=dv) as vm_dv:
-            utils.check_disk_count_in_vm(vm=vm_dv)
+        with create_vm_from_dv(dv=dv) as vm_dv:
+            check_disk_count_in_vm(vm=vm_dv)
 
 
 @pytest.mark.sno
@@ -303,8 +306,8 @@ def test_private_registry_recover_after_missing_configmap(
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
         dv.wait_for_dv_success()
-        with utils.create_vm_from_dv(dv=dv) as vm_dv:
-            utils.check_disk_count_in_vm(vm=vm_dv)
+        with create_vm_from_dv(dv=dv) as vm_dv:
+            check_disk_count_in_vm(vm=vm_dv)
 
 
 @pytest.mark.sno
@@ -327,8 +330,8 @@ def test_private_registry_with_untrusted_certificate(
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
         dv.wait_for_dv_success()
-        with utils.create_vm_from_dv(dv=dv) as vm_dv:
-            utils.check_disk_count_in_vm(vm=vm_dv)
+        with create_vm_from_dv(dv=dv) as vm_dv:
+            check_disk_count_in_vm(vm=vm_dv)
 
         # negative flow - remove certificate from configmap
         registry_config_map.update(
@@ -413,8 +416,8 @@ def test_public_registry_data_volume(
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
         dv.wait_for_dv_success()
-        with utils.create_vm_from_dv(dv=dv) as vm_dv:
-            utils.check_disk_count_in_vm(vm=vm_dv)
+        with create_vm_from_dv(dv=dv) as vm_dv:
+            check_disk_count_in_vm(vm=vm_dv)
 
 
 # The following test is to show after imports fails because low capacity storage,
@@ -425,7 +428,7 @@ def test_public_registry_data_volume_low_capacity(
     admin_client, namespace, storage_class_matrix__function__
 ):
     # negative flow - low capacity volume
-    with utilities.storage.create_dv(
+    with create_dv(
         source=REGISTRY_STR,
         dv_name="import-public-registry-low-capacity-dv",
         namespace=namespace.name,
@@ -446,7 +449,7 @@ def test_public_registry_data_volume_low_capacity(
         )
 
     # positive flow
-    with utilities.storage.create_dv(
+    with create_dv(
         source=REGISTRY_STR,
         dv_name="import-public-registry-low-capacity-dv",
         namespace=namespace.name,
@@ -466,7 +469,7 @@ def test_public_registry_data_volume_archive(
     with pytest.raises(
         ApiException, match=r".*ContentType must be kubevirt when Source is Registry.*"
     ):
-        with utilities.storage.create_dv(
+        with create_dv(
             source=REGISTRY_STR,
             dv_name="import-public-registry-archive",
             namespace=namespace.name,
@@ -499,7 +502,7 @@ def test_fqdn_name(
     not a partial check of just the prefix.
     """
     storage_class = [*storage_class_matrix__function__][0]
-    with utilities.storage.create_dv(
+    with create_dv(
         source=REGISTRY_STR,
         dv_name=f"cnv-2347-{storage_class}",
         namespace=namespace.name,
@@ -565,7 +568,7 @@ def test_inject_invalid_cert_to_configmap(
     """
     Test that generate ConfigMap from cert file, then inject invalid content in the cert of ConfigMap, import will fail.
     """
-    with utilities.storage.create_dv(
+    with create_dv(
         source=REGISTRY_STR,
         dv_name=dv_name,
         namespace=namespace.name,

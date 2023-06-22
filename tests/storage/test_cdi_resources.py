@@ -24,6 +24,7 @@ from utilities.constants import (
     CDI_OPERATOR,
     CDI_SECRETS,
     TIMEOUT_10MIN,
+    TIMEOUT_30SEC,
     Images,
 )
 from utilities.storage import create_dv, data_volume, get_images_server_url
@@ -160,19 +161,18 @@ def test_verify_pod_cdi_label(cdi_resources):
     verify_label(cdi_resources=cdi_resources)
 
 
-def _pods_list(dyn_client, pod_name, storage_ns_name):
-    pods = list(Pod.get(dyn_client=dyn_client, namespace=storage_ns_name))
+def _pods_list(pod_name, storage_ns_name):
+    pods = list(Pod.get(namespace=storage_ns_name))
     return [pod for pod in pods if pod_name in pod.name]
 
 
-def is_cdi_worker_pod(dyn_client, pod_name, storage_ns_name):
+def is_cdi_worker_pod(pod_name, storage_ns_name):
     """pod_name can also be partial pod name"""
     LOGGER.info("waiting for worker pod")
     sampler = TimeoutSampler(
-        wait_timeout=30,
+        wait_timeout=TIMEOUT_30SEC,
         sleep=1,
         func=_pods_list,
-        dyn_client=dyn_client,
         pod_name=pod_name,
         storage_ns_name=storage_ns_name,
     )
@@ -183,15 +183,15 @@ def is_cdi_worker_pod(dyn_client, pod_name, storage_ns_name):
 
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3475")
-def test_importer_pod_cdi_label(skip_upstream, admin_client, namespace):
+def test_importer_pod_cdi_label(skip_upstream, namespace, https_server_certificate):
     # verify "cdi.kubevirt.io" label is included in importer pod
     with import_image_to_dv(
         dv_name="cnv-3475",
         images_https_server_name=get_images_server_url(schema="https"),
         storage_ns_name=namespace.name,
+        https_server_certificate=https_server_certificate,
     ):
         is_cdi_worker_pod(
-            dyn_client=admin_client,
             pod_name="importer",
             storage_ns_name=namespace.name,
         )
@@ -200,7 +200,7 @@ def test_importer_pod_cdi_label(skip_upstream, admin_client, namespace):
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-3474")
 def test_uploader_pod_cdi_label(
-    admin_client, storage_class_matrix__module__, namespace, unprivileged_client
+    unprivileged_client, namespace, storage_class_matrix__module__
 ):
     """
     Verify "cdi.kubevirt.io" label is included in uploader pod
@@ -212,7 +212,6 @@ def test_uploader_pod_cdi_label(
         client=unprivileged_client,
     ):
         is_cdi_worker_pod(
-            dyn_client=admin_client,
             pod_name="cdi-upload",
             storage_ns_name=namespace.name,
         )
@@ -235,7 +234,6 @@ def test_uploader_pod_cdi_label(
 )
 def test_cloner_pods_cdi_label(
     skip_upstream,
-    admin_client,
     namespace,
     data_volume_without_snapshot_capability_scope_function,
 ):
@@ -251,12 +249,10 @@ def test_cloner_pods_cdi_label(
             status=DataVolume.Status.CLONE_IN_PROGRESS, timeout=TIMEOUT_10MIN
         )
         is_cdi_worker_pod(
-            dyn_client=admin_client,
             pod_name="cdi-upload-dv-target",
             storage_ns_name=cdv.namespace,
         )
         is_cdi_worker_pod(
-            dyn_client=admin_client,
             pod_name="-source-pod",
             storage_ns_name=cdv.namespace,
         )

@@ -31,12 +31,7 @@ from utilities.constants import (
     Images,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import (
-    cluster_resource,
-    get_cert,
-    get_http_image_url,
-    get_pod_by_name_prefix,
-)
+from utilities.infra import cluster_resource, get_http_image_url, get_pod_by_name_prefix
 from utilities.storage import (
     create_dv,
     is_snapshot_supported_by_sc,
@@ -60,6 +55,7 @@ def import_image_to_dv(
     dv_name,
     images_https_server_name,
     storage_ns_name,
+    https_server_certificate,
 ):
     url = get_file_url_https_server(
         images_https_server=images_https_server_name, file_name=Images.Cirros.QCOW2_IMG
@@ -67,7 +63,7 @@ def import_image_to_dv(
     with cluster_resource(ConfigMap)(
         name="https-cert-configmap",
         namespace=storage_ns_name,
-        data={"tlsregistry.crt": get_cert(server_type="https_cert")},
+        data={"tlsregistry.crt": https_server_certificate},
     ) as configmap:
         with create_dv(
             source="http",

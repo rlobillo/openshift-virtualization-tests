@@ -16,3 +16,5 @@ HPP_STORAGE_CLASSES = [
     HppCsiStorageClass.Name.HOSTPATH_CSI_BASIC,
     HppCsiStorageClass.Name.HOSTPATH_CSI_PVC_BLOCK,
 ]
+
+REGISTRY_STR = "registry"

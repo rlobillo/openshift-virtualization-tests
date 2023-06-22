@@ -71,8 +71,6 @@ servers = {
     "https_server": "https://{server}/files/",
     "http_server_auth": "http://{server}/files/mod-auth-basic/",
     "registry_server": "docker://{server}",
-    "https_cert": "usa_https.crt",
-    "registry_cert": "usa_registry.crt",
 }
 
 cnv_registry_sources = {
