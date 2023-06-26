@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import logging
 import multiprocessing
 import os
@@ -40,6 +39,9 @@ PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE = "cirros-registry-disk-demo:latest"
 PRIVATE_REGISTRY_CIRROS_RAW_IMAGE = "cirros.raw:latest"
 PRIVATE_REGISTRY_CIRROS_QCOW2_IMAGE = "cirros.qcow2:latest"
 REGISTRY_TLS_SELF_SIGNED_SERVER = py_config["servers"]["registry_server"]
+REGISTRY_STR = "registry"
+REGISTRY_HTTPS_PORT = 8443
+REGISTRY_HTTP_PORT = 5000
 
 
 @pytest.fixture()
@@ -141,10 +143,10 @@ def test_private_registry_cirros(
     storage_class_matrix__function__,
 ):
     with utilities.storage.create_dv(
-        source="registry",
+        source=REGISTRY_STR,
         dv_name="import-private-registry-cirros-image",
         namespace=namespace.name,
-        url=f"{images_private_registry_server}:8443/{file_name}",
+        url=f"{images_private_registry_server}:{REGISTRY_HTTPS_PORT}/{file_name}",
         cert_configmap=registry_config_map.name,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
@@ -175,7 +177,7 @@ def test_disk_image_not_conform_to_registy_disk(
     admin_client, dv_name, url, namespace, storage_class_matrix__function__
 ):
     with utilities.storage.create_dv(
-        source="registry",
+        source=REGISTRY_STR,
         dv_name=dv_name,
         namespace=namespace.name,
         url=url,
@@ -205,7 +207,7 @@ def test_public_registry_multiple_data_volume(
     try:
         for dv in ("dv1", "dv2", "dv3"):
             rdv = DataVolume(
-                source="registry",
+                source=REGISTRY_STR,
                 name=f"import-public-registry-quay-{dv}",
                 namespace=namespace.name,
                 url=QUAY_IMAGE,
@@ -256,7 +258,7 @@ def test_public_registry_multiple_data_volume(
     "insecure_registry",
     [
         pytest.param(
-            {"server": f"{py_config['servers']['registry_server']}:5000"},
+            {"server": f"{REGISTRY_TLS_SELF_SIGNED_SERVER}:{REGISTRY_HTTP_PORT}"},
         ),
     ],
     indirect=True,
@@ -271,10 +273,10 @@ def test_private_registry_insecured_configmap(
     storage_class_matrix__function__,
 ):
     with utilities.storage.create_dv(
-        source="registry",
+        source=REGISTRY_STR,
         dv_name="import-private-insecured-registry",
         namespace=namespace.name,
-        url=f"{images_private_registry_server}:5000/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+        url=f"{images_private_registry_server}:{REGISTRY_HTTP_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
         dv.wait_for_dv_success()
@@ -293,10 +295,10 @@ def test_private_registry_recover_after_missing_configmap(
 ):
     # creating DV before configmap with certificate is created
     with utilities.storage.create_dv(
-        source="registry",
+        source=REGISTRY_STR,
         dv_name="import-private-registry-with-no-configmap",
         namespace=namespace.name,
-        url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+        url=f"{images_private_registry_server}:{REGISTRY_HTTPS_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
@@ -317,10 +319,10 @@ def test_private_registry_with_untrusted_certificate(
     storage_class_matrix__function__,
 ):
     with utilities.storage.create_dv(
-        source="registry",
+        source=REGISTRY_STR,
         dv_name="import-private-registry-with-untrusted-certificate",
         namespace=namespace.name,
-        url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+        url=f"{images_private_registry_server}:{REGISTRY_HTTPS_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
@@ -336,10 +338,10 @@ def test_private_registry_with_untrusted_certificate(
             }
         )
         with utilities.storage.create_dv(
-            source="registry",
+            source=REGISTRY_STR,
             dv_name="import-private-registry-no-certificate",
             namespace=namespace.name,
-            url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+            url=f"{images_private_registry_server}:{REGISTRY_HTTPS_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
             cert_configmap=registry_config_map.name,
             content_type="",
             storage_class=[*storage_class_matrix__function__][0],
@@ -401,7 +403,7 @@ def test_public_registry_data_volume(
     storage_class_matrix__function__,
 ):
     with utilities.storage.create_dv(
-        source="registry",
+        source=REGISTRY_STR,
         dv_name=dv_name,
         namespace=namespace.name,
         url=url,
@@ -424,7 +426,7 @@ def test_public_registry_data_volume_low_capacity(
 ):
     # negative flow - low capacity volume
     with utilities.storage.create_dv(
-        source="registry",
+        source=REGISTRY_STR,
         dv_name="import-public-registry-low-capacity-dv",
         namespace=namespace.name,
         url=QUAY_IMAGE,
@@ -445,7 +447,7 @@ def test_public_registry_data_volume_low_capacity(
 
     # positive flow
     with utilities.storage.create_dv(
-        source="registry",
+        source=REGISTRY_STR,
         dv_name="import-public-registry-low-capacity-dv",
         namespace=namespace.name,
         url=QUAY_IMAGE,
@@ -465,7 +467,7 @@ def test_public_registry_data_volume_archive(
         ApiException, match=r".*ContentType must be kubevirt when Source is Registry.*"
     ):
         with utilities.storage.create_dv(
-            source="registry",
+            source=REGISTRY_STR,
             dv_name="import-public-registry-archive",
             namespace=namespace.name,
             url=QUAY_IMAGE,
@@ -479,7 +481,7 @@ def test_public_registry_data_volume_archive(
     "insecure_registry",
     [
         pytest.param(
-            {"server": f"{REGISTRY_TLS_SELF_SIGNED_SERVER}:8443"},
+            {"server": f"{REGISTRY_TLS_SELF_SIGNED_SERVER}:{REGISTRY_HTTPS_PORT}"},
         ),
     ],
     indirect=True,
@@ -498,14 +500,14 @@ def test_fqdn_name(
     """
     storage_class = [*storage_class_matrix__function__][0]
     with utilities.storage.create_dv(
-        source="registry",
+        source=REGISTRY_STR,
         dv_name=f"cnv-2347-{storage_class}",
         namespace=namespace.name,
         # Substring of the FQDN name
-        url=f"{REGISTRY_TLS_SELF_SIGNED_SERVER[:22]}{REGISTRY_TLS_SELF_SIGNED_SERVER[30:]}:8443/"
+        url=f"{REGISTRY_TLS_SELF_SIGNED_SERVER[:22]}{REGISTRY_TLS_SELF_SIGNED_SERVER[30:]}:{REGISTRY_HTTPS_PORT}/"
         f"{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=configmap_with_cert.name,
-        size="1Gi",
+        size=Images.Cirros.DEFAULT_DV_SIZE,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
         # Import fails because FQDN is verified from the registry certificate and a substring is not supported.
@@ -564,12 +566,12 @@ def test_inject_invalid_cert_to_configmap(
     Test that generate ConfigMap from cert file, then inject invalid content in the cert of ConfigMap, import will fail.
     """
     with utilities.storage.create_dv(
-        source="registry",
+        source=REGISTRY_STR,
         dv_name=dv_name,
         namespace=namespace.name,
-        url=f"{images_private_registry_server}:8443/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+        url=f"{images_private_registry_server}:{REGISTRY_HTTPS_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=configmap_with_cert.name,
-        size="1Gi",
+        size=Images.Cirros.DEFAULT_DV_SIZE,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
         dv.wait_for_status(
