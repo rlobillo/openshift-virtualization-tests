@@ -685,7 +685,7 @@ def nodes_active_nics(
             if iface_name in nodes_nics[node.name]["occupied"]:
                 continue
 
-            # BZ 1885605 workaround: If any of the node's physical interfaces serves as a port of an
+            # BZ 1885605 <skip-bug-check> workaround: If any of the node's physical interfaces serves as a port of an
             # OVS bridge, it shouldn't be used for tests' node networking.
             bridge_ports = _bridge_ports(node_interface=node_iface)
             for port in bridge_ports:

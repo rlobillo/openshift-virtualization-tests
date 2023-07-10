@@ -1926,9 +1926,6 @@ def verify_vm_migrated(
     if wait_for_interfaces:
         wait_for_vm_interfaces(vmi=vm.vmi)
 
-    # Bug 2005693 - trying to SSH to a VM may fail if the source virt-launcher pod is terminating
-    if utilities.infra.is_bug_open(bug_id=2005693):
-        assert_pod_status_completed(source_pod=vmi_source_pod)
     if check_ssh_connectivity:
         wait_for_ssh_connectivity(vm=vm)
 

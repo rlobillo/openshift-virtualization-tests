@@ -7,6 +7,7 @@ import pytest
 from ocp_resources.node_network_configuration_policy import (
     NodeNetworkConfigurationPolicy,
 )
+from ocp_utilities.infra import cluster_resource
 from ocp_utilities.utils import run_ssh_commands
 
 from tests.network.host_network.vlan.utils import (
@@ -17,7 +18,6 @@ from tests.network.host_network.vlan.utils import (
 )
 from tests.network.utils import DHCP_SERVICE_RESTART
 from utilities.constants import LINUX_BRIDGE, NODE_TYPE_WORKER_LABEL
-from utilities.infra import cluster_resource, is_bug_open
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
     EthernetNetworkConfigurationPolicy,
@@ -34,19 +34,20 @@ LOGGER = logging.getLogger(__name__)
 pytestmark = pytest.mark.usefixtures("workers_type")
 
 
-# W/A for bug 2017623
 @pytest.fixture(scope="module")
 def base_ethernet_interface_for_vlan_creation(vlan_base_iface):
-    # TODO: remove this fixture once bug 2017623 is fixed.
-    if is_bug_open(bug_id=2017623):
-        with EthernetNetworkConfigurationPolicy(
-            name=f"{vlan_base_iface}-temp",
-            ipv4_enable=False,
-            ipv4_dhcp=False,
-            ipv6_enable=False,
-            interfaces_name=[vlan_base_iface],
-        ) as temp_interface:
-            yield temp_interface
+    # W/A for BZ 2017623 <skip-bug-check>, which requires direct setting of the interface that serves
+    # as the VLAN base interface.
+    # As this BZ is planned to be fixed in CNV 4.14, and not back-ported, this W/A should remain
+    # permanent (and not depend on the bug fix) for all versions prior to 4.14.
+    with EthernetNetworkConfigurationPolicy(
+        name=f"{vlan_base_iface}-temp",
+        ipv4_enable=False,
+        ipv4_dhcp=False,
+        ipv6_enable=False,
+        interfaces_name=[vlan_base_iface],
+    ) as temp_interface:
+        yield temp_interface
 
 
 @pytest.fixture(scope="module")
