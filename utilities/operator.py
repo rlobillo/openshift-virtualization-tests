@@ -82,8 +82,6 @@ def create_icsp_command(
     )
     if pull_secret:
         base_command = f"{base_command} --registry-config={pull_secret}"
-    else:
-        base_command = f"{base_command} --insecure"
     return base_command
 
 

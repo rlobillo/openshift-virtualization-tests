@@ -60,6 +60,11 @@ ENV LANG=C.UTF-8 \
 
 WORKDIR /cnv-tests
 
+# Add Red Hat IT certificates
+ADD https://certs.corp.redhat.com/certs/2015-IT-Root-CA.pem /etc/pki/ca-trust/source/anchors/RH-IT-Root-CA-2015.crt
+ADD https://certs.corp.redhat.com/certs/2022-IT-Root-CA.pem /etc/pki/ca-trust/source/anchors/RH-IT-Root-CA-2022.crt
+RUN update-ca-trust extract
+
 COPY --from=builder /cnv-tests/ /cnv-tests/
 COPY --from=builder /root/.config/pypoetry/ /root/.config/pypoetry/
 COPY --from=builder ${POETRY_HOME} ${POETRY_HOME}
