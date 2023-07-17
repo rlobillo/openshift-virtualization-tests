@@ -1,22 +1,5 @@
-import shlex
-
 import pytest
-from ocp_resources.service_account import ServiceAccount
 
-from tests.network.constants import (
-    HTTPBIN_COMMAND,
-    HTTPBIN_IMAGE,
-    PORT_8080,
-    SERVICE_MESH_PORT,
-)
-from tests.network.upgrade.utils import wait_for_http_pod_to_be_in_running_state
-from tests.network.utils import (
-    CirrosVirtualMachineForServiceMesh,
-    ServiceMeshDeployments,
-    ServiceMeshDeploymentService,
-    ServiceMeshMemberRollForTests,
-)
-from utilities import console
 from utilities.constants import (
     KMP_DISABLED_LABEL,
     KMP_VM_ASSIGNMENT_LABEL,
@@ -24,12 +7,7 @@ from utilities.constants import (
 )
 from utilities.infra import cluster_resource, create_ns
 from utilities.network import cloud_init, network_nad
-from utilities.virt import (
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-    wait_for_console,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 NAD_MAC_SPOOF_NAME = "brspoofupgrade"
@@ -101,99 +79,6 @@ def running_vma_upgrade_mac_spoof(vma_upgrade_mac_spoof):
 @pytest.fixture(scope="session")
 def running_vmb_upgrade_mac_spoof(vmb_upgrade_mac_spoof):
     return running_vm(vm=vmb_upgrade_mac_spoof)
-
-
-@pytest.fixture(scope="session")
-def service_mesh_upgrade_ns(skip_if_service_mesh_not_installed, unprivileged_client):
-    yield from create_ns(
-        unprivileged_client=unprivileged_client,
-        name="service-mesh-upgrade-tests",
-    )
-
-
-@pytest.fixture(scope="session")
-def httpbin_service_mesh_deployment_for_upgrade(service_mesh_upgrade_ns):
-    with ServiceMeshDeployments(
-        name="httpbin",
-        namespace=service_mesh_upgrade_ns.name,
-        version=ServiceMeshDeployments.ApiVersion.V1,
-        image=HTTPBIN_IMAGE,
-        command=shlex.split(HTTPBIN_COMMAND),
-        port=PORT_8080,
-        service_port=SERVICE_MESH_PORT,
-        service_account=True,
-        http_readiness_probe=True,
-    ) as dp:
-        yield dp
-
-
-@pytest.fixture(scope="session")
-def httpbin_service_mesh_service_account_for_upgrade(
-    httpbin_service_mesh_deployment_for_upgrade,
-):
-    with cluster_resource(ServiceAccount)(
-        name=httpbin_service_mesh_deployment_for_upgrade.app_name,
-        namespace=httpbin_service_mesh_deployment_for_upgrade.namespace,
-    ) as sa:
-        yield sa
-
-
-@pytest.fixture(scope="session")
-def httpbin_service_mesh_service_for_upgrade(
-    admin_client,
-    httpbin_service_mesh_deployment_for_upgrade,
-    httpbin_service_mesh_service_account_for_upgrade,
-):
-    deployment_namespace = httpbin_service_mesh_deployment_for_upgrade.namespace
-    with ServiceMeshDeploymentService(
-        namespace=deployment_namespace,
-        app_name=httpbin_service_mesh_deployment_for_upgrade.app_name,
-        port=httpbin_service_mesh_deployment_for_upgrade.service_port,
-    ) as sm_deployment_service:
-        # TODO: Once Jira issue CNV-24274 is closed, and we have the health-check of the pod working accurately,
-        #   the next function call (6 lines) can be removed.
-        wait_for_http_pod_to_be_in_running_state(
-            admin_client=admin_client,
-            sm_deployment_service=sm_deployment_service,
-            deployment_namespace=deployment_namespace,
-        )
-        yield sm_deployment_service
-
-
-@pytest.fixture(scope="session")
-def service_mesh_member_roll_for_upgrade(service_mesh_upgrade_ns):
-    with ServiceMeshMemberRollForTests(members=[service_mesh_upgrade_ns.name]) as smmr:
-        yield smmr
-
-
-@pytest.fixture(scope="session")
-def vm_cirros_with_service_mesh_annotation_for_upgrade(
-    unprivileged_client,
-    service_mesh_upgrade_ns,
-    service_mesh_member_roll_for_upgrade,
-):
-    vm_name = "service-mesh-vm"
-    with cluster_resource(CirrosVirtualMachineForServiceMesh)(
-        client=unprivileged_client,
-        name=vm_name,
-        namespace=service_mesh_upgrade_ns.name,
-    ) as vm:
-        vm.custom_service_enable(
-            service_name=vm_name,
-            port=SERVICE_MESH_PORT,
-        )
-        running_vm(vm=vm, wait_for_interfaces=False, check_ssh_connectivity=False)
-        yield vm
-
-
-@pytest.fixture(scope="session")
-def service_mesh_vm_for_upgrade_with_console_ready(
-    vm_cirros_with_service_mesh_annotation_for_upgrade,
-):
-    wait_for_console(
-        vm=vm_cirros_with_service_mesh_annotation_for_upgrade,
-        console_impl=console.Cirros,
-    )
 
 
 @pytest.fixture(scope="session")
