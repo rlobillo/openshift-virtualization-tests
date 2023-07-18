@@ -73,18 +73,14 @@ class ResourceEditorValidateHCOReconcile(ResourceEditor):
         self.wait_for_reconcile_post_update = wait_for_reconcile_post_update
         self._consecutive_checks_count = consecutive_checks_count
         self.list_resource_reconcile = list_resource_reconcile or []
-        # TODO: Remove this variable when https://issues.redhat.com/browse/CNV-23504 is fixed
         LOGGER.info(f"Patches: {self.patches}")
         self.hco_crypto_policy_update = (
-            utilities.infra.is_jira_open(jira_id="CNV-23504")
-            if TLS_SECURITY_PROFILE in str(self.patches)
-            else False
+            True if TLS_SECURITY_PROFILE in str(self.patches) else False
         )
 
     def update(self, backup_resources=False):
         super().update(backup_resources=backup_resources)
         if self.wait_for_reconcile_post_update:
-            # TODO: Remove this check when https://issues.redhat.com/browse/CNV-23504 is fixed
             if self.hco_crypto_policy_update:
                 verify_ssp_pod_is_running(
                     dyn_client=self.admin_client,
@@ -99,7 +95,6 @@ class ResourceEditorValidateHCOReconcile(ResourceEditor):
 
     def restore(self):
         super().restore()
-        # TODO: Remove this check when https://issues.redhat.com/browse/CNV-23504 is fixed
         if self.hco_crypto_policy_update:
             verify_ssp_pod_is_running(
                 dyn_client=self.admin_client,

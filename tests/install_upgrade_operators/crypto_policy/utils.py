@@ -28,7 +28,7 @@ from utilities.constants import (
     TLS_SECURITY_PROFILE,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile, wait_for_hco_conditions
-from utilities.infra import ExecCommandOnPod, is_jira_open
+from utilities.infra import ExecCommandOnPod
 from utilities.ssp import verify_ssp_pod_is_running
 
 
@@ -340,18 +340,13 @@ def update_apiserver_crypto_policy(
     apiserver,
     tls_spec,
 ):
-    jira_status = is_jira_open(jira_id="CNV-23504")
     with ResourceEditor(
         patches={apiserver: {"spec": {TLS_SECURITY_PROFILE: tls_spec}}},
     ):
-        if jira_status:
-            verify_ssp_pod_is_running(
-                dyn_client=admin_client, hco_namespace=hco_namespace
-            )
+        verify_ssp_pod_is_running(dyn_client=admin_client, hco_namespace=hco_namespace)
         yield
     wait_for_cluster_operator_stabilize(admin_client=admin_client)
-    if jira_status:
-        verify_ssp_pod_is_running(dyn_client=admin_client, hco_namespace=hco_namespace)
+    verify_ssp_pod_is_running(dyn_client=admin_client, hco_namespace=hco_namespace)
     wait_for_hco_conditions(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
