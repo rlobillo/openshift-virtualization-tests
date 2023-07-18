@@ -31,7 +31,7 @@ LOGGER = logging.getLogger(__name__)
 LATENCY_DISCONNECTED_CONFIGMAP = "latency-disconnected-configmap"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def checkup_ns(unprivileged_client):
     yield from create_ns(
         unprivileged_client=unprivileged_client, name="test-checkup-framework"
@@ -134,13 +134,14 @@ def framework_resources(
     framework_latency_role_binding,
     framework_configmap_role,
     framework_configmap_role_binding,
-    label_checkup_nodes,
 ):
     yield
 
 
 @pytest.fixture(scope="module")
-def checkup_linux_bridge_device(skip_if_no_multinic_nodes, nodes_available_nics):
+def checkup_linux_bridge_device(
+    skip_if_no_multinic_nodes, nodes_available_nics, label_checkup_nodes
+):
     bridge_name = "checkup-br"
     with network_device(
         interface_type=LINUX_BRIDGE,
