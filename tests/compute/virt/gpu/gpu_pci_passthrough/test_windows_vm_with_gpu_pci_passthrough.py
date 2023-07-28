@@ -30,7 +30,7 @@ WIN10 = get_windows_os_dict(windows_version="win-10")
 WIN10_LABELS = WIN10["template_labels"]
 WIN19 = get_windows_os_dict(windows_version="win-2019")
 WIN19_LABELS = WIN19["template_labels"]
-DV_SIZE = Images.Windows.NVIDIA_DV_SIZE
+DV_SIZE = Images.Windows.DEFAULT_DV_SIZE
 TESTS_CLASS_NAME = "TestPCIPassthroughWinHostDevicesSpec"
 
 
@@ -40,9 +40,7 @@ TESTS_CLASS_NAME = "TestPCIPassthroughWinHostDevicesSpec"
         pytest.param(
             {
                 "dv_name": WIN10_LABELS["os"],
-                "image": os.path.join(
-                    Images.Windows.DIR, Images.Windows.WIM10_NVIDIA_IMG
-                ),
+                "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN10_IMG),
                 "storage_class": py_config["default_storage_class"],
                 "dv_size": DV_SIZE,
             },
@@ -57,9 +55,7 @@ TESTS_CLASS_NAME = "TestPCIPassthroughWinHostDevicesSpec"
         pytest.param(
             {
                 "dv_name": WIN19_LABELS["os"],
-                "image": os.path.join(
-                    Images.Windows.DIR, Images.Windows.WIN19_NVIDIA_IMG
-                ),
+                "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN19_IMG),
                 "storage_class": py_config["default_storage_class"],
                 "dv_size": DV_SIZE,
             },

@@ -77,7 +77,7 @@ def test_efi_secureboot_with_smm_disabled(namespace, unprivileged_client):
         pytest.param(
             {
                 "dv_name": "dv-windows-efi-secureboot",
-                "image": os.path.join(Images.Windows.DIR, Images.Windows.WIM10_EFI_IMG),
+                "image": os.path.join(Images.Windows.DIR, Images.Windows.WIN10_EFI_IMG),
                 "storage_class": py_config["default_storage_class"],
                 "dv_size": Images.Windows.DEFAULT_DV_SIZE,
             },

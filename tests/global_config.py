@@ -271,8 +271,8 @@ windows_os_matrix = [
     {
         "win-10": {
             OS_VERSION_STR: "10",
-            IMAGE_NAME_STR: Images.Windows.WIM10_IMG,
-            IMAGE_PATH_STR: os.path.join(Images.Windows.DIR, Images.Windows.WIM10_IMG),
+            IMAGE_NAME_STR: Images.Windows.WIN10_IMG,
+            IMAGE_PATH_STR: os.path.join(Images.Windows.DIR, Images.Windows.WIN10_IMG),
             DV_SIZE_STR: Images.Windows.DEFAULT_DV_SIZE,
             TEMPLATE_LABELS_STR: {
                 OS_STR: "win10",

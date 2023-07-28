@@ -103,7 +103,7 @@ class TestMigrationVMWithMemoryLoad:
                 {
                     "dv_name": "dv-win10-wsl2",
                     "image": os.path.join(
-                        Images.Windows.DIR, Images.Windows.WIM10_WSL2_IMG
+                        Images.Windows.DIR, Images.Windows.WIN10_WSL2_IMG
                     ),
                     "dv_size": Images.Windows.WSL2_DV_SIZE,
                     "storage_class": py_config["default_storage_class"],

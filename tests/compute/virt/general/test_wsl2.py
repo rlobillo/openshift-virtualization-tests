@@ -124,7 +124,7 @@ def windows_10_vm(
             {
                 "dv_name": "dv-windows-wsl2",
                 "image": os.path.join(
-                    Images.Windows.DIR, Images.Windows.WIM10_WSL2_IMG
+                    Images.Windows.DIR, Images.Windows.WIN10_WSL2_IMG
                 ),
                 "storage_class": py_config["default_storage_class"],
                 "dv_size": Images.Windows.WSL2_DV_SIZE,
