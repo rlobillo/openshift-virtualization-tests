@@ -56,6 +56,7 @@ marketplace_namespace = "openshift-marketplace"
 machine_api_namespace = "openshift-machine-api"
 golden_images_namespace = "openshift-virtualization-os-images"
 hco_subscription = ""  # TODO: remove constants/HCO_SUBSCRIPTION and use this instead.
+disconnected_cluster = False
 
 linux_bridge_cni = "cnv-bridge"
 bridge_tuning = "cnv-tuning"

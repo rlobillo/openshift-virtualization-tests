@@ -2694,3 +2694,9 @@ def eus_target_cnv_version(cnv_current_version):
             return_code=EUS_ERROR_CODE,
         )
     return Version(version=f"v{cnv_current_version.major}.{minor + 2}.0")
+
+
+@pytest.fixture(scope="session")
+def is_disconnected_cluster():
+    # To enable disconnected_cluster pass --tc=disconnected_cluster:True to pytest commandline.
+    return py_config.get("disconnected_cluster")
