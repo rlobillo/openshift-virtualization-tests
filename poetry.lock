@@ -962,13 +962,14 @@ PyYAML = "*"
 
 [[package]]
 name = "openshift-python-wrapper"
-version = "4.12.37"
-description = "Wrapper around https://github.com/openshift/openshift-restclient-python"
+version = "4.12.39"
+description = "Wrapper around https://github.com/kubernetes-client/python"
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8,<4.0"
 files = [
-    {file = "openshift-python-wrapper-4.12.37.tar.gz", hash = "sha256:c1f921373aad80a1e83aa2b7668257e2f7617897c8f1b40f306ffe3782ca7d85"},
+    {file = "openshift_python_wrapper-4.12.39-py3-none-any.whl", hash = "sha256:a98ccad82e1587044307e58826d6da733e6a1e2a89861c0ebfbabddc874123a5"},
+    {file = "openshift_python_wrapper-4.12.39.tar.gz", hash = "sha256:b766b4dbaeb6df8bd5018c95dfdda5a8079a5c148f41ecac3742ea0dea4a210a"},
 ]
 
 [package.dependencies]
