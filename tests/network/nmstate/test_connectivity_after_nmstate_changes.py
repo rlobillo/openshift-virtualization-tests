@@ -10,7 +10,12 @@ from tests.network.utils import (
     assert_ssh_alive,
     run_ssh_in_background,
 )
-from utilities.constants import LINUX_BRIDGE, NMSTATE_HANDLER
+from utilities.constants import (
+    LINUX_BRIDGE,
+    NMSTATE_HANDLER,
+    TIMEOUT_1MIN,
+    TIMEOUT_5SEC,
+)
 from utilities.infra import cluster_resource, get_pod_by_name_prefix, name_prefix
 from utilities.network import (
     assert_ping_successful,
@@ -317,8 +322,8 @@ class TestConnectivityAfterNmstateChanged:
         # We expect some packets lost due to change of node network configuration.
         try:
             for sample in TimeoutSampler(
-                wait_timeout=10,
-                sleep=1,
+                wait_timeout=TIMEOUT_1MIN,
+                sleep=TIMEOUT_5SEC,
                 func=is_destination_pingable_from_vm,
                 src_vm=nmstate_linux_bridge_attached_running_vma,
                 dst_ip=vmb_dst_ip,
