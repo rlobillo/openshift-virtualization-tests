@@ -194,14 +194,16 @@ def vm_a(
     requested_network_config = kmp_utils.vm_network_config(
         mac_pool=mac_pool, all_nads=all_nads, end_ip_octet=1, mac_uid="1"
     )
-    yield from kmp_utils.create_vm(
+    with kmp_utils.create_vm(
         name="vm-fedora-a",
         iface_config=requested_network_config,
         namespace=namespace,
         node_selector=worker_node1.hostname,
         client=unprivileged_client,
         mac_pool=mac_pool,
-    )
+    ) as vm:
+        running_vm(vm=vm, wait_for_cloud_init=True)
+        yield vm
 
 
 @pytest.fixture(scope="class")
@@ -216,36 +218,28 @@ def vm_b(
     requested_network_config = kmp_utils.vm_network_config(
         mac_pool=mac_pool, all_nads=all_nads, end_ip_octet=2, mac_uid="2"
     )
-    yield from kmp_utils.create_vm(
+    with kmp_utils.create_vm(
         name="vm-fedora-b",
         iface_config=requested_network_config,
         namespace=namespace,
         node_selector=worker_node2.hostname,
         client=unprivileged_client,
         mac_pool=mac_pool,
-    )
-
-
-@pytest.fixture(scope="class")
-def running_vm_a(vm_a):
-    return running_vm(vm=vm_a)
-
-
-@pytest.fixture(scope="class")
-def running_vm_b(vm_b):
-    return running_vm(vm=vm_b)
+    ) as vm:
+        running_vm(vm=vm, wait_for_cloud_init=True)
+        yield vm
 
 
 @pytest.fixture(scope="function")
 def restarted_vmi_a(vm_a):
     vm_a.stop(wait=True)
-    return running_vm(vm=vm_a)
+    return running_vm(vm=vm_a, wait_for_cloud_init=True)
 
 
 @pytest.fixture(scope="function")
 def restarted_vmi_b(vm_b):
     vm_b.stop(wait=True)
-    return running_vm(vm=vm_b)
+    return running_vm(vm=vm_b, wait_for_cloud_init=True)
 
 
 @pytest.fixture(scope="class")

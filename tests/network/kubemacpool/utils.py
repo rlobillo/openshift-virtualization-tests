@@ -1,3 +1,4 @@
+import contextlib
 import logging
 from collections import namedtuple
 from ipaddress import ip_interface
@@ -45,6 +46,7 @@ def vm_network_config(mac_pool, all_nads, end_ip_octet, mac_uid):
     }
 
 
+@contextlib.contextmanager
 def create_vm(name, namespace, iface_config, node_selector, client, mac_pool):
     network_data_data = {}
     _data = {
@@ -72,7 +74,6 @@ def create_vm(name, namespace, iface_config, node_selector, client, mac_pool):
         cloud_init_data=cloud_init_data,
     ) as vm:
         mac_pool.append_macs(vm=vm)
-        vm.start()
         yield vm
         mac_pool.remove_macs(vm=vm)
 
