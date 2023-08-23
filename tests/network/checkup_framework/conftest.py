@@ -386,7 +386,7 @@ def latency_job(
 
 
 @pytest.fixture()
-def linux_bridge_disconnected_device():
+def linux_bridge_disconnected_device(label_checkup_nodes):
     bridge_name = f"{DISCONNECTED_STR}-br"
     with network_device(
         interface_type=LINUX_BRIDGE,
