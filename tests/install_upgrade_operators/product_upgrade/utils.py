@@ -1,16 +1,14 @@
 import json
 import logging
 import re
-from contextlib import contextmanager
 from multiprocessing import Process
 
 import requests
 from ocp_resources.cluster_operator import ClusterOperator
 from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.cluster_version import ClusterVersion
-from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.pod import Pod
-from ocp_resources.resource import Resource, ResourceEditor
+from ocp_resources.resource import Resource
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.utils import run_command
 from ocp_wrapper_data_collector.data_collector import (
@@ -28,21 +26,23 @@ from tests.utils import get_hco_version_name
 from utilities.constants import (
     BASE_EXCEPTIONS_DICT,
     BREW_REGISTERY_SOURCE,
-    EUS_ERROR_CODE,
     HCO_CATALOG_SOURCE,
     IMAGE_CRON_STR,
+    TIMEOUT_2MIN,
+    TIMEOUT_5SEC,
     TIMEOUT_10MIN,
     TIMEOUT_10SEC,
     TIMEOUT_20MIN,
     TIMEOUT_30MIN,
+    TIMEOUT_30SEC,
     TIMEOUT_180MIN,
     TSC_FREQUENCY,
+    NamespacesNames,
 )
 from utilities.data_collector import get_data_collector_dict
 from utilities.hco import wait_for_hco_conditions, wait_for_hco_version
 from utilities.infra import (
     cluster_resource,
-    exit_pytest_execution,
     get_clusterversion,
     get_csv_by_name,
     get_deployments,
@@ -102,6 +102,7 @@ def wait_for_pod_replacement(dyn_client, hco_namespace, pod_name, related_images
         )
 
     LOGGER.info(f"Verify new pod {pod_name} replacement.")
+
     new_pod_sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_30MIN,
         sleep=1,
@@ -186,15 +187,14 @@ def assert_only_expected_pods_exist(
     LOGGER.info("Verify all cnv pods have the right image and no leftover pods exist")
     current_cnv_pods = get_pods(dyn_client=dyn_client, namespace=hco_namespace)
 
-    mismatching_pods = {
-        pod.name: pod.instance.spec.containers[0].image
-        for pod in current_cnv_pods
-        if pod.instance.spec.containers[0].image not in expected_images
-        and not (
+    mismatching_pods = {}
+    for pod in current_cnv_pods:
+        pod_instance = pod.instance
+        if pod_instance.spec.containers[0].image not in expected_images and not (
             IMAGE_CRON_STR in pod.name
-            or pod.instance.status.phase in pod.Status.SUCCEEDED
-        )
-    }
+            or pod_instance.status.phase in pod.Status.SUCCEEDED
+        ):
+            mismatching_pods[pod.name] = pod_instance.spec.containers[0].image
 
     assert not mismatching_pods, (
         f"The following pods images were not replaced / removed: {mismatching_pods}."
@@ -375,6 +375,12 @@ def wait_for_post_upgrade_deployments_replicas(dyn_client, hco_namespace):
 
 
 def verify_upgrade_cnv(dyn_client, hco_namespace, expected_images):
+    LOGGER.info("Wait for HCO stable conditions after upgrade")
+    wait_for_hco_conditions(
+        admin_client=dyn_client,
+        hco_namespace=hco_namespace,
+        wait_timeout=TIMEOUT_30MIN,
+    )
     wait_for_post_upgrade_deployments_replicas(
         dyn_client=dyn_client, hco_namespace=hco_namespace
     )
@@ -582,7 +588,7 @@ def query_version_explorer(api_end_point, query_string):
         response = requests.get(
             url=f"{CNV_VERSION_EXPLORER_URL}/{api_end_point}?{query_string}",
             verify=False,
-            timeout=TIMEOUT_10SEC,
+            timeout=TIMEOUT_30SEC,
         )
         response.raise_for_status()
     except (HTTPError, ConnectionError, Timeout, TooManyRedirects) as ex:
@@ -591,8 +597,21 @@ def query_version_explorer(api_end_point, query_string):
     return response.json()
 
 
+def wait_for_version_explorer_response(api_end_point, query_string):
+    version_explorer_sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_2MIN,
+        sleep=TIMEOUT_30SEC,
+        func=query_version_explorer,
+        api_end_point=api_end_point,
+        query_string=query_string,
+    )
+    for sample in version_explorer_sampler:
+        if sample:
+            return sample
+
+
 def get_upgrade_path(target_version):
-    return query_version_explorer(
+    return wait_for_version_explorer_response(
         api_end_point="GetUpgradePath", query_string=f"targetVersion={target_version}"
     )
 
@@ -623,30 +642,28 @@ def get_shortest_upgrade_path(target_version):
 
 
 def get_build_info_by_version(version, errata_status="true"):
-    return query_version_explorer(
+    query_string = f"version={version}"
+    if errata_status:
+        query_string = f"{query_string}&errata_status={errata_status}"
+    return wait_for_version_explorer_response(
         api_end_point="GetSuccessfulBuildsByVersion",
-        query_string=f"version={version}&errata_status={errata_status}",
+        query_string=query_string,
     )
 
 
-def get_iib_images_of_cnv_versions(versions):
+def get_iib_images_of_cnv_versions(versions, errata_status="true"):
     base_image_url = f"{BREW_REGISTERY_SOURCE}/rh-osbs/iib:"
     version_images = {}
     for version in versions:
-        build_info = get_build_info_by_version(version=version)
+        build_info = get_build_info_by_version(
+            version=version, errata_status=errata_status
+        )
         LOGGER.info(f"Build info for version {version}: {build_info}")
         version_images[version] = (
             base_image_url + build_info["successful_builds"][0]["iib"]
         )
 
     return version_images
-
-
-@contextmanager
-def pause_machine_config_pool(mcp_list):
-    LOGGER.info("Pausing MCP updates while modifying ICSP")
-    with ResourceEditor(patches={mcp: {"spec": {"paused": True}} for mcp in mcp_list}):
-        yield
 
 
 def extract_ocp_version_from_ocp_image(ocp_image_url):
@@ -738,7 +755,7 @@ def wait_for_target_csv(admin_client, hco_namespace, hco_target_version):
     LOGGER.info(f"Wait for new CSV: {hco_target_version}")
     csv_sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_10MIN,
-        sleep=1,
+        sleep=TIMEOUT_5SEC,
         func=get_csv_by_name,
         admin_client=admin_client,
         namespace=hco_namespace.name,
@@ -761,7 +778,7 @@ def wait_for_hco_csv_creation(admin_client, hco_namespace, hco_target_version):
     LOGGER.info(f"Wait for new CSV {hco_target_version} to be created")
     csv_sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_10MIN,
-        sleep=1,
+        sleep=TIMEOUT_5SEC,
         func=get_csv_by_name,
         admin_client=admin_client,
         namespace=hco_namespace.name,
@@ -788,25 +805,20 @@ def get_mcp_conditions(machine_config_pools):
     return {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools}
 
 
-def update_icsp(
-    admin_client,
-    cnv_image_url,
-    cnv_registry_source,
+def get_generated_icsp(
+    image_url,
+    registry_source,
     generated_pulled_secret,
     is_upgrade_from_stage_source,
     pull_secret_directory,
 ):
-    """
-    Creates a new ImageContentSourcePolicy file with a given CNV image and applies it to the cluster.
-    """
-    source_url = cnv_registry_source["source_map"]
     pull_secret = None
-    if BREW_REGISTERY_SOURCE in cnv_image_url:
-        source_url = BREW_REGISTERY_SOURCE
+    if BREW_REGISTERY_SOURCE in image_url:
+        registry_source = BREW_REGISTERY_SOURCE
         pull_secret = generated_pulled_secret
     cnv_mirror_cmd = create_icsp_command(
-        image=cnv_image_url,
-        source_url=source_url,
+        image=image_url,
+        source_url=registry_source,
         folder_name=pull_secret_directory,
         pull_secret=pull_secret,
     )
@@ -816,62 +828,57 @@ def update_icsp(
     )
     if is_upgrade_from_stage_source:
         update_icsp_stage_mirror(icsp_file_path=icsp_file_path)
-    LOGGER.info("pausing MCP updates while modifying ICSP")
-    with ResourceEditor(
-        patches={
-            mcp: {"spec": {"paused": True}}
-            for mcp in cluster_resource(MachineConfigPool).get(dyn_client=admin_client)
-        }
-    ):
-        # Due to the amount of annotations in ICSP yaml, `oc apply` may fail. Existing ICSP is deleted.
+
+    return icsp_file_path
+
+
+def apply_icsp(admin_client, icsp_file_path, delete_file=False):
+    """
+    Creates a new ImageContentSourcePolicy file with a given CNV image and applies it to the cluster.
+    """
+    # Due to the amount of annotations in ICSP yaml, `oc apply` may fail. Existing ICSP is deleted.
+    if delete_file:
         LOGGER.info("Deleting existing ICSP.")
         delete_existing_icsp(admin_client=admin_client, name="iib")
-        LOGGER.info("Creating new ICSP.")
-        create_icsp_from_file(icsp_file_path=icsp_file_path)
+    LOGGER.info("Creating new ICSP.")
+    create_icsp_from_file(icsp_file_path=icsp_file_path)
 
 
-def verify_eus_ocp_upgrade_and_handle_exceptions(
-    admin_client,
-    master_machine_config_pools,
-    master_machine_config_pools_conditions,
-    masters,
-    ocp_version,
-):
-    try:
-        verify_upgrade_ocp(
-            admin_client=admin_client,
-            machine_config_pools_list=master_machine_config_pools,
-            target_ocp_version=ocp_version,
-            initial_mcp_conditions=master_machine_config_pools_conditions,
-            nodes=masters,
-        )
-    except EUS_TO_EUS_EXCEPTIONS as ex:
-        LOGGER.error(f"Error occurred: {ex}")
-        exit_pytest_execution(
-            message=f"Failed: to perform ocp upgrade:" f" {ocp_version}",
-            return_code=EUS_ERROR_CODE,
-        )
+def wait_for_odf_update(target_version):
+    def _get_updated_odf_csv(_target_version):
+        csv_list = []
+        for csv in cluster_resource(ClusterServiceVersion).get(
+            namespace=NamespacesNames.OPENSHIFT_STORAGE
+        ):
+            if any(
+                csv_name in csv.name
+                for csv_name in [
+                    "mcg-operator",
+                    "ocs-operator",
+                    "odf-csi-addons-operator",
+                    "odf-operator",
+                ]
+            ):
+                csv_instance = csv.instance
+                phase = csv_instance.status.phase
+                current_version = csv_instance.spec.version
+                if (
+                    phase != csv.Status.SUCCEEDED
+                    or _target_version not in current_version
+                ):
+                    csv_list.append(
+                        f"{csv.name} with status: {phase}, version: {csv_instance.spec.version}"
+                    )
+        return csv_list
 
+    upgrade_sampler = TimeoutSampler(
+        wait_timeout=TIMEOUT_20MIN,
+        sleep=TIMEOUT_30SEC,
+        func=_get_updated_odf_csv,
+        _target_version=target_version,
+    )
 
-def perform_cnv_upgrade_and_handle_exceptions(
-    admin_client,
-    cnv_image_url,
-    hco_namespace,
-    hyperconverged_resource_scope_function,
-    cnv_version,
-):
-    log_message = f"Cnv upgrade to version {cnv_version} using image: {cnv_image_url}"
-    LOGGER.info(log_message)
-    try:
-        perform_cnv_upgrade(
-            admin_client=admin_client,
-            cnv_image_url=cnv_image_url,
-            cr_name=hyperconverged_resource_scope_function.name,
-            hco_namespace=hco_namespace,
-            cnv_target_version=cnv_version.lstrip("v"),
-        )
-    except EUS_TO_EUS_EXCEPTIONS as ex:
-        LOGGER.error(f"Error occurred: {ex}")
-        exit_pytest_execution(
-            message=f"Failed: {log_message}", return_code=EUS_ERROR_CODE
-        )
+    for sample in upgrade_sampler:
+        if not sample:
+            return
+        LOGGER.info(f"Following odf csvs are not updated: {','.join(sample)}")

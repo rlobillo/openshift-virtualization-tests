@@ -32,6 +32,7 @@ def create_vm_for_snapshot_upgrade_tests(
         namespace=dv.res["metadata"]["namespace"],
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
         data_volume_template={"metadata": dv.res["metadata"], "spec": dv.res["spec"]},
+        eviction=None,
     ) as vm:
         write_file(
             vm=vm,

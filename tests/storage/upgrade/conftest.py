@@ -137,6 +137,7 @@ def fedora_vm_for_hotplug_upg(upgrade_namespace_scope_session):
         name=name,
         namespace=upgrade_namespace_scope_session.name,
         body=fedora_vm_body(name=name),
+        eviction=None,
     ) as vm:
         running_vm(vm=vm)
         yield vm

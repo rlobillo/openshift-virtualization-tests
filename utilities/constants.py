@@ -575,3 +575,4 @@ class UpgradeStreams:
 
 
 EUS_ERROR_CODE = 98
+EVICTION_STRATEGY = "evictionStrategy"

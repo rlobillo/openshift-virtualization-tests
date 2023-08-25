@@ -4,6 +4,7 @@ import logging
 import re
 
 from benedict import benedict
+from kubernetes.dynamic.exceptions import NotFoundError
 from ocp_resources.deployment import Deployment
 from ocp_resources.installplan import InstallPlan
 from ocp_resources.network_addons_config import NetworkAddonsConfig
@@ -78,11 +79,11 @@ def wait_for_install_plan(
         sleep=1,
         func=cluster_resource(InstallPlan).get,
         exceptions_dict={
-            ConflictError: []
+            ConflictError: [],
+            NotFoundError: [],
         },  # Ignore ConflictError during install plan reconciliation
         dyn_client=dyn_client,
-        hco_namespace=hco_namespace,
-        hco_target_version=hco_target_version,
+        namespace=hco_namespace,
     )
     subscription = get_subscription(
         admin_client=dyn_client,
@@ -103,27 +104,29 @@ def wait_for_install_plan(
                 # upgrade cnv using custom catalogsource, to a specified version. Approving install plan associated
                 # with the production catalogsource would also lead to failure as production catalogsource has been
                 # disabled at this point.
-                ip_instance = ip.instance
-                if not is_production_source:
+                if ip.exists:
+                    ip_instance = ip.instance
+                    if not is_production_source:
+                        if (
+                            not ip_instance.spec.approved
+                            and ip_instance.status
+                            and ip_instance.status.bundleLookups[0]
+                            .get("catalogSourceRef")
+                            .get("name")
+                            == PRODUCTION_CATALOG_SOURCE
+                        ):
+                            ip.delete(wait=True)
+                            continue
                     if (
-                        not ip_instance.spec.approved
-                        and ip_instance.status
-                        and ip_instance.status.bundleLookups[0]
-                        .get("catalogSourceRef")
-                        .get("name")
-                        == PRODUCTION_CATALOG_SOURCE
+                        hco_target_version
+                        == ip_instance.spec.clusterServiceVersionNames[0]
+                        and ip.name == install_plan_name_in_subscription
                     ):
-                        ip.delete(wait=True)
-                        continue
-                if (
-                    hco_target_version == ip_instance.spec.clusterServiceVersionNames[0]
-                    and ip.name == install_plan_name_in_subscription
-                ):
-                    return ip
-                LOGGER.info(
-                    f"Subscription: {subscription.name}, is associated with install plan:"
-                    f" {install_plan_name_in_subscription}"
-                )
+                        return ip
+                    LOGGER.info(
+                        f"Subscription: {subscription.name}, is associated with install plan:"
+                        f" {install_plan_name_in_subscription}"
+                    )
     except TimeoutExpiredError:
         LOGGER.error(
             f"timeout waiting for target install plan: version={hco_target_version}, "

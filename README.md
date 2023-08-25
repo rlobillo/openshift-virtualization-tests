@@ -236,13 +236,16 @@ pytest tests/install_upgrade_operators/product_install/test_install_openshift_vi
 ```
 
 ## Upgrade tests
-Current upgrade test automation allows us the ability to run just ocp/cnv upgrade or upgrade along with pre and post upgrade validation of various components.
+Current upgrade test automation allows us the ability to run just ocp/cnv/eus upgrade or upgrade along with pre and post upgrade validation of various components.
 
 Note: Before running upgrade tests, please check "Cluster requirements" section to see minimum requirements in terms of cluster size.
 ##### Y-stream Upgrade:
 In this case, upgrade testing would always involve upgrading both ocp and cnv. Please note, in Y-1 -> Y upgrade, OCP must be upgraded first, followed by CNV upgrades. (e.g. upgrading from 4.10 latest z stream -> 4.11.0, ocp must be upgraded to 4.11 first, before cnv can be upgraded).
 ##### Z-stream Upgrade:
-Here, no ocp upgrade is needed (e.g. 4.11.z-1 -> 4.11.z).
+Here, no ocp upgrade is needed (e.g. 4.12.z-1 -> 4.12.z).
+##### EUS Upgrade:
+EUS-to-EUS updates are only viable between even-numbered minor versions of OpenShift Container Platform.
+Here, the comma separated list of two ocp images for EUS upgrade from 4.y.z->4.y+2.0 needs to be provided via command line parameter --eus-ocp-images . Test would determine the correct CNV upgrade path based on the current CNV version(4.y.z) and possible target cnv version (4.y+2.0)
 
 Before running upgrade tests, it must be understood if a direct upgrade path exists between the source and target version. This can be done by using cnv version explorer tool.
 ```bash
@@ -281,9 +284,16 @@ Command to run only cnv upgrade test, without any pre/post validation:
 ```bash
 -m cnv_upgrade --upgrade cnv --cnv-version <target_version> --cnv source <osbs|production|staging> --cnv-image <cnv_image_to_upgrade_to>
 ```
-To upgrade to cnv 4.10.1, using the cnv image that has been shipped, following command could be used:
+To upgrade to cnv 4.12.0, using the cnv image that has been shipped, following command could be used:
 ```bash
---upgrade cnv --cnv-version 4.10.1 --cnv-source osbs --cnv-image registry-proxy.engineering.redhat.com/rh-osbs/iib:224744
+--upgrade cnv --cnv-version 4.12.0 --cnv-source osbs --cnv-image registry-proxy.engineering.redhat.com/rh-osbs/iib:<index_image>
+```
+
+#### EUS upgrade
+Command to run entire upgrade test suite for EUS upgrade, including pre and post upgrade validation:
+```bash
+--upgrade eus --eus-ocp-images <ocp_image_version_4.y+1.z>,<ocp_image_version_4.y+2.z>
+```
 ```
 
 Note: cnv-image information can be found here: http://cnv-version-explorer.apps.cnv.engineering.redhat.com/

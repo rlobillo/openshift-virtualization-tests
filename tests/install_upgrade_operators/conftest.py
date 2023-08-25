@@ -188,11 +188,6 @@ def machine_config_pools_conditions_scope_module(machine_config_pools):
     return get_mcp_conditions(machine_config_pools=machine_config_pools)
 
 
-@pytest.fixture()
-def master_machine_config_pools_conditions(master_machine_config_pools):
-    return get_mcp_conditions(machine_config_pools=master_machine_config_pools)
-
-
 @pytest.fixture(scope="module")
 def worker_machine_config_pools_conditions(worker_machine_config_pools):
     return get_mcp_conditions(machine_config_pools=worker_machine_config_pools)

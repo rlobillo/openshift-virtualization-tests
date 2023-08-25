@@ -21,6 +21,7 @@ from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import cluster_resource
+from ocp_utilities.utils import run_command
 from ocp_wrapper_data_collector.data_collector import collect_resources_yaml_instance
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
@@ -85,14 +86,16 @@ def create_icsp_command(
     return base_command
 
 
-def generate_icsp_file(folder_name, command):
-    rc, _, _ = utilities.infra.run_command(
+def generate_icsp_file(command, folder_name=None, file_name=ICSP_FILE):
+    rc, _, _ = run_command(
         command=shlex.split(command),
         verify_stderr=False,
     )
     assert rc
-
-    icsp_file_path = os.path.join(folder_name, ICSP_FILE)
+    if not folder_name:
+        folder_name = os.path.abspath(os.getcwd())
+    icsp_file_path = os.path.join(folder_name, file_name)
+    LOGGER.info(f"Path: {icsp_file_path}")
     assert os.path.isfile(
         icsp_file_path
     ), f"ICSP file does not exist in path {icsp_file_path}"
@@ -102,7 +105,7 @@ def generate_icsp_file(folder_name, command):
 
 def create_icsp_from_file(icsp_file_path):
     LOGGER.info(f"Creating icsp using file: {icsp_file_path}")
-    rc, _, _ = utilities.infra.run_command(
+    rc, _, _ = run_command(
         command=shlex.split(f"oc create -f {icsp_file_path}"), verify_stderr=False
     )
     assert rc
@@ -191,12 +194,14 @@ def get_mcps_with_all_machines_ready(machine_config_pools_list):
     return resulting_mcps
 
 
-def wait_for_mcp_updated_condition_true(machine_config_pools_list):
+def wait_for_mcp_updated_condition_true(
+    machine_config_pools_list, update_timeout=TIMEOUT_75MIN
+):
     LOGGER.info(
         f"Waiting for MCPs to reach desired condition: {MachineConfigPool.Status.UPDATED}"
     )
     sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_75MIN,
+        wait_timeout=update_timeout,
         sleep=TIMEOUT_5SEC,
         func=get_mcps_with_true_condition_status,
         exceptions_dict=BASE_EXCEPTIONS_DICT,
@@ -211,7 +216,7 @@ def wait_for_mcp_updated_condition_true(machine_config_pools_list):
 def wait_for_mcp_ready_machine_count(machine_config_pools_list):
     LOGGER.info("Waiting for MCPs to have all machines ready.")
     sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_10MIN,
+        wait_timeout=TIMEOUT_20MIN,
         sleep=TIMEOUT_5SEC,
         func=get_mcps_with_all_machines_ready,
         exceptions_dict=BASE_EXCEPTIONS_DICT,
@@ -245,9 +250,10 @@ def consecutive_checks_for_mcp_condition(mcp_sampler, machine_config_pools_list)
         raise
 
 
-def wait_for_mcp_update_end(machine_config_pools_list):
+def wait_for_mcp_update_end(machine_config_pools_list, update_timeout=TIMEOUT_75MIN):
     wait_for_mcp_updated_condition_true(
-        machine_config_pools_list=machine_config_pools_list
+        machine_config_pools_list=machine_config_pools_list,
+        update_timeout=update_timeout,
     )
     wait_for_mcp_ready_machine_count(
         machine_config_pools_list=machine_config_pools_list
@@ -552,7 +558,10 @@ def wait_for_csv_successful_state(admin_client, namespace_name, subscription_nam
 
 
 def wait_for_mcp_update_completion(
-    machine_config_pools_list, initial_mcp_conditions, nodes
+    machine_config_pools_list,
+    initial_mcp_conditions,
+    nodes=None,
+    update_timeout=TIMEOUT_75MIN,
 ):
     initial_updating_transition_times = get_mcp_updating_transition_times(
         mcp_conditions=initial_mcp_conditions
@@ -564,15 +573,17 @@ def wait_for_mcp_update_completion(
     )
     wait_for_mcp_update_end(
         machine_config_pools_list=machine_config_pools_list,
+        update_timeout=update_timeout,
     )
-    wait_for_nodes_to_have_same_kubelet_version(nodes=nodes)
-    wait_for_all_nodes_ready(nodes=nodes)
+    if nodes:
+        wait_for_nodes_to_have_same_kubelet_version(nodes=nodes)
+        wait_for_all_nodes_ready(nodes=nodes)
 
 
 def wait_for_all_nodes_ready(nodes):
     nodes_not_ready = None
     sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_5MIN,
+        wait_timeout=TIMEOUT_15MIN,
         sleep=TIMEOUT_10SEC,
         func=get_nodes_not_ready,
         exceptions_dict=BASE_EXCEPTIONS_DICT,
@@ -602,7 +613,7 @@ def get_nodes_not_ready(nodes):
 def wait_for_nodes_to_have_same_kubelet_version(nodes):
     node_versions = None
     sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_5MIN,
+        wait_timeout=TIMEOUT_15MIN,
         sleep=TIMEOUT_10SEC,
         func=lambda: {
             node.name: node.instance.status.nodeInfo.kubeletVersion for node in nodes

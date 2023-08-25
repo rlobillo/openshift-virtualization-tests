@@ -7,5 +7,6 @@ SIDECAR_FEATURE_GATE_KEY = "Sidecar"
 WORKLOADUPDATEMETHODS = "workloadUpdateMethods"
 KEY_PATH_SEPARATOR = "->"
 CNV_VERSION_EXPLORER_URL = (
-    "https://cnv-version-explorer.apps.cnv2.engineering.redhat.com"
+    "http://cnv-version-explorer.apps.cnv2.engineering.redhat.com"
 )
+WORKLOAD_UPDATE_STRATEGY_KEY_NAME = "workloadUpdateStrategy"

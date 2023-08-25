@@ -48,6 +48,7 @@ from utilities.constants import (
     DATA_SOURCE_NAME,
     DATA_SOURCE_NAMESPACE,
     DEFAULT_KUBEVIRT_CONDITIONS,
+    EVICTION_STRATEGY,
     IP_FAMILY_POLICY_PREFER_DUAL_STACK,
     LIVE_MIGRATE,
     OS_FLAVOR_CIRROS,
@@ -420,6 +421,9 @@ class VirtualMachineForTests(VirtualMachine):
         self.is_vm_from_template = self._is_vm_from_template()
 
         template_spec = self.res["spec"]["template"]["spec"]
+        # if eviction is set to None, use it
+        if self.eviction is None:
+            template_spec[EVICTION_STRATEGY] = "None"
         template_spec = self.update_node_selector(template_spec=template_spec)
         template_spec = self.update_vm_network_configuration(
             template_spec=template_spec
@@ -812,7 +816,7 @@ class VirtualMachineForTests(VirtualMachine):
 
     def update_vm_cpu_configuration(self, template_spec):
         if self.eviction:
-            template_spec["evictionStrategy"] = LIVE_MIGRATE
+            template_spec[EVICTION_STRATEGY] = LIVE_MIGRATE
 
         # cpu settings
         if self.cpu_flags:
@@ -889,13 +893,13 @@ class VirtualMachineForTests(VirtualMachine):
         ) and not self.is_vm_from_template:
             access_mode = self.get_storage_configuration()
 
-            # For storage class that is not ReadWriteMany - evictionStrategy should be removed from the VM
+            # For storage class that is not ReadWriteMany - evictionStrategy should be set as "None" in the VM
             # (Except when evictionStrategy is explicitly set)
             if not self.eviction and DataVolume.AccessMode.RWX not in access_mode:
                 LOGGER.info(
-                    "'evictionStrategy' removed from VM because data volume access mode is not RWX"
+                    f"{EVICTION_STRATEGY} explicitly set to 'None' in VM because data volume access mode is not RWX"
                 )
-                template_spec.pop("evictionStrategy", None)
+                template_spec[EVICTION_STRATEGY] = "None"
 
             if self.pvc:
                 pvc_disk_name = f"{self.pvc.name}-pvc-disk"
@@ -1275,15 +1279,15 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
                     "storageClassName"
                 ] = source_dv_pvc_spec.storageClassName
 
-        # On SNO cluster or for storage class that is not ReadWriteMany- evictionStrategy should be removed from the VM
+        # For storage class that is not ReadWriteMany- evictionStrategy should be set as "None" in the VM
         # (Except when evictionStrategy is explicitly set)
         # To apply this logic, self.access_modes should be available.
-        if self.sno_cluster or (
+        if not self.sno_cluster and (
             not self.eviction
             and not (self.diskless_vm or self.non_existing_pvc)
             and DataVolume.AccessMode.RWX not in self.access_modes
         ):
-            spec.pop("evictionStrategy", None)
+            spec[EVICTION_STRATEGY] = "None"
 
         # On PSI cluster Windows VM with hyperv/reenlightenment flag can't be migrated,
         # current workaround removes the flag when VM created from the template

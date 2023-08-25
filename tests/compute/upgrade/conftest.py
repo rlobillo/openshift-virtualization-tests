@@ -120,7 +120,12 @@ def migratable_vms(admin_client, hco_namespace, upgrade_namespaces):
 
 @pytest.fixture()
 def unupdated_vmi_pods_names(
-    admin_client, hco_namespace, hco_target_version, upgrade_namespaces, migratable_vms
+    admin_client,
+    hco_namespace,
+    hco_target_version,
+    eus_created_target_hco_csv,
+    upgrade_namespaces,
+    migratable_vms,
 ):
     wait_for_automatic_vm_migrations(admin_client=admin_client, vm_list=migratable_vms)
 
@@ -133,7 +138,7 @@ def unupdated_vmi_pods_names(
     return validate_vms_pod_updated(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
-        hco_target_version=hco_target_version,
+        hco_target_version=hco_target_version or eus_created_target_hco_csv.name,
         vm_list=migratable_vms,
     )
 
@@ -156,6 +161,7 @@ def vm_from_template(
     cpu_model,
     networks,
     template_labels,
+    memory_requests=None,
     run_strategy=None,
 ):
     with VirtualMachineForTestsFromTemplate(
@@ -165,6 +171,7 @@ def vm_from_template(
         labels=Template.generate_template_labels(**template_labels),
         data_source=data_source,
         cpu_model=cpu_model,
+        memory_requests=memory_requests,
         run_strategy=run_strategy,
         networks=networks,
         interfaces=sorted(networks.keys()),
@@ -263,6 +270,7 @@ def windows_vm(
                 template_labels=latest_windows_dict["template_labels"],
                 data_source=ds,
                 cpu_model=nodes_common_cpu_model,
+                memory_requests="6Gi",
                 networks=vm_bridge_networks,
             ) as vm:
                 running_vm(vm=vm, check_ssh_connectivity=False)
@@ -289,7 +297,7 @@ def run_strategy_golden_image_rwx_data_source(
 
 @pytest.fixture(scope="session")
 def skip_on_zstream(cnv_upgrade_stream):
-    if cnv_upgrade_stream == UpgradeStreams.Z_STREAM:
+    if cnv_upgrade_stream and cnv_upgrade_stream == UpgradeStreams.Z_STREAM:
         pytest.skip("This test is not supported for z-stream upgrade")
 
 

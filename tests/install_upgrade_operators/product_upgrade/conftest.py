@@ -2,35 +2,50 @@ import logging
 import os
 import re
 
+import packaging
 import pytest
+import yaml
 from ocp_resources.kubevirt import KubeVirt
+from ocp_resources.machine_config_pool import MachineConfigPool
+from ocp_resources.resource import ResourceEditor
+from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import py_config
 
-from tests.install_upgrade_operators.constants import WORKLOADUPDATEMETHODS
-from tests.install_upgrade_operators.launcher_updates.constants import (
+from tests.install_upgrade_operators.constants import (
     WORKLOAD_UPDATE_STRATEGY_KEY_NAME,
+    WORKLOADUPDATEMETHODS,
 )
 from tests.install_upgrade_operators.product_upgrade.utils import (
+    apply_icsp,
     approve_cnv_upgrade_install_plan,
     extract_ocp_version_from_ocp_image,
     get_alerts_fired_during_upgrade,
     get_all_cnv_alerts,
+    get_generated_icsp,
     get_iib_images_of_cnv_versions,
+    get_mcp_conditions,
     get_nodes_labels,
     get_nodes_taints,
     get_shortest_upgrade_path,
-    pause_machine_config_pool,
+    perform_cnv_upgrade,
     run_ocp_upgrade_command,
-    update_icsp,
+    verify_upgrade_ocp,
     wait_for_hco_csv_creation,
     wait_for_hco_upgrade,
+    wait_for_odf_update,
     wait_for_pods_replacement_by_type,
 )
 from tests.install_upgrade_operators.utils import wait_for_operator_condition
-from utilities.constants import HCO_CATALOG_SOURCE, TIMEOUT_10MIN
+from utilities.constants import (
+    HCO_CATALOG_SOURCE,
+    ICSP_FILE,
+    TIMEOUT_10MIN,
+    TIMEOUT_180MIN,
+    NamespacesNames,
+)
 from utilities.data_collector import get_data_collector_dict
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import get_related_images_name_and_version
+from utilities.infra import get_related_images_name_and_version, get_subscription
 from utilities.operator import (
     get_machine_config_pool_by_name,
     update_image_in_catalog_source,
@@ -42,6 +57,7 @@ from utilities.virt import get_oc_image_info
 
 LOGGER = logging.getLogger(__name__)
 POD_STR_NOT_MANAGED_BY_HCO = "hostpath-"
+ODF_URL = "quay.io/rhceph-dev"
 
 
 @pytest.fixture(scope="session")
@@ -89,14 +105,22 @@ def updated_image_content_source_policy(
     if is_disconnected_cluster:
         LOGGER.warning("Skip applying ICSP in a disconnected setup.")
         return
-    update_icsp(
-        admin_client=admin_client,
-        cnv_image_url=cnv_image_url,
-        cnv_registry_source=cnv_registry_source,
+    icsp_file = get_generated_icsp(
+        image_url=cnv_image_url,
+        registry_source=cnv_registry_source["source_map"],
         generated_pulled_secret=generated_pulled_secret,
         is_upgrade_from_stage_source=is_upgrade_from_stage_source,
         pull_secret_directory=pull_secret_directory,
     )
+    with ResourceEditor(
+        patches={
+            mcp: {"spec": {"paused": True}}
+            for mcp in cluster_resource(MachineConfigPool).get(dyn_client=admin_client)
+        }
+    ):
+        apply_icsp(
+            admin_client=admin_client, icsp_file_path=icsp_file, delete_file=True
+        )
 
     LOGGER.info("Wait for MCP update after ICSP modification.")
     wait_for_mcp_update_completion(
@@ -152,23 +176,9 @@ def created_target_hco_csv(admin_client, hco_namespace, hco_target_version):
     )
 
 
-@pytest.fixture(scope="module")
-def eus_created_target_hco_csv(admin_client, hco_namespace, eus_hco_target_version):
-    return wait_for_hco_csv_creation(
-        admin_client=admin_client,
-        hco_namespace=hco_namespace,
-        hco_target_version=eus_hco_target_version,
-    )
-
-
 @pytest.fixture()
 def related_images_from_target_csv(created_target_hco_csv):
     return get_related_images_name_and_version(csv=created_target_hco_csv)
-
-
-@pytest.fixture()
-def eus_related_images_from_target_csv(eus_created_target_hco_csv):
-    return get_related_images_name_and_version(csv=eus_created_target_hco_csv)
 
 
 @pytest.fixture()
@@ -333,6 +343,12 @@ def fired_alerts_during_ocp_upgrade(
 
 
 @pytest.fixture(scope="session")
+def skip_on_eus_upgrade(pytestconfig):
+    if pytestconfig.option.upgrade == "eus":
+        pytest.skip("This test is not supported for EUS upgrade")
+
+
+@pytest.fixture(scope="session")
 def skip_on_cnv_upgrade(pytestconfig):
     if pytestconfig.option.upgrade == "cnv":
         pytest.skip("This test is not supported for CNV upgrade")
@@ -355,43 +371,87 @@ def eus_cnv_upgrade_path(eus_target_cnv_version):
             versions=upgrade_path_to_intermediate_version["versions"]
         ),
         "eus": get_iib_images_of_cnv_versions(
-            versions=upgrade_path_to_target_version["versions"]
+            versions=upgrade_path_to_target_version["versions"], errata_status=None
         ),
     }
     LOGGER.info(f"Upgrade path for EUS-to-EUS upgrade: {upgrade_path}")
     return upgrade_path
 
 
-@pytest.fixture(scope="module")
-def eus_paused_mcp_workload_update(
+@pytest.fixture()
+def default_workload_update_strategy(hyperconverged_resource_scope_module):
+    return hyperconverged_resource_scope_module.instance.to_dict()["spec"][
+        WORKLOAD_UPDATE_STRATEGY_KEY_NAME
+    ]
+
+
+@pytest.fixture()
+def eus_paused_mcp(
     workers,
     worker_machine_config_pools,
     worker_machine_config_pools_conditions,
     eus_target_cnv_version,
-    hyperconverged_resource_scope_module,
     eus_applied_all_icsp,
 ):
-    with pause_machine_config_pool(mcp_list=worker_machine_config_pools):
-        with ResourceEditorValidateHCOReconcile(
-            patches={
-                hyperconverged_resource_scope_module: {
-                    "spec": {
-                        WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {WORKLOADUPDATEMETHODS: []}
+    LOGGER.info("Pausing worker MCP updates before starting EUS upgrade.")
+    for mcp in worker_machine_config_pools:
+        ResourceEditor(patches={mcp: {"spec": {"paused": True}}}).update()
+
+
+@pytest.fixture()
+def eus_paused_workload_update(
+    hyperconverged_resource_scope_module,
+    default_workload_update_strategy,
+):
+    ResourceEditorValidateHCOReconcile(
+        patches={
+            hyperconverged_resource_scope_module: {
+                "spec": {WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {WORKLOADUPDATEMETHODS: []}}
+            }
+        },
+        list_resource_reconcile=[KubeVirt],
+        wait_for_reconcile_post_update=True,
+    ).update()
+
+
+@pytest.fixture()
+def eus_unpaused_workload_update(
+    hyperconverged_resource_scope_module,
+    default_workload_update_strategy,
+):
+    LOGGER.info(f"Reset hco.spec.{WORKLOAD_UPDATE_STRATEGY_KEY_NAME}.")
+    ResourceEditorValidateHCOReconcile(
+        patches={
+            hyperconverged_resource_scope_module: {
+                "spec": {
+                    WORKLOAD_UPDATE_STRATEGY_KEY_NAME: {
+                        WORKLOADUPDATEMETHODS: default_workload_update_strategy[
+                            WORKLOADUPDATEMETHODS
+                        ]
                     }
                 }
-            },
-            list_resource_reconcile=[KubeVirt],
-            wait_for_reconcile_post_update=True,
-        ):
-            yield
-    LOGGER.info(
-        f"Cleaned up hco.spec.{WORKLOAD_UPDATE_STRATEGY_KEY_NAME}. After un-pausing worker mcp, wait for "
-        "worker mcp to complete update."
-    )
+            }
+        },
+        list_resource_reconcile=[KubeVirt],
+        wait_for_reconcile_post_update=True,
+    ).update()
+
+
+@pytest.fixture()
+def eus_unpaused_mcp(
+    workers,
+    worker_machine_config_pools,
+    worker_machine_config_pools_conditions,
+):
+    LOGGER.info("Un-pause worker mcp and wait for worker mcp to complete update.")
+    for mcp in worker_machine_config_pools:
+        ResourceEditor(patches={mcp: {"spec": {"paused": False}}}).update()
+
     wait_for_mcp_update_completion(
         machine_config_pools_list=worker_machine_config_pools,
         initial_mcp_conditions=worker_machine_config_pools_conditions,
         nodes=workers,
+        update_timeout=TIMEOUT_180MIN,
     )
 
 
@@ -403,6 +463,74 @@ def eus_ocp_image_urls(pytestconfig):
 @pytest.fixture()
 def triggered_source_eus_to_non_eus_ocp_upgrade(eus_ocp_image_urls):
     run_ocp_upgrade_command(ocp_image_url=eus_ocp_image_urls[0])
+
+
+@pytest.fixture()
+def source_eus_to_non_eus_ocp_upgraded(
+    admin_client,
+    masters,
+    master_machine_config_pools,
+    ocp_version_eus_to_non_eus_from_image_url,
+    triggered_source_eus_to_non_eus_ocp_upgrade,
+):
+    LOGGER.info(f"Upgrading OCP to: {ocp_version_eus_to_non_eus_from_image_url}")
+    verify_upgrade_ocp(
+        admin_client=admin_client,
+        machine_config_pools_list=master_machine_config_pools,
+        target_ocp_version=ocp_version_eus_to_non_eus_from_image_url,
+        initial_mcp_conditions=get_mcp_conditions(
+            machine_config_pools=master_machine_config_pools
+        ),
+        nodes=masters,
+    )
+
+
+@pytest.fixture()
+def updated_odf_subscription_source(odf_subscription, odf_version):
+    LOGGER.info("Update odf subscription source.")
+    LOGGER.info(
+        f"Update subscription {odf_subscription.name} source channel: {odf_version}"
+    )
+    ResourceEditor(
+        patches={
+            odf_subscription: {
+                "spec": {
+                    "channel": f"stable-{odf_version}",
+                }
+            }
+        }
+    ).update()
+
+
+@pytest.fixture()
+def odf_subscription(admin_client):
+    return get_subscription(
+        admin_client=admin_client,
+        namespace=NamespacesNames.OPENSHIFT_STORAGE,
+        subscription_name="ocs-subscription",
+    )
+
+
+@pytest.fixture()
+def source_eus_to_non_eus_cnv_upgraded(
+    admin_client,
+    hco_namespace,
+    eus_cnv_upgrade_path,
+    hyperconverged_resource_scope_function,
+    updated_cnv_subscription_source,
+):
+    for version, cnv_image_url in sorted(eus_cnv_upgrade_path["non-eus"].items()):
+        LOGGER.info(f"Cnv upgrade to version {version} using image: {cnv_image_url}")
+        perform_cnv_upgrade(
+            admin_client=admin_client,
+            cnv_image_url=cnv_image_url,
+            cr_name=hyperconverged_resource_scope_function.name,
+            hco_namespace=hco_namespace,
+            cnv_target_version=version.lstrip("v"),
+        )
+    LOGGER.info(
+        "Successfully performed cnv upgrades from source EUS to non-EUS version."
+    )
 
 
 @pytest.fixture()
@@ -420,11 +548,48 @@ def ocp_version_non_eus_to_eus_from_image_url(eus_ocp_image_urls):
     return extract_ocp_version_from_ocp_image(ocp_image_url=eus_ocp_image_urls[1])
 
 
-@pytest.fixture(scope="module")
-def eus_applied_all_icsp(
+@pytest.fixture()
+def non_eus_to_target_eus_ocp_upgraded(
     admin_client,
+    masters,
+    master_machine_config_pools,
+    ocp_version_non_eus_to_eus_from_image_url,
+    triggered_non_eus_to_target_eus_ocp_upgrade,
+):
+    LOGGER.info(f"Upgrading OCP to: {ocp_version_non_eus_to_eus_from_image_url}")
+    verify_upgrade_ocp(
+        admin_client=admin_client,
+        machine_config_pools_list=master_machine_config_pools,
+        target_ocp_version=ocp_version_non_eus_to_eus_from_image_url,
+        initial_mcp_conditions=get_mcp_conditions(
+            machine_config_pools=master_machine_config_pools
+        ),
+        nodes=masters,
+    )
+
+
+@pytest.fixture()
+def non_eus_to_target_eus_cnv_upgraded(
+    admin_client,
+    hco_namespace,
+    eus_cnv_upgrade_path,
+    hyperconverged_resource_scope_function,
+    updated_cnv_subscription_source,
+):
+    version, cnv_image_url = next(iter(eus_cnv_upgrade_path["eus"].items()))
+    LOGGER.info(f"Cnv upgrade to version {version} using image: {cnv_image_url}")
+    perform_cnv_upgrade(
+        admin_client=admin_client,
+        cnv_image_url=cnv_image_url,
+        cr_name=hyperconverged_resource_scope_function.name,
+        hco_namespace=hco_namespace,
+        cnv_target_version=version.lstrip("v"),
+    )
+
+
+@pytest.fixture(scope="module")
+def created_eus_icsps(
     nodes,
-    tmpdir_factory,
     pull_secret_directory,
     generated_pulled_secret,
     machine_config_pools,
@@ -433,16 +598,55 @@ def eus_applied_all_icsp(
     eus_cnv_upgrade_path,
     is_upgrade_from_stage_source,
 ):
+    icsp_files = []
+    registry_source = cnv_registry_source["source_map"]
     for entry in eus_cnv_upgrade_path:
         for version in eus_cnv_upgrade_path[entry]:
             cnv_image_url = eus_cnv_upgrade_path[entry][version]
-            update_icsp(
-                admin_client=admin_client,
-                cnv_image_url=cnv_image_url,
-                cnv_registry_source=cnv_registry_source,
+            icsp_file = get_generated_icsp(
+                image_url=cnv_image_url,
+                registry_source=registry_source,
                 generated_pulled_secret=generated_pulled_secret,
                 is_upgrade_from_stage_source=is_upgrade_from_stage_source,
                 pull_secret_directory=pull_secret_directory,
+            )
+            version_str = version.lstrip("v").replace(".", "")
+            with open(icsp_file, "r") as fd:
+                icsp_yaml = yaml.safe_load(fd.read())
+            icsp_yaml["metadata"]["name"] = f"iib-{version_str}"
+            with open(icsp_file, "w") as current_icsp_file:
+                yaml.dump(icsp_yaml, current_icsp_file)
+            new_file_name = icsp_file.replace(
+                ICSP_FILE, f"imageContentSourcePolicy{version_str}.yaml"
+            )
+            os.rename(icsp_file, new_file_name)
+            icsp_files.append(new_file_name)
+    LOGGER.info(f"EUS ICSP Files created: {icsp_files}")
+    return icsp_files
+
+
+@pytest.fixture(scope="module")
+def eus_applied_all_icsp(
+    admin_client,
+    nodes,
+    pull_secret_directory,
+    generated_pulled_secret,
+    machine_config_pools,
+    machine_config_pools_conditions_scope_module,
+    cnv_registry_source,
+    eus_cnv_upgrade_path,
+    created_eus_icsps,
+):
+    with ResourceEditor(
+        patches={
+            mcp: {"spec": {"paused": True}}
+            for mcp in cluster_resource(MachineConfigPool).get(dyn_client=admin_client)
+        }
+    ):
+        for file_name in created_eus_icsps:
+            LOGGER.info(f"Applying file: {file_name}")
+            apply_icsp(
+                admin_client=admin_client, icsp_file_path=file_name, delete_file=False
             )
     LOGGER.info("Wait for MCP update after ICSP modification.")
     wait_for_mcp_update_completion(
@@ -460,3 +664,19 @@ def worker_machine_config_pools():
 @pytest.fixture(scope="session")
 def master_machine_config_pools():
     return [get_machine_config_pool_by_name(mcp_name="master")]
+
+
+@pytest.fixture()
+def odf_version(openshift_current_version):
+    ocp_version = packaging.version.parse(
+        version=openshift_current_version.split("-")[0]
+    )
+    return f"{ocp_version.major}.{ocp_version.minor+1}"
+
+
+@pytest.fixture()
+def upgraded_odf(
+    odf_version,
+    updated_odf_subscription_source,
+):
+    wait_for_odf_update(target_version=odf_version)

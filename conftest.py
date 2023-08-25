@@ -348,13 +348,123 @@ def pytest_cmdline_main(config):
         raise ValueError("Running with --cnv-source: Missing --cnv-version")
 
 
+def add_polarion_parameters_to_user_properties(item, matrix_name):
+    values = re.findall(
+        "(#.*?#)", item.name
+    )  # Extract all substrings enclosed in '#' from item.name
+    for value in values:
+        value = value.strip("#")
+        for param in py_config[matrix_name]:
+            if isinstance(param, dict):
+                param = [*param][0]
+
+            if value == param:
+                item.user_properties.append(
+                    (f"polarion-parameter-{matrix_name}", value)
+                )
+
+
+def add_test_id_markers(item, marker_name):
+    for marker in item.iter_markers(name=marker_name):
+        test_id = marker.args[0]
+        if marker_name == "polarion":
+            marker_name = f"{marker_name}-testcase-id"
+        item.user_properties.append((marker_name, test_id))
+
+
+def add_tier2_marker(item):
+    markers = [mark.name for mark in list(item.iter_markers())]
+    if not [mark for mark in markers if mark in EXCLUDE_MARKER_FROM_TIER2_MARKER]:
+        item.add_marker(marker="tier2")
+
+
+def mark_tests_by_team(item):
+    for team, vals in TEAM_MARKERS.items():
+        if item.location[0].split("/")[1] in vals:
+            item.add_marker(marker=team)
+
+
+def filter_upgrade_tests(items, config):
+    upgrade_tests, non_upgrade_tests = [], []
+    for item in items:
+        if "upgrade" in item.keywords:
+            upgrade_tests.append(item)
+        else:
+            non_upgrade_tests.append(item)
+
+    if config.getoption("--upgrade"):
+        # If performing OCP upgrade, remove tests marked with pytest.mark.cnv_upgrade.
+        # If performing CNV upgrade, remove test marked with pytest.mark.ocp_upgrade,
+        # and determine if we are running the cnv upgrade test for production source or for stage/osbs.
+        cnv_source = config.getoption("--cnv-source")
+
+        remove_upgrade_tests_based_on_config(
+            cnv_source=cnv_source, upgrade_tests=upgrade_tests
+        )
+
+        return upgrade_tests, non_upgrade_tests
+
+    return non_upgrade_tests, upgrade_tests
+
+
+def remove_upgrade_tests_based_on_config(cnv_source, upgrade_tests):
+    ocp_upgrade_test = None
+    cnv_upgrade_test_with_prod_src = None
+    cnv_upgrade_test_no_prod_src = None
+    cnv_upgrade_tests = []
+    eus_upgrade_tests = []
+
+    for test in upgrade_tests:
+        if "ocp_upgrade" in test.keywords:
+            ocp_upgrade_test = test
+        if "eus_upgrade" in test.keywords:
+            eus_upgrade_tests.append(test)
+        if "cnv_upgrade" in test.keywords:
+            cnv_upgrade_tests.append(test)
+            if "production_source" in test.name:
+                cnv_upgrade_test_with_prod_src = test
+            else:
+                cnv_upgrade_test_no_prod_src = test
+
+    if py_config["upgraded_product"] == "cnv":
+        tests_to_remove = [
+            cnv_upgrade_test_no_prod_src
+            if cnv_source == "production"
+            else cnv_upgrade_test_with_prod_src,
+            ocp_upgrade_test,
+        ]
+        tests_to_remove.extend(eus_upgrade_tests)
+    elif py_config["upgraded_product"] == "ocp":
+        tests_to_remove = cnv_upgrade_tests
+        tests_to_remove.extend(eus_upgrade_tests)
+    else:
+        tests_to_remove = cnv_upgrade_tests
+        tests_to_remove.append(ocp_upgrade_test)
+
+    for test in tests_to_remove:
+        upgrade_tests.remove(test)
+
+
 def pytest_collection_modifyitems(session, config, items):
     """
-    Add polarion test case it from tests to junit xml
+    Pytest builtin function.
+    Modify the test items during pytest collection to include necessary test metadata.
+
+    This function performs the following actions:
+    1. Adds Polarion parameters to user properties.
+    2. Adds test ID markers for Polarion, Bugzilla, and Jira.
+    3. Adds the tier2 marker for tests without an exclusion marker.
+    4. Marks tests by team.
+    5. Filters upgrade tests based on the --upgrade option.
+
+    Args:
+        session (pytest.Session): The pytest session object.
+        config (pytest.Config): The pytest configuration object.
+        items (list): A list of pytest.Item objects representing the tests.
     """
-    # TODO: Reduce cognitive complexity
+    scope_match = re.compile(r"__(module|class|function)__$")
+
     for item in items:
-        scope_match = re.compile(r"__(module|class|function)__$")
         for fixture_name in [
             fixture_name
             for fixture_name in item.fixturenames
@@ -374,100 +484,21 @@ def pytest_collection_modifyitems(session, config, items):
                     )
                     item.add_marker(marker=skip)
 
-            values = re.findall("(#.*?#)", item.name)
-            for value in values:
-                value = value.strip("#").strip("#")
-                for param in py_config[matrix_name]:
-                    if isinstance(param, dict):
-                        param = [*param][0]
+            add_polarion_parameters_to_user_properties(
+                item=item, matrix_name=matrix_name
+            )
 
-                    if value == param:
-                        item.user_properties.append(
-                            (f"polarion-parameter-{matrix_name}", value)
-                        )
-
-        for marker in item.iter_markers(name="polarion"):
-            test_id = marker.args[0]
-            item.user_properties.append(("polarion-testcase-id", test_id))
-
-        for marker in item.iter_markers(name="bugzilla"):
-            test_id = marker.args[0]
-            item.user_properties.append(("bugzilla", test_id))
-
-        for marker in item.iter_markers(name="jira"):
-            test_id = marker.args[0]
-            item.user_properties.append(("jira", test_id))
+        add_test_id_markers(item=item, marker_name="polarion")
+        add_test_id_markers(item=item, marker_name="bugzilla")
+        add_test_id_markers(item=item, marker_name="jira")
 
         # Add tier2 marker for tests without an exclution marker.
-        markers = [mark.name for mark in list(item.iter_markers())]
-        if not [mark for mark in markers if mark in EXCLUDE_MARKER_FROM_TIER2_MARKER]:
-            item.add_marker(marker="tier2")
+        add_tier2_marker(item=item)
 
-        # Mark tests by team.
-        def _mark_tests_by_team(_item):
-            for team, vals in TEAM_MARKERS.items():
-                if _item.location[0].split("/")[1] in vals:
-                    _item.add_marker(marker=team)
-
-        _mark_tests_by_team(_item=item)
+        mark_tests_by_team(item=item)
 
     #  Collect only 'upgrade' tests when running pytest with --upgrade
-    upgrade_tests, non_upgrade_tests = [], []
-    for item in items:
-        if "upgrade" in item.keywords:
-            upgrade_tests.append(item)
-        else:
-            non_upgrade_tests.append(item)
-
-    if config.getoption("--upgrade"):
-        # If performing OCP upgrade, remove tests marked with pytest.mark.cnv_upgrade.
-        # If performing CNV upgrade, remove test marked with pytest.mark.ocp_upgrade,
-        # and determine if we are running the cnv upgrade test for production source or for stage/osbs.
-
-        cnv_source = config.getoption("--cnv-source")
-
-        ocp_upgrade_test = None
-        cnv_upgrade_test_with_prod_src = None
-        cnv_upgrade_test_no_prod_src = None
-        cnv_upgrade_tests = []
-        eus_upgrade_tests = []
-
-        for test in upgrade_tests:
-            if "ocp_upgrade" in test.keywords:
-                ocp_upgrade_test = test
-            if "eus_upgrade" in test.keywords:
-                eus_upgrade_tests.append(test)
-            if "cnv_upgrade" in test.keywords:
-                cnv_upgrade_tests.append(test)
-                if "production_source" in test.name:
-                    cnv_upgrade_test_with_prod_src = test
-                else:
-                    cnv_upgrade_test_no_prod_src = test
-
-        if py_config["upgraded_product"] == "cnv":
-            tests_to_remove = [
-                cnv_upgrade_test_no_prod_src
-                if cnv_source == "production"
-                else cnv_upgrade_test_with_prod_src,
-                ocp_upgrade_test,
-            ]
-            tests_to_remove.extend(eus_upgrade_tests)
-        elif py_config["upgraded_product"] == "ocp":
-            tests_to_remove = cnv_upgrade_tests
-            tests_to_remove.extend(eus_upgrade_tests)
-        else:
-            tests_to_remove = cnv_upgrade_tests
-            tests_to_remove.append(ocp_upgrade_test)
-
-        for test in tests_to_remove:
-            upgrade_tests.remove(test)
-
-        discard = non_upgrade_tests
-        keep = upgrade_tests
-
-    else:
-        discard = upgrade_tests
-        keep = non_upgrade_tests
+    keep, discard = filter_upgrade_tests(items=items, config=config)
 
     items[:] = keep
     config.hook.pytest_deselected(items=discard)

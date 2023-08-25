@@ -833,7 +833,7 @@ def get_csv_by_name(csv_name, admin_client, namespace):
     Raises:
         NotFoundError: when a given csv is not found in a given namespace
     """
-    csv = utilities.infra.cluster_resource(ClusterServiceVersion)(
+    csv = cluster_resource(ClusterServiceVersion)(
         client=admin_client, namespace=namespace, name=csv_name
     )
     if csv.exists:

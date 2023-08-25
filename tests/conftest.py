@@ -114,6 +114,7 @@ from utilities.infra import (
     generate_namespace_name,
     generate_openshift_pull_secret_file,
     get_clusterversion,
+    get_csv_by_name,
     get_daemonset_yaml_file_with_image_hash,
     get_http_image_url,
     get_hyperconverged_resource,
@@ -2102,6 +2103,7 @@ def running_vm_upgrade_a(
         client=unprivileged_client,
         cloud_init_data=cloud_init(ip_address="10.200.100.1"),
         body=fedora_vm_body(name=name),
+        eviction=None,
     ) as vm:
         running_vm(vm=vm, wait_for_cloud_init=True)
         yield vm
@@ -2123,6 +2125,7 @@ def running_vm_upgrade_b(
         client=unprivileged_client,
         cloud_init_data=cloud_init(ip_address="10.200.100.2"),
         body=fedora_vm_body(name=name),
+        eviction=None,
     ) as vm:
         running_vm(vm=vm, wait_for_cloud_init=True)
         yield vm
@@ -2179,7 +2182,7 @@ def vm_bridge_networks(upgrade_bridge_on_all_nodes):
 
 
 @pytest.fixture(scope="session")
-def cnv_upgrade_stream(admin_client, pytestconfig, cnv_current_version):
+def cnv_upgrade_stream(admin_client, pytestconfig, cnv_current_version, is_eus_upgrade):
     """
     Verify if the upgrade can be performed by comparing the current and target versions.
 
@@ -2188,27 +2191,30 @@ def cnv_upgrade_stream(admin_client, pytestconfig, cnv_current_version):
         pytestconfig: The pytest configuration object.
         cnv_current_version: The current CNV version.
     """
-    current_version = packaging.version.parse(version=cnv_current_version)
-    target_version = packaging.version.parse(version=pytestconfig.option.cnv_version)
-    if target_version <= current_version:
-        # Upgrade only if a newer CNV version is requested
-        raise ValueError(
-            f"Cannot upgrade to older/identical versions,"
-            f"current: {cnv_current_version} target: {target_version}"
+    if not is_eus_upgrade:
+        current_version = packaging.version.parse(version=cnv_current_version)
+        target_version = packaging.version.parse(
+            version=pytestconfig.option.cnv_version
+        )
+        if target_version <= current_version:
+            # Upgrade only if a newer CNV version is requested
+            raise ValueError(
+                f"Cannot upgrade to older/identical versions,"
+                f"current: {cnv_current_version} target: {target_version}"
+            )
+
+        upgrade_stream = determine_upgrade_stream(
+            current_version=current_version, target_version=target_version
         )
 
-    upgrade_stream = determine_upgrade_stream(
-        current_version=current_version, target_version=target_version
-    )
-
-    LOGGER.info(
-        f"CNV upgrade:\n"
-        f"Current version: {cnv_current_version},\n"
-        f"Target version: {target_version},\n"
-        f"Upgrade stream: {upgrade_stream},\n"
-        f"Target channel: {target_version.major}.{target_version.minor}"
-    )
-    return upgrade_stream
+        LOGGER.info(
+            f"CNV upgrade:\n"
+            f"Current version: {cnv_current_version},\n"
+            f"Target version: {target_version},\n"
+            f"Upgrade stream: {upgrade_stream},\n"
+            f"Target channel: {target_version.major}.{target_version.minor}"
+        )
+        return upgrade_stream
 
 
 def determine_upgrade_stream(current_version, target_version):
@@ -2260,17 +2266,27 @@ def rhel_latest_os_params():
 
 @pytest.fixture(scope="session")
 def hco_target_version(cnv_target_version):
-    return get_hco_version_name(cnv_target_version=cnv_target_version)
+    return (
+        get_hco_version_name(cnv_target_version=cnv_target_version)
+        if cnv_target_version
+        else None
+    )
 
 
 @pytest.fixture(scope="session")
-def eus_hco_target_version(eus_target_cnv_version):
-    return get_hco_version_name(cnv_target_version=eus_target_cnv_version)
+def eus_hco_target_version(is_eus_upgrade, eus_target_cnv_version):
+    if is_eus_upgrade:
+        return get_hco_version_name(cnv_target_version=eus_target_cnv_version)
 
 
 @pytest.fixture(scope="session")
 def cnv_target_version(pytestconfig):
     return pytestconfig.option.cnv_version
+
+
+@pytest.fixture(scope="session")
+def is_eus_upgrade(pytestconfig):
+    return pytestconfig.option.upgrade == "eus"
 
 
 @pytest.fixture()
@@ -2669,15 +2685,29 @@ def disabled_default_sources_in_operatorhub_scope_module(admin_client):
 
 
 @pytest.fixture(scope="session")
-def eus_target_cnv_version(cnv_current_version):
-    cnv_current_version = Version(version=cnv_current_version)
-    minor = cnv_current_version.minor
-    if minor % 2:
-        exit_pytest_execution(
-            message=f"EUS upgrade can not be performed from non-eus version: {cnv_current_version}",
-            return_code=EUS_ERROR_CODE,
+def eus_target_cnv_version(is_eus_upgrade, cnv_current_version):
+    if is_eus_upgrade:
+        cnv_current_version = Version(version=cnv_current_version)
+        minor = cnv_current_version.minor
+        # EUS-to-EUS updates are only viable between even-numbered minor versions, exit if non-eus version
+        if minor % 2:
+            exit_pytest_execution(
+                message=f"EUS upgrade can not be performed from non-eus version: {cnv_current_version}",
+                return_code=EUS_ERROR_CODE,
+            )
+        return Version(version=f"v{cnv_current_version.major}.{minor + 2}.0")
+
+
+@pytest.fixture()
+def eus_created_target_hco_csv(
+    admin_client, hco_namespace, eus_hco_target_version, is_eus_upgrade
+):
+    if is_eus_upgrade:
+        return get_csv_by_name(
+            csv_name=eus_hco_target_version,
+            admin_client=admin_client,
+            namespace=hco_namespace.name,
         )
-    return Version(version=f"v{cnv_current_version.major}.{minor + 2}.0")
 
 
 @pytest.fixture(scope="session")

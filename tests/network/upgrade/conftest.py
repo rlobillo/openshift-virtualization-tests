@@ -48,6 +48,7 @@ def vma_upgrade_mac_spoof(
         body=fedora_vm_body(name=name),
         node_selector=worker_node1.hostname,
         running=True,
+        eviction=None,
     ) as vm:
         yield vm
 
@@ -67,6 +68,7 @@ def vmb_upgrade_mac_spoof(
         body=fedora_vm_body(name=name),
         node_selector=worker_node1.hostname,
         running=True,
+        eviction=None,
     ) as vm:
         yield vm
 

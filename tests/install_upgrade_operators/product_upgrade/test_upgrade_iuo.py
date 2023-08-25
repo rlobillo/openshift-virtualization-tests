@@ -47,8 +47,12 @@ class TestUpgradeIUO:
         depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,
     )
-    def test_alerts_fired_during_ocp_upgrade(
-        self, skip_on_cnv_upgrade, prometheus, fired_alerts_during_ocp_upgrade
+    def test_cnv_alerts_fired_during_ocp_upgrade(
+        self,
+        skip_on_cnv_upgrade,
+        skip_on_eus_upgrade,
+        prometheus,
+        fired_alerts_during_ocp_upgrade,
     ):
         LOGGER.info("Verify if any alerts were fired during ocp upgrades")
         process_alerts_fired_during_upgrade(
@@ -67,7 +71,11 @@ class TestUpgradeIUO:
         scope=DEPENDENCY_SCOPE_SESSION,
     )
     def test_cnv_alerts_fired_during_cnv_upgrade(
-        self, skip_on_ocp_upgrade, prometheus, fired_alerts_during_cnv_upgrade
+        self,
+        skip_on_ocp_upgrade,
+        skip_on_eus_upgrade,
+        prometheus,
+        fired_alerts_during_cnv_upgrade,
     ):
         process_alerts_fired_during_upgrade(
             prometheus=prometheus,
