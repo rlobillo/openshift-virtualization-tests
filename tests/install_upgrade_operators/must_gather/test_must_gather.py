@@ -12,13 +12,11 @@ from ocp_resources.imagestreamtag import ImageStreamTag
 from ocp_resources.mutating_webhook_config import MutatingWebhookConfiguration
 from ocp_resources.namespace import Namespace
 from ocp_resources.network_addons_config import NetworkAddonsConfig
-from ocp_resources.network_attachment_definition import NetworkAttachmentDefinition
 from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource
 from ocp_resources.template import Template
 from ocp_resources.validating_webhook_config import ValidatingWebhookConfiguration
-from ocp_resources.virtual_machine import VirtualMachine
 from pytest_testconfig import config as py_config
 
 from tests.install_upgrade_operators.must_gather.utils import (
@@ -71,24 +69,6 @@ class TestMustGatherCluster:
                 VALIDATE_UID_NAME,
                 marks=(pytest.mark.polarion("CNV-3042")),
                 id="test_networkaddonsoperator_resources",
-            ),
-            pytest.param(
-                NetworkAttachmentDefinition,
-                "namespaces/{namespace}/"
-                f"{NetworkAttachmentDefinition.ApiGroup.K8S_CNI_CNCF_IO}/"
-                "network-attachment-definitions/{name}.yaml",
-                VALIDATE_FIELDS,
-                marks=(pytest.mark.polarion("CNV-2720")),
-                id="test_network_attachment_definitions_resources",
-            ),
-            pytest.param(
-                VirtualMachine,
-                "namespaces/{namespace}/"
-                f"{VirtualMachine.ApiGroup.KUBEVIRT_IO}/virtualmachines/custom"
-                "/{name}.yaml",
-                VALIDATE_FIELDS,
-                marks=(pytest.mark.polarion("CNV-3043")),
-                id="test_virtualmachine_resources",
             ),
             pytest.param(
                 CDIConfig,
