@@ -163,8 +163,8 @@ from utilities.virt import (
     get_hyperconverged_ovs_annotations,
     get_kubevirt_hyperconverged_spec,
     kubernetes_taint_exists,
+    running_vm,
     vm_instance_from_template,
-    wait_for_vm_interfaces,
     wait_for_windows_vm,
 )
 
@@ -2087,7 +2087,7 @@ def upgrade_bridge_marker_nad(bridge_on_one_node, kmp_enabled_namespace):
 
 
 @pytest.fixture(scope="session")
-def vm_upgrade_a(
+def running_vm_upgrade_a(
     unprivileged_client,
     upgrade_bridge_marker_nad,
     kmp_enabled_namespace,
@@ -2103,12 +2103,12 @@ def vm_upgrade_a(
         cloud_init_data=cloud_init(ip_address="10.200.100.1"),
         body=fedora_vm_body(name=name),
     ) as vm:
-        vm.start(wait=True)
+        running_vm(vm=vm, wait_for_cloud_init=True)
         yield vm
 
 
 @pytest.fixture(scope="session")
-def vm_upgrade_b(
+def running_vm_upgrade_b(
     unprivileged_client,
     upgrade_bridge_marker_nad,
     kmp_enabled_namespace,
@@ -2124,24 +2124,8 @@ def vm_upgrade_b(
         cloud_init_data=cloud_init(ip_address="10.200.100.2"),
         body=fedora_vm_body(name=name),
     ) as vm:
-        vm.start(wait=True)
+        running_vm(vm=vm, wait_for_cloud_init=True)
         yield vm
-
-
-@pytest.fixture(scope="session")
-def running_vm_upgrade_a(vm_upgrade_a):
-    vmi = vm_upgrade_a.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vm_upgrade_a
-
-
-@pytest.fixture(scope="session")
-def running_vm_upgrade_b(vm_upgrade_b):
-    vmi = vm_upgrade_b.vmi
-    vmi.wait_until_running()
-    wait_for_vm_interfaces(vmi=vmi)
-    return vm_upgrade_b
 
 
 @pytest.fixture(scope="session")
