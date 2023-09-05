@@ -488,7 +488,11 @@ EXPECTED_STATUS_CONDITIONS = {
     SSP: DEFAULT_RESOURCE_CONDITIONS,
     NetworkAddonsConfig: DEFAULT_RESOURCE_CONDITIONS,
 }
-MACHINE_CONFIG_PODS_TO_COLLECT = ["machine-config-operator", "machine-config-daemon"]
+MACHINE_CONFIG_PODS_TO_COLLECT = [
+    "machine-config-operator",
+    "machine-config-daemon",
+    "machine-config-controller",
+]
 BREW_REGISTERY_SOURCE = "brew.registry.redhat.io"
 ICSP_FILE = "imageContentSourcePolicy.yaml"
 BASE_EXCEPTIONS_DICT = {
