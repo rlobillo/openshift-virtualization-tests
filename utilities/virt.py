@@ -1391,14 +1391,12 @@ def vm_console_run_commands(
 
 
 def fedora_vm_body(name):
-    from pkg_resources import resource_stream
-
     pull_secret = None
     if py_config["distribution"] == "downstream":
         pull_secret = utilities.infra.generate_openshift_pull_secret_file()
 
     # Make sure we can find the file even if utilities was installed via pip.
-    yaml_file = resource_stream("utilities", "manifests/vm-fedora.yaml").name
+    yaml_file = os.path.abspath("utilities/manifests/vm-fedora.yaml")
 
     with open(yaml_file, "r") as fd:
         data = fd.read()

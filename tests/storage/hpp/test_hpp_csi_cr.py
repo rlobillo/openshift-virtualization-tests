@@ -3,13 +3,13 @@ Test suite to verify the Hostpath Provisioner CSI Custom Resource permutations
 """
 import io
 import logging
+import os
 
 import pytest
 import yaml
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.storage_class import StorageClass
 from ocp_utilities.infra import cluster_resource
-from pkg_resources import resource_stream
 
 from tests.storage.hpp.utils import (
     check_disk_count_in_vm_and_image_location,
@@ -79,12 +79,11 @@ def hpp_csi_custom_resource(
     """
     Creates HPP CSI Custom resource from yaml
     """
+    file_path = os.path.abspath(f"tests/storage/hpp/manifests/{request.param}")
+    assert os.path.exists(file_path)
+
     is_cr_with_pvc_template = False
-    with cluster_resource(HostPathProvisioner)(
-        yaml_file=resource_stream(
-            "tests", f"storage/hpp/manifests/{request.param}"
-        ).name
-    ) as hpp_csi_cr:
+    with cluster_resource(HostPathProvisioner)(yaml_file=file_path) as hpp_csi_cr:
         is_cr_with_pvc_template = is_hpp_cr_with_pvc_template(
             hpp_custom_resource=hpp_csi_cr
         )
