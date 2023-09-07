@@ -38,8 +38,8 @@ pytestmark = pytest.mark.usefixtures("workers_type")
 def base_ethernet_interface_for_vlan_creation(vlan_base_iface):
     # W/A for BZ 2017623 <skip-bug-check>, which requires direct setting of the interface that serves
     # as the VLAN base interface.
-    # As this BZ is planned to be fixed in CNV 4.14, and not back-ported, this W/A should remain
-    # permanent (and not depend on the bug fix) for all versions prior to 4.14.
+    # As this BZ was fixed in CNV v4.14 and will not be back-ported, this W/A should remain permanent (and not depend
+    # on the bug fix) for all versions prior to 4.14.
     with EthernetNetworkConfigurationPolicy(
         name=f"{vlan_base_iface}-temp",
         ipv4_enable=False,
