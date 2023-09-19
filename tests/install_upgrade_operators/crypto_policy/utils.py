@@ -21,7 +21,7 @@ from tests.install_upgrade_operators.crypto_policy.constants import (
     TLS_INTERMEDIATE_CIPHERS_IANA_OPENSSL_SYNTAX,
 )
 from utilities.constants import (
-    CLUSTER_RESOURCE_NAME,
+    CLUSTER,
     DEFAULT_RESOURCE_CONDITIONS,
     TIMEOUT_2MIN,
     TIMEOUT_15MIN,
@@ -88,7 +88,6 @@ def get_resources_crypto_policy_dict(
 def wait_for_crypto_policy_update(
     admin_client, resource, resource_namespace, resource_name, key_name, expected_policy
 ):
-
     sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_2MIN,
         sleep=2,
@@ -250,7 +249,7 @@ def assert_no_crypto_policy_in_hco(
         key_name=TLS_SECURITY_PROFILE,
     )
     assert not hco_crypto_policy, (
-        f"On updating APIServer {CLUSTER_RESOURCE_NAME} with {crypto_policy}, HCO crypto policy "
+        f"On updating APIServer {CLUSTER} with {crypto_policy}, HCO crypto policy "
         f"was set up to {hco_crypto_policy}:"
     )
 

@@ -25,7 +25,7 @@ from tests.install_upgrade_operators.crypto_policy.utils import (
 )
 from utilities.constants import (
     CDI_KUBEVIRT_HYPERCONVERGED,
-    CLUSTER_RESOURCE_NAME,
+    CLUSTER,
     KUBEVIRT_HCO_NAME,
     SSP_KUBEVIRT_HYPERCONVERGED,
     TLS_SECURITY_PROFILE,
@@ -54,7 +54,7 @@ def resources_dict(hco_namespace):
             KEY_NAME_STR: f"config{KEY_PATH_SEPARATOR}{TLS_SECURITY_PROFILE}",
         },
         NetworkAddonsConfig: {
-            RESOURCE_NAME_STR: CLUSTER_RESOURCE_NAME,
+            RESOURCE_NAME_STR: CLUSTER,
             RESOURCE_NAMESPACE_STR: None,
             KEY_NAME_STR: TLS_SECURITY_PROFILE,
         },
@@ -74,14 +74,10 @@ def resource_crypto_policy_settings(request, admin_client):
 
 @pytest.fixture(scope="module")
 def api_server(admin_client):
-    api_server = cluster_resource(APIServer)(
-        client=admin_client, name=CLUSTER_RESOURCE_NAME
-    )
+    api_server = cluster_resource(APIServer)(client=admin_client, name=CLUSTER)
     if api_server.exists:
         return api_server
-    raise ResourceNotFoundError(
-        f"{api_server.kind}: {CLUSTER_RESOURCE_NAME} not found."
-    )
+    raise ResourceNotFoundError(f"{api_server.kind}: {CLUSTER} not found.")
 
 
 @pytest.fixture()

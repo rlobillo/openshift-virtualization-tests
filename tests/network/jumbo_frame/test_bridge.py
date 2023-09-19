@@ -6,7 +6,6 @@ from collections import OrderedDict
 import pytest
 
 from tests.network.utils import assert_no_ping
-from utilities.constants import MTU_9000
 from utilities.infra import cluster_resource
 from utilities.network import (
     assert_ping_successful,
@@ -19,7 +18,6 @@ from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 pytestmark = pytest.mark.usefixtures(
-    "skip_if_workers_vms",
     "skip_if_no_multinic_nodes",
     "skip_when_one_node",
     "hyperconverged_ovs_annotations_enabled_scope_session",
@@ -33,6 +31,7 @@ def jumbo_frame_bridge_device_name(index_number):
 
 @pytest.fixture(scope="class")
 def jumbo_frame_bridge_device_worker_1(
+    cluster_hardware_mtu,
     bridge_device_matrix__class__,
     worker_node1,
     nodes_available_nics,
@@ -44,13 +43,14 @@ def jumbo_frame_bridge_device_worker_1(
         interface_name=jumbo_frame_bridge_device_name,
         node_selector=worker_node1.hostname,
         ports=[nodes_available_nics[worker_node1.name][-1]],
-        mtu=MTU_9000,
+        mtu=cluster_hardware_mtu,
     ) as br:
         yield br
 
 
 @pytest.fixture(scope="class")
 def jumbo_frame_bridge_device_worker_2(
+    cluster_hardware_mtu,
     bridge_device_matrix__class__,
     worker_node2,
     nodes_available_nics,
@@ -62,13 +62,14 @@ def jumbo_frame_bridge_device_worker_2(
         interface_name=jumbo_frame_bridge_device_name,
         node_selector=worker_node2.hostname,
         ports=[nodes_available_nics[worker_node2.name][-1]],
-        mtu=MTU_9000,
+        mtu=cluster_hardware_mtu,
     ) as br:
         yield br
 
 
 @pytest.fixture(scope="class")
 def br1test_bridge_nad(
+    cluster_hardware_mtu,
     bridge_device_matrix__class__,
     namespace,
     jumbo_frame_bridge_device_name,
@@ -80,7 +81,7 @@ def br1test_bridge_nad(
         nad_type=bridge_device_matrix__class__,
         nad_name=f"{jumbo_frame_bridge_device_name}-nad",
         interface_name=jumbo_frame_bridge_device_name,
-        mtu=MTU_9000,
+        mtu=cluster_hardware_mtu,
     ) as nad:
         yield nad
 

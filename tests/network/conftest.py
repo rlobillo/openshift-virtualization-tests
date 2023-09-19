@@ -27,9 +27,9 @@ from utilities.network import ip_version_data_from_matrix, network_nad
 @pytest.fixture(scope="session")
 def bond_supported(hosts_common_available_ports):
     """
-    Check if setup support BOND (have more then 2 NICs up)
+    Check if setup support BOND (have 2 or more NICs up)
     """
-    return len(hosts_common_available_ports) > 2
+    return len(hosts_common_available_ports) >= 2
 
 
 @pytest.fixture(scope="class")

@@ -6,7 +6,6 @@ from collections import OrderedDict
 import pytest
 
 from tests.network.utils import assert_no_ping
-from utilities.constants import MTU_9000
 from utilities.infra import cluster_resource
 from utilities.network import (
     BondNodeNetworkConfigurationPolicy,
@@ -23,7 +22,6 @@ BOND_NAME = "jfbond1"
 BRIDGE_NAME = "brbond1"
 
 pytestmark = pytest.mark.usefixtures(
-    "skip_if_workers_vms",
     "skip_if_no_multinic_nodes",
     "skip_when_one_node",
     "skip_no_bond_support",
@@ -34,6 +32,7 @@ pytestmark = pytest.mark.usefixtures(
 
 @pytest.fixture(scope="class")
 def jumbo_frame_bond1_worker_1(
+    cluster_hardware_mtu,
     index_number,
     skip_no_bond_support,
     worker_node1,
@@ -47,13 +46,14 @@ def jumbo_frame_bond1_worker_1(
         bond_name=BOND_NAME,
         bond_ports=nodes_available_nics[worker_node1.name][-2:],
         node_selector=worker_node1.hostname,
-        mtu=MTU_9000,
+        mtu=cluster_hardware_mtu,
     ) as bond:
         yield bond
 
 
 @pytest.fixture(scope="class")
 def jumbo_frame_bond1_worker_2(
+    cluster_hardware_mtu,
     index_number,
     skip_no_bond_support,
     worker_node2,
@@ -67,13 +67,14 @@ def jumbo_frame_bond1_worker_2(
         bond_name=BOND_NAME,
         bond_ports=nodes_available_nics[worker_node2.name][-2:],
         node_selector=worker_node2.hostname,
-        mtu=MTU_9000,
+        mtu=cluster_hardware_mtu,
     ) as bond:
         yield bond
 
 
 @pytest.fixture(scope="class")
 def jumbo_frame_bridge_on_bond_worker_1(
+    cluster_hardware_mtu,
     bridge_device_matrix__class__,
     jumbo_frame_bond1_worker_1,
 ):
@@ -86,13 +87,14 @@ def jumbo_frame_bridge_on_bond_worker_1(
         interface_name=BRIDGE_NAME,
         node_selector=jumbo_frame_bond1_worker_1.node_selector,
         ports=[jumbo_frame_bond1_worker_1.bond_name],
-        mtu=MTU_9000,
+        mtu=cluster_hardware_mtu,
     ) as br:
         yield br
 
 
 @pytest.fixture(scope="class")
 def jumbo_frame_bridge_on_bond_worker_2(
+    cluster_hardware_mtu,
     bridge_device_matrix__class__,
     jumbo_frame_bond1_worker_2,
 ):
@@ -105,7 +107,7 @@ def jumbo_frame_bridge_on_bond_worker_2(
         interface_name=BRIDGE_NAME,
         node_selector=jumbo_frame_bond1_worker_2.node_selector,
         ports=[jumbo_frame_bond1_worker_2.bond_name],
-        mtu=MTU_9000,
+        mtu=cluster_hardware_mtu,
     ) as br:
         yield br
 
@@ -113,6 +115,7 @@ def jumbo_frame_bridge_on_bond_worker_2(
 @pytest.fixture(scope="class")
 def br1bond_nad(
     skip_no_bond_support,
+    cluster_hardware_mtu,
     bridge_device_matrix__class__,
     namespace,
     jumbo_frame_bridge_on_bond_worker_1,
@@ -123,7 +126,7 @@ def br1bond_nad(
         nad_type=bridge_device_matrix__class__,
         nad_name=f"{BRIDGE_NAME}-bond-nad",
         interface_name=jumbo_frame_bridge_on_bond_worker_1.bridge_name,
-        mtu=MTU_9000,
+        mtu=cluster_hardware_mtu,
     ) as nad:
         yield nad
 

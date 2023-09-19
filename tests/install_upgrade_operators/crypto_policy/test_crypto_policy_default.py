@@ -24,7 +24,7 @@ from tests.install_upgrade_operators.crypto_policy.utils import (
 )
 from utilities.constants import (
     CDI_KUBEVIRT_HYPERCONVERGED,
-    CLUSTER_RESOURCE_NAME,
+    CLUSTER,
     KUBEVIRT_HCO_NAME,
     SSP_KUBEVIRT_HYPERCONVERGED,
     TLS_SECURITY_PROFILE,
@@ -41,7 +41,7 @@ pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
         pytest.param(
             {
                 RESOURCE_TYPE_STR: APIServer,
-                RESOURCE_NAME_STR: CLUSTER_RESOURCE_NAME,
+                RESOURCE_NAME_STR: CLUSTER,
                 KEY_NAME_STR: TLS_SECURITY_PROFILE,
             },
             APIServer,
@@ -94,7 +94,7 @@ pytestmark = [pytest.mark.post_upgrade, pytest.mark.sno]
         pytest.param(
             {
                 RESOURCE_TYPE_STR: NetworkAddonsConfig,
-                RESOURCE_NAME_STR: CLUSTER_RESOURCE_NAME,
+                RESOURCE_NAME_STR: CLUSTER,
                 KEY_NAME_STR: TLS_SECURITY_PROFILE,
             },
             NetworkAddonsConfig,

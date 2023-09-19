@@ -16,9 +16,6 @@ from utilities.infra import ExecCommandOnPod
 LOGGER = logging.getLogger(__name__)
 
 
-pytestmark = pytest.mark.usefixtures("skip_if_workers_vms")
-
-
 class TestVlanInterface:
     @pytest.mark.polarion("CNV-4161")
     def test_vlan_interface_on_all_worker_nodes(

@@ -87,7 +87,6 @@ class TestL2LinuxBridge:
     @pytest.mark.polarion("CNV-2674")
     def test_icmp_multicast(
         self,
-        skip_if_workers_vms,
         namespace,
         configured_l2_bridge_vm_a,
         l2_bridge_running_vm_b,
