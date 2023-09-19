@@ -40,7 +40,11 @@ from utilities.constants import (
     TIMEOUT_20MIN,
     TIMEOUT_75MIN,
 )
-from utilities.data_collector import collect_mcp_information, get_data_collector_dict
+from utilities.data_collector import (
+    collect_cnv_information,
+    collect_mcp_information,
+    get_data_collector_dict,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -247,6 +251,7 @@ def consecutive_checks_for_mcp_condition(mcp_sampler, machine_config_pools_list)
             not_matching_mcps=not_matching_mcps,
             condition_type=MachineConfigPool.Status.UPDATED,
         )
+        collect_cnv_information()
         raise
 
 
