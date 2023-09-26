@@ -1104,7 +1104,7 @@ def get_daemonset_yaml_file_with_image_hash(
     )
 
     image_info = utilities.virt.get_oc_image_info(
-        image="quay.io/openshift-cnv/qe-cnv-tests-net-util-container",
+        image="quay.io/openshift-cnv/qe-cnv-tests-net-util-container:latest",
         pull_secret=generated_pulled_secret,
     )
     with open(ds_yaml_file, "r") as fd:

@@ -601,7 +601,7 @@ class PodWithPVC(Pod):
                     "containers": [
                         {
                             "name": "runner",
-                            "image": "quay.io/openshift-cnv/qe-cnv-tests-net-util-container",
+                            "image": "quay.io/openshift-cnv/qe-cnv-tests-net-util-container:latest",
                             "command": [
                                 "/bin/bash",
                                 "-c",
