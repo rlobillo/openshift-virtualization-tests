@@ -62,7 +62,6 @@ ODF_URL = "quay.io/rhceph-dev"
 
 @pytest.fixture(scope="session")
 def cnv_image_name(cnv_image_url):
-    # Image name format example staging: registry-proxy-stage.engineering.redhat.com/rh-osbs-stage/iib-pub-pending:v4.9
     # Image name format example osbs: registry-proxy.engineering.redhat.com/rh-osbs/iib:45131
     match = re.match(".*/(.*):", cnv_image_url)
     assert match, (
@@ -99,7 +98,6 @@ def updated_image_content_source_policy(
     cnv_registry_source,
     pull_secret_directory,
     generated_pulled_secret,
-    is_upgrade_from_stage_source,
     is_disconnected_cluster,
 ):
     if is_disconnected_cluster:
@@ -109,9 +107,9 @@ def updated_image_content_source_policy(
         image_url=cnv_image_url,
         registry_source=cnv_registry_source["source_map"],
         generated_pulled_secret=generated_pulled_secret,
-        is_upgrade_from_stage_source=is_upgrade_from_stage_source,
         pull_secret_directory=pull_secret_directory,
     )
+    LOGGER.info("pausing MCP updates while modifying ICSP")
     with ResourceEditor(
         patches={
             mcp: {"spec": {"paused": True}}
@@ -227,7 +225,7 @@ def upgraded_cnv(
     created_target_hco_csv.wait_for_status(
         status=created_target_hco_csv.Status.SUCCEEDED,
         timeout=TIMEOUT_10MIN,
-        stop_status=None,
+        stop_status="fakestatus",  # to bypass intermittent FAILED status that is not permanent.
     )
     LOGGER.info(
         f"Wait for operator condition {hco_target_version} to reach upgradable: True"

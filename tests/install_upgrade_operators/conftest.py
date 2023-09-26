@@ -76,11 +76,6 @@ def cnv_registry_source(cnv_source):
     return py_config["cnv_registry_sources"][cnv_source]
 
 
-@pytest.fixture(scope="session")
-def is_upgrade_from_stage_source(cnv_source):
-    return cnv_source == "stage"
-
-
 @pytest.fixture()
 def kubevirt_resource(admin_client, hco_namespace):
     return get_hyperconverged_kubevirt(

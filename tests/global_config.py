@@ -78,12 +78,12 @@ cnv_registry_sources = {
         "cnv_subscription_source": HCO_CATALOG_SOURCE,
         "source_map": f"{BREW_REGISTERY_SOURCE}/rh-osbs",
     },
-    "stage": {
-        "cnv_subscription_source": HCO_CATALOG_SOURCE,
-        "source_map": "registry.stage.redhat.io/container-native-virtualization",
-    },
     "production": {
         "cnv_subscription_source": PRODUCTION_CATALOG_SOURCE,
+    },
+    "fbc": {
+        "cnv_subscription_source": HCO_CATALOG_SOURCE,
+        "source_map": BREW_REGISTERY_SOURCE,
     },
 }
 

@@ -168,7 +168,7 @@ def get_operator_by_name(dyn_client, hco_namespace, operator_name):
     return operator_pod
 
 
-def assert_only_expected_pods_exist(
+def wait_for_expected_pods_exist(
     dyn_client,
     hco_namespace,
     expected_images,
@@ -185,21 +185,46 @@ def assert_only_expected_pods_exist(
         AssertionError if there are pods' images which do not match the expected images list
     """
     LOGGER.info("Verify all cnv pods have the right image and no leftover pods exist")
-    current_cnv_pods = get_pods(dyn_client=dyn_client, namespace=hco_namespace)
 
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_10MIN,
+        sleep=TIMEOUT_10SEC,
+        func=get_pods_with_mismatch_image,
+        dyn_client=dyn_client,
+        hco_namespace=hco_namespace,
+        expected_images=expected_images,
+    )
+    sample = None
+    try:
+        for sample in samples:
+            if not sample:
+                return
+            else:
+                LOGGER.info(
+                    f"Following pods images are waiting to be replaced: {sample}"
+                )
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"The following pods images were not replaced / removed: {sample}."
+            f"Expected images: {expected_images}"
+        )
+        raise
+
+
+def get_pods_with_mismatch_image(dyn_client, hco_namespace, expected_images):
+    cnv_pods = get_pods(dyn_client=dyn_client, namespace=hco_namespace)
     mismatching_pods = {}
-    for pod in current_cnv_pods:
+    for pod in cnv_pods:
         pod_instance = pod.instance
         if pod_instance.spec.containers[0].image not in expected_images and not (
             IMAGE_CRON_STR in pod.name
             or pod_instance.status.phase in pod.Status.SUCCEEDED
         ):
-            mismatching_pods[pod.name] = pod_instance.spec.containers[0].image
-
-    assert not mismatching_pods, (
-        f"The following pods images were not replaced / removed: {mismatching_pods}."
-        f"Expected images: {expected_images}"
-    )
+            mismatching_pods[pod.name] = {
+                pod_instance.spec.containers[0].image: pod_instance.status.phase
+            }
+    LOGGER.info(f"Mismatch pod: {mismatching_pods}")
+    return mismatching_pods
 
 
 def get_nodes_taints(nodes):
@@ -335,22 +360,6 @@ def get_dict_diff(before_upgrade, after_upgrade):
     }
 
 
-def update_icsp_stage_mirror(icsp_file_path):
-    # TODO: Remove once mirror catalog from stage is fixed
-    rc, out, err = run_command(
-        command=[
-            "sed",
-            "-i",
-            "-e",
-            "s|/container-native-virtualization-\\(.*\\)|/\\1|g",
-            icsp_file_path,
-        ]
-    )
-    assert (
-        rc
-    ), f"Failed to update stage mirror in ICSP: icsp_file_path={icsp_file_path} out={out} err={err}"
-
-
 def wait_for_hco_upgrade(dyn_client, hco_namespace, cnv_target_version):
     LOGGER.info(f"Wait for HCO version to be updated to {cnv_target_version}.")
     wait_for_hco_version(
@@ -385,7 +394,7 @@ def verify_upgrade_cnv(dyn_client, hco_namespace, expected_images):
         dyn_client=dyn_client, hco_namespace=hco_namespace
     )
 
-    assert_only_expected_pods_exist(
+    wait_for_expected_pods_exist(
         dyn_client=dyn_client,
         hco_namespace=hco_namespace,
         expected_images=expected_images,
@@ -809,25 +818,18 @@ def get_generated_icsp(
     image_url,
     registry_source,
     generated_pulled_secret,
-    is_upgrade_from_stage_source,
     pull_secret_directory,
 ):
-    pull_secret = None
-    if BREW_REGISTERY_SOURCE in image_url:
-        registry_source = BREW_REGISTERY_SOURCE
-        pull_secret = generated_pulled_secret
     cnv_mirror_cmd = create_icsp_command(
         image=image_url,
         source_url=registry_source,
         folder_name=pull_secret_directory,
-        pull_secret=pull_secret,
+        pull_secret=generated_pulled_secret,
     )
     icsp_file_path = generate_icsp_file(
         folder_name=pull_secret_directory,
         command=cnv_mirror_cmd,
     )
-    if is_upgrade_from_stage_source:
-        update_icsp_stage_mirror(icsp_file_path=icsp_file_path)
 
     return icsp_file_path
 

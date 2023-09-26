@@ -141,7 +141,7 @@ def pytest_addoption(parser):
         "--cnv-source",
         help="CNV source lane",
         default="osbs",
-        choices=["production", "stage", "osbs"],
+        choices=["production", "fbc", "osbs"],
     )
 
     # OCP upgrade options

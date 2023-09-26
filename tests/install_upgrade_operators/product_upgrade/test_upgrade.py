@@ -57,7 +57,7 @@ class TestUpgrade:
         upgraded_cnv,
     ):
         """
-        Test the CNV upgrade process (using OSBS/stage sources). The main steps of the test are:
+        Test the CNV upgrade process (using OSBS/fbc sources). The main steps of the test are:
 
         1. Disable the default sources in operatorhub in order to be able to upgrade usg a custom catalog source.
         2. Generate a new ICSP for the IIB image being used.
@@ -95,7 +95,7 @@ class TestUpgrade:
     ):
         """
         Test the CNV upgrade process using the production source.
-        The main steps of the test are the same as for OSBS and stage,
+        The main steps of the test are the same as for osbs/fbc source,
         but it is not needed to disable the default sources, create a new ICSP or update the HCO CatalogSource.
         """
         verify_upgrade_cnv(
