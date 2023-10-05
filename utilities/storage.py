@@ -891,3 +891,34 @@ def create_cirros_dv_for_snapshot_dict(name, namespace, storage_class):
     )
     dv.to_dict()
     return dv.res
+
+
+class OCSVirtualizationStorageClass(StorageClass):
+    def __init__(self, name, teardown=False):
+        super().__init__(name=name, teardown=teardown)
+
+    def to_dict(self):
+        super().to_dict()
+        self.res.update(
+            {
+                "provisioner": StorageClass.Provisioner.CEPH_RBD,
+                "reclaimPolicy": "Delete",
+                "volumeBindingMode": StorageClass.VolumeBindingMode.Immediate,
+                "allowVolumeExpansion": True,
+                "parameters": {
+                    "clusterID": "openshift-storage",
+                    "csi.storage.k8s.io/controller-expand-secret-name": "rook-csi-rbd-provisioner",
+                    "csi.storage.k8s.io/controller-expand-secret-namespace": "openshift-storage",
+                    "csi.storage.k8s.io/fstype": "ext4",
+                    "csi.storage.k8s.io/node-stage-secret-name": "rook-csi-rbd-node",
+                    "csi.storage.k8s.io/node-stage-secret-namespace": "openshift-storage",
+                    "csi.storage.k8s.io/provisioner-secret-name": "rook-csi-rbd-provisioner",
+                    "csi.storage.k8s.io/provisioner-secret-namespace": "openshift-storage",
+                    "imageFeatures": "layering,deep-flatten,exclusive-lock,object-map,fast-diff",
+                    "imageFormat": "2",
+                    "mapOptions": "krbd:rxbounce",
+                    "mounter": "rbd",
+                    "pool": "ocs-storagecluster-cephblockpool",
+                },
+            }
+        )

@@ -9,8 +9,9 @@ from tests.upgrade_params import (
     IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
     IUO_UPGRADE_TEST_ORDERING_NODE_ID,
 )
-from utilities.constants import DEPENDENCY_SCOPE_SESSION, LS_COMMAND
+from utilities.constants import DEPENDENCY_SCOPE_SESSION, LS_COMMAND, StorageClassNames
 from utilities.storage import (
+    OCSVirtualizationStorageClass,
     assert_disk_serial,
     assert_hotplugvolume_nonexist_optional_restart,
     run_command_on_cirros_vm_and_check_output,
@@ -206,3 +207,23 @@ class TestUpgradeStorage:
     ):
         assert_disk_serial(vm=fedora_vm_for_hotplug_upg)
         assert_hotplugvolume_nonexist_optional_restart(vm=fedora_vm_for_hotplug_upg)
+
+    @pytest.mark.polarion("CNV-10334")
+    @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
+    @pytest.mark.dependency(
+        depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID],
+        scope=DEPENDENCY_SCOPE_SESSION,
+    )
+    def test_install_ocs_virtualization_storage_class(
+        self,
+        skip_on_ocp_upgrade,
+        skip_on_cnv_upgrade,
+    ):
+        storage_class_name = f"{StorageClassNames.CEPH_RBD}-virtualization"
+        storage_class = cluster_resource(OCSVirtualizationStorageClass)(
+            name=storage_class_name
+        )
+        if storage_class.exists:
+            LOGGER.info(f"StorageClass {storage_class_name} already exists")
+        else:
+            storage_class.deploy()

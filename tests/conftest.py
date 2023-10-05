@@ -2714,3 +2714,9 @@ def eus_created_target_hco_csv(
 def is_disconnected_cluster():
     # To enable disconnected_cluster pass --tc=disconnected_cluster:True to pytest commandline.
     return py_config.get("disconnected_cluster")
+
+
+@pytest.fixture(scope="session")
+def skip_on_cnv_upgrade(pytestconfig):
+    if pytestconfig.option.upgrade == "cnv":
+        pytest.skip("This test is not supported for CNV upgrade")

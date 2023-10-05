@@ -346,12 +346,6 @@ def skip_on_eus_upgrade(pytestconfig):
         pytest.skip("This test is not supported for EUS upgrade")
 
 
-@pytest.fixture(scope="session")
-def skip_on_cnv_upgrade(pytestconfig):
-    if pytestconfig.option.upgrade == "cnv":
-        pytest.skip("This test is not supported for CNV upgrade")
-
-
 @pytest.fixture(scope="module")
 def eus_cnv_upgrade_path(eus_target_cnv_version):
     # Get the shortest path to the target (EUS) version
