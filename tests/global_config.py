@@ -76,7 +76,7 @@ servers = {
 cnv_registry_sources = {
     "osbs": {
         "cnv_subscription_source": HCO_CATALOG_SOURCE,
-        "source_map": f"{BREW_REGISTERY_SOURCE}/rh-osbs",
+        "source_map": BREW_REGISTERY_SOURCE,
     },
     "production": {
         "cnv_subscription_source": PRODUCTION_CATALOG_SOURCE,
