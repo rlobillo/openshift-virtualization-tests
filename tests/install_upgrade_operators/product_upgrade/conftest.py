@@ -588,7 +588,6 @@ def created_eus_icsps(
     machine_config_pools_conditions_scope_module,
     cnv_registry_source,
     eus_cnv_upgrade_path,
-    is_upgrade_from_stage_source,
 ):
     icsp_files = []
     registry_source = cnv_registry_source["source_map"]
@@ -599,7 +598,6 @@ def created_eus_icsps(
                 image_url=cnv_image_url,
                 registry_source=registry_source,
                 generated_pulled_secret=generated_pulled_secret,
-                is_upgrade_from_stage_source=is_upgrade_from_stage_source,
                 pull_secret_directory=pull_secret_directory,
             )
             version_str = version.lstrip("v").replace(".", "")
