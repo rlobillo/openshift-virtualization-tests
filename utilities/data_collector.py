@@ -19,7 +19,7 @@ from ocp_wrapper_data_collector.data_collector import (
 from pytest_testconfig import config as py_config
 
 import utilities.infra
-from utilities.constants import MACHINE_CONFIG_PODS_TO_COLLECT
+from utilities.constants import MACHINE_CONFIG_PODS_TO_COLLECT, VIRT_LAUNCHER
 
 
 LOGGER = logging.getLogger(__name__)
@@ -78,6 +78,21 @@ def collect_cnv_information():
             dyn_client=get_client(), namespace=py_config["hco_namespace"]
         )
     ]
+    collect_pods_data(pods_list=pods_to_collect, base_directory=base_directory)
+
+
+def collect_virt_launcher_pod_data():
+    base_directory = get_data_collector_base_dir(
+        data_collector_dict=get_data_collector_dict()
+    )
+    LOGGER.warning("Collecting virt-launcher pods for all namespace.")
+    pods_to_collect = list(
+        Pod.get(
+            dyn_client=get_client(),
+            label_selector=f"{Pod.ApiGroup.KUBEVIRT_IO}={VIRT_LAUNCHER}",
+        )
+    )
+
     collect_pods_data(pods_list=pods_to_collect, base_directory=base_directory)
 
 

@@ -43,6 +43,7 @@ from utilities.constants import (
 from utilities.data_collector import (
     collect_cnv_information,
     collect_mcp_information,
+    collect_virt_launcher_pod_data,
     get_data_collector_dict,
 )
 
@@ -252,6 +253,7 @@ def consecutive_checks_for_mcp_condition(mcp_sampler, machine_config_pools_list)
             condition_type=MachineConfigPool.Status.UPDATED,
         )
         collect_cnv_information()
+        collect_virt_launcher_pod_data()
         raise
 
 
