@@ -72,11 +72,12 @@ def collect_cnv_information():
         resources_to_collect=[HyperConverged, KubeVirt], base_directory=base_directory
     )
 
-    pods_to_collect = []
-    for pod in cluster_resource(Pod).get(
-        dyn_client=get_client(), namespace=py_config["hco_namespace"]
-    ):
-        pods_to_collect.extend(pod)
+    pods_to_collect = [
+        pod
+        for pod in cluster_resource(Pod).get(
+            dyn_client=get_client(), namespace=py_config["hco_namespace"]
+        )
+    ]
     collect_pods_data(pods_list=pods_to_collect, base_directory=base_directory)
 
 
