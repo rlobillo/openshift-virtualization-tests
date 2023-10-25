@@ -363,7 +363,7 @@ def eus_cnv_upgrade_path(eus_target_cnv_version):
             versions=upgrade_path_to_intermediate_version["versions"]
         ),
         "eus": get_iib_images_of_cnv_versions(
-            versions=upgrade_path_to_target_version["versions"], errata_status=None
+            versions=upgrade_path_to_target_version["versions"]
         ),
     }
     LOGGER.info(f"Upgrade path for EUS-to-EUS upgrade: {upgrade_path}")
