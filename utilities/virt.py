@@ -424,6 +424,8 @@ class VirtualMachineForTests(VirtualMachine):
         # if eviction is set to None, use it
         if self.eviction is None:
             template_spec[EVICTION_STRATEGY] = "None"
+        if self.eviction:
+            template_spec[EVICTION_STRATEGY] = LIVE_MIGRATE
         template_spec = self.update_node_selector(template_spec=template_spec)
         template_spec = self.update_vm_network_configuration(
             template_spec=template_spec
@@ -815,9 +817,6 @@ class VirtualMachineForTests(VirtualMachine):
         return template_spec
 
     def update_vm_cpu_configuration(self, template_spec):
-        if self.eviction:
-            template_spec[EVICTION_STRATEGY] = LIVE_MIGRATE
-
         # cpu settings
         if self.cpu_flags:
             template_spec.setdefault("domain", {})["cpu"] = self.cpu_flags

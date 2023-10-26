@@ -144,12 +144,14 @@ def unupdated_vmi_pods_names(
 
 
 @pytest.fixture(scope="session")
-def run_strategy_golden_image_rwx_dv(dvs_for_upgrade):
-    return [
+def run_strategy_golden_image_dv(dvs_for_upgrade):
+    # Give the priority to RWX storage
+    rwx_dv = [
         dv
         for dv in dvs_for_upgrade
         if DataVolume.AccessMode.RWX in dv.pvc.instance.spec.accessModes
-    ][0]
+    ]
+    return rwx_dv[0] if rwx_dv else dvs_for_upgrade[0]
 
 
 @contextmanager
@@ -184,7 +186,7 @@ def manual_run_strategy_vm(
     unprivileged_client,
     upgrade_namespace_scope_session,
     vm_bridge_networks,
-    run_strategy_golden_image_rwx_data_source,
+    run_strategy_golden_image_data_source,
     nodes_common_cpu_model,
     rhel_latest_os_params,
 ):
@@ -193,7 +195,7 @@ def manual_run_strategy_vm(
         namespace=upgrade_namespace_scope_session.name,
         client=unprivileged_client,
         template_labels=rhel_latest_os_params["rhel_template_labels"],
-        data_source=run_strategy_golden_image_rwx_data_source,
+        data_source=run_strategy_golden_image_data_source,
         run_strategy=VirtualMachine.RunStrategy.MANUAL,
         cpu_model=nodes_common_cpu_model,
         networks=vm_bridge_networks,
@@ -208,7 +210,7 @@ def always_run_strategy_vm(
     upgrade_namespace_scope_session,
     vm_bridge_networks,
     upgrade_br1test_nad,
-    run_strategy_golden_image_rwx_data_source,
+    run_strategy_golden_image_data_source,
     nodes_common_cpu_model,
     rhel_latest_os_params,
 ):
@@ -217,7 +219,7 @@ def always_run_strategy_vm(
         namespace=upgrade_namespace_scope_session.name,
         client=unprivileged_client,
         template_labels=rhel_latest_os_params["rhel_template_labels"],
-        data_source=run_strategy_golden_image_rwx_data_source,
+        data_source=run_strategy_golden_image_data_source,
         run_strategy=VirtualMachine.RunStrategy.ALWAYS,
         cpu_model=nodes_common_cpu_model,
         networks=vm_bridge_networks,
@@ -283,14 +285,12 @@ def base_templates_after_upgrade(admin_client):
 
 
 @pytest.fixture(scope="session")
-def run_strategy_golden_image_rwx_data_source(
-    admin_client, run_strategy_golden_image_rwx_dv
-):
+def run_strategy_golden_image_data_source(admin_client, run_strategy_golden_image_dv):
     with cluster_resource(DataSource)(
-        name=run_strategy_golden_image_rwx_dv.name,
-        namespace=run_strategy_golden_image_rwx_dv.namespace,
+        name=run_strategy_golden_image_dv.name,
+        namespace=run_strategy_golden_image_dv.namespace,
         client=admin_client,
-        source=generate_data_source_dict(dv=run_strategy_golden_image_rwx_dv),
+        source=generate_data_source_dict(dv=run_strategy_golden_image_dv),
     ) as ds:
         yield ds
 
