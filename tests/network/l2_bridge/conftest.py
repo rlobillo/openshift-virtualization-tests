@@ -131,8 +131,25 @@ def mpls_nad(
 
 
 @pytest.fixture(scope="class")
-def l2_bridge_all_nads(namespace, dhcp_nad, custom_eth_type_llpd_nad, mpls_nad):
-    return [custom_eth_type_llpd_nad.name, mpls_nad.name, dhcp_nad.name]
+def dot1q_nad(
+    bridge_device_matrix__class__,
+    namespace,
+    l2_bridge_device_worker_1,
+    l2_bridge_device_worker_2,
+    l2_bridge_device_name,
+):
+    with network_nad(
+        namespace=namespace,
+        nad_type=bridge_device_matrix__class__,
+        nad_name=f"{l2_bridge_device_name}-dot1q-nad",
+        interface_name=l2_bridge_device_name,
+    ) as nad:
+        yield nad
+
+
+@pytest.fixture(scope="class")
+def l2_bridge_all_nads(dhcp_nad, custom_eth_type_llpd_nad, mpls_nad, dot1q_nad):
+    return [custom_eth_type_llpd_nad.name, mpls_nad.name, dhcp_nad.name, dot1q_nad.name]
 
 
 def _cloud_init_data(

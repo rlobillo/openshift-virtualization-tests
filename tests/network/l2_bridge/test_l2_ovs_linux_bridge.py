@@ -1,3 +1,4 @@
+import logging
 import shlex
 
 import pytest
@@ -7,14 +8,42 @@ from ocp_utilities.utils import run_ssh_commands
 
 from tests.network.constants import DHCP_IP_RANGE_START
 from utilities.constants import TIMEOUT_2MIN
-from utilities.network import assert_ping_successful, get_vmi_ip_v4_by_name
+from utilities.network import assert_ping_successful, get_vmi_ip_v4_by_name, ping
 
 
+LOGGER = logging.getLogger(__name__)
 CUSTOM_ETH_PROTOCOL = "0x88B6"  # rfc5342 Local Experimental Ethertype. Used to test custom eth type and linux bridge
 
 pytestmark = pytest.mark.usefixtures(
     "skip_if_no_multinic_nodes", "hyperconverged_ovs_annotations_enabled_scope_session"
 )
+
+
+def wait_for_no_packet_loss_after_connection(src_vm, dst_ip, interface=None):
+    sleep_count_value = 10
+
+    def _get_ping_state():
+        return (
+            ping(
+                src_vm=src_vm,
+                dst_ip=dst_ip,
+                count=sleep_count_value,
+                interface=interface,
+            )[0]
+            == "0"
+        )
+
+    try:
+        for sample in TimeoutSampler(
+            wait_timeout=TIMEOUT_2MIN,
+            sleep=sleep_count_value,
+            func=_get_ping_state,
+        ):
+            if sample:
+                return
+    except TimeoutError:
+        LOGGER.error(f"Ping from {src_vm.name} to {dst_ip} failed.")
+        raise
 
 
 class TestL2LinuxBridge:
@@ -27,15 +56,16 @@ class TestL2LinuxBridge:
     @pytest.mark.polarion("CNV-2285")
     def test_connectivity_l2_bridge(
         self,
-        namespace,
         configured_l2_bridge_vm_a,
+        l2_bridge_running_vm_a,
         l2_bridge_running_vm_b,
     ):
         """
         Test VM to VM connectivity via mpls
         """
-        assert_ping_successful(
-            src_vm=l2_bridge_running_vm_b, dst_ip=l2_bridge_running_vm_b.mpls_local_ip
+        wait_for_no_packet_loss_after_connection(
+            src_vm=l2_bridge_running_vm_a,
+            dst_ip=l2_bridge_running_vm_b.mpls_local_ip,
         )
 
     @pytest.mark.polarion("CNV-2282")
@@ -87,7 +117,6 @@ class TestL2LinuxBridge:
     @pytest.mark.polarion("CNV-2674")
     def test_icmp_multicast(
         self,
-        namespace,
         configured_l2_bridge_vm_a,
         l2_bridge_running_vm_b,
     ):
