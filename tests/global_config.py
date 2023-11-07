@@ -17,6 +17,8 @@ from utilities.constants import (
     BREW_REGISTERY_SOURCE,
     HCO_CATALOG_SOURCE,
     INTEL,
+    IPV4_STR,
+    IPV6_STR,
     LINUX_BRIDGE,
     OVS_BRIDGE,
     PRODUCTION_CATALOG_SOURCE,
@@ -427,8 +429,8 @@ centos_os_matrix = [
 )
 
 ip_stack_version_matrix = [
-    "ipv4",
-    "ipv6",
+    IPV4_STR,
+    IPV6_STR,
 ]
 cnv_pod_matrix = ALL_CNV_PODS
 cnv_crd_matrix = ALL_CNV_CRDS
