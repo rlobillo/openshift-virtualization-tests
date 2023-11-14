@@ -8,13 +8,22 @@ import socket
 import sys
 
 from ocp_resources.configmap import ConfigMap
+from ocp_resources.namespace import Namespace
+from ocp_resources.resource import ResourceEditor
+from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import config as py_config
 
-from utilities.constants import CNV_TESTS_CONTAINER
-from utilities.infra import exit_pytest_execution, get_kube_system_namespace
+from utilities.constants import (
+    CNV_TEST_RUN_IN_PROGRESS,
+    CNV_TESTS_CONTAINER,
+    POD_SECURITY_NAMESPACE_LABELS,
+    TIMEOUT_2MIN,
+)
+from utilities.infra import exit_pytest_execution
 
 
 LOGGER = logging.getLogger(__name__)
+CNV_TEST_RUN_IN_PROGRESS_NS = f"{CNV_TEST_RUN_IN_PROGRESS}-ns"
 
 
 def get_base_matrix_name(matrix_name):
@@ -154,14 +163,33 @@ def stop_if_run_in_progress():
         )
 
 
+def deploy_run_in_progress_namespace():
+    run_in_progress_namespace = cluster_resource(Namespace)(
+        name=CNV_TEST_RUN_IN_PROGRESS_NS
+    )
+    if not run_in_progress_namespace.exists:
+        run_in_progress_namespace.deploy(wait=True)
+        run_in_progress_namespace.wait_for_status(
+            status=Namespace.Status.ACTIVE, timeout=TIMEOUT_2MIN
+        )
+        ResourceEditor(
+            {
+                run_in_progress_namespace: {
+                    "metadata": {"labels": POD_SECURITY_NAMESPACE_LABELS}
+                }
+            }
+        ).update()
+    return run_in_progress_namespace
+
+
 def deploy_run_in_progress_config_map(session):
     run_in_progress_config_map(session=session).deploy()
 
 
 def run_in_progress_config_map(session=None):
-    return ConfigMap(
-        name="cnv-tests-run-in-progress",
-        namespace=get_kube_system_namespace().name,
+    return cluster_resource(ConfigMap)(
+        name=CNV_TEST_RUN_IN_PROGRESS,
+        namespace=CNV_TEST_RUN_IN_PROGRESS_NS,
         data=get_current_running_data(session=session) if session else None,
     )
 

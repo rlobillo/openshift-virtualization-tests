@@ -1005,13 +1005,6 @@ def scale_deployment_replicas(deployment_name, namespace, replica_count):
     deployment.wait_for_replicas(deployed=initial_replicas > 0)
 
 
-def get_kube_system_namespace():
-    ns = Namespace(name="kube-system")
-    if ns.exists:
-        return ns
-    raise ResourceNotFoundError(f"{ns.name} namespace not found")
-
-
 def get_console_spec_links(admin_client, name):
     console_cli_download_resource_content = ConsoleCLIDownload(
         name=name, client=admin_client
@@ -1190,3 +1183,25 @@ def wait_for_node_status(node, status=True, wait_timeout=TIMEOUT_1MIN):
     ):
         if (status and sample) or (not status and not sample):
             return
+
+
+def get_deployment_by_name(namespace_name, deployment_name):
+    """
+    Gets a deployment object by name
+
+    Args:
+        namespace_name (str): name of the associated namespace
+        deployment_name (str): Name of the deployment
+
+    Returns:
+        Deployment: Deployment object
+    """
+    deployment = cluster_resource(Deployment)(
+        namespace=namespace_name,
+        name=deployment_name,
+    )
+    if deployment.exists:
+        return deployment
+    raise ResourceNotFoundError(
+        f"Deployment: {deployment_name} is not found in namespace: {namespace_name}"
+    )

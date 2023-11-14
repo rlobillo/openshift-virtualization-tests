@@ -10,9 +10,11 @@ import subprocess
 import time
 
 import pytest
+from kubernetes.dynamic.exceptions import ResourceNotFoundError
 from ocp_resources.cdi import CDI
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.namespace import Namespace
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.secret import Secret
@@ -100,6 +102,14 @@ def valid_cdi_certificates(secrets):
                 assert (
                     start_timestamp <= current_timestamp <= end_timestamp
                 ), f"Certificate of {cdi_secret} expired"
+
+
+@pytest.fixture(scope="session")
+def kube_system_namespace():
+    kube_system_ns = Namespace(name="kube-system")
+    if kube_system_ns.exists:
+        return kube_system_ns
+    raise ResourceNotFoundError(f"{kube_system_ns.name} namespace not found")
 
 
 @pytest.fixture()

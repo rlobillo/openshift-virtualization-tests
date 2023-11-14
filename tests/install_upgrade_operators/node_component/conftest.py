@@ -8,10 +8,7 @@ from tests.install_upgrade_operators.node_component.utils import (
     get_pod_per_nodes,
     update_subscription_config,
 )
-from tests.install_upgrade_operators.utils import (
-    get_deployment_by_name,
-    get_network_addon_config,
-)
+from tests.install_upgrade_operators.utils import get_network_addon_config
 from utilities.constants import (
     BRIDGE_MARKER,
     CDI_APISERVER,
@@ -28,7 +25,12 @@ from utilities.constants import (
     VIRT_TEMPLATE_VALIDATOR,
 )
 from utilities.hco import add_labels_to_nodes, apply_np_changes, wait_for_hco_conditions
-from utilities.infra import cluster_resource, get_daemonset_by_name, get_subscription
+from utilities.infra import (
+    cluster_resource,
+    get_daemonset_by_name,
+    get_deployment_by_name,
+    get_subscription,
+)
 from utilities.virt import (
     VirtualMachineForTests,
     fedora_vm_body,
@@ -117,9 +119,7 @@ def nodes_labeled(np_nodes_labels_dict):
 @pytest.fixture()
 def virt_template_validator_spec_nodeselector(admin_client, hco_namespace):
     virt_template_validator_spec = get_deployment_by_name(
-        admin_client=admin_client,
-        deployment_name=VIRT_TEMPLATE_VALIDATOR,
-        namespace_name=hco_namespace.name,
+        namespace_name=hco_namespace.name, deployment_name=VIRT_TEMPLATE_VALIDATOR
     ).instance.to_dict()["spec"]["template"]["spec"]
     return virt_template_validator_spec.get("nodeSelector")
 
@@ -135,9 +135,8 @@ def network_addon_config_spec_placement(admin_client):
 def network_deployment_placement(admin_client, hco_namespace):
     node_selector_deployments = {}
     nw_deployment = get_deployment_by_name(
-        admin_client=admin_client,
-        deployment_name=KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
         namespace_name=hco_namespace.name,
+        deployment_name=KUBEMACPOOL_MAC_CONTROLLER_MANAGER,
     ).instance.to_dict()["spec"]["template"]["spec"]
     node_selector_deployments[KUBEMACPOOL_MAC_CONTROLLER_MANAGER] = nw_deployment.get(
         "nodeSelector"
@@ -179,9 +178,7 @@ def virt_deployment_nodeselector_comp_list(admin_client, hco_namespace):
     virt_deployments = [VIRT_API, VIRT_CONTROLLER]
     for deployment in virt_deployments:
         virt_deployment = get_deployment_by_name(
-            admin_client=admin_client,
-            deployment_name=deployment,
-            namespace_name=hco_namespace.name,
+            namespace_name=hco_namespace.name, deployment_name=deployment
         ).instance.to_dict()["spec"]["template"]["spec"]
         nodeselector_lists.append(virt_deployment.get("nodeSelector").get("infra-comp"))
     return nodeselector_lists
@@ -193,9 +190,7 @@ def cdi_deployment_nodeselector_list(admin_client, hco_namespace):
     cdi_deployments = [CDI_APISERVER, CDI_DEPLOYMENT, CDI_UPLOADPROXY]
     for deployment in cdi_deployments:
         cdi_deployment = get_deployment_by_name(
-            admin_client=admin_client,
-            deployment_name=deployment,
-            namespace_name=hco_namespace.name,
+            namespace_name=hco_namespace.name, deployment_name=deployment
         ).instance.to_dict()["spec"]["template"]["spec"]
         nodeselector_lists.append(cdi_deployment.get("nodeSelector"))
     return nodeselector_lists

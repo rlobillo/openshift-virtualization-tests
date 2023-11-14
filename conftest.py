@@ -56,6 +56,7 @@ from utilities.logger import setup_logging
 from utilities.pytest_utils import (
     config_default_storage_class,
     deploy_run_in_progress_config_map,
+    deploy_run_in_progress_namespace,
     get_base_matrix_name,
     get_cnv_qe_server_url,
     get_matrix_params,
@@ -707,6 +708,7 @@ def pytest_sessionstart(session):
     # must be at the end to make sure we create it only after all pytest_sessionstart checks pass.
     if not skip_if_pytest_flags_exists(pytest_config=session.config):
         stop_if_run_in_progress()
+        deploy_run_in_progress_namespace()
         deploy_run_in_progress_config_map(session=session)
 
 
@@ -714,6 +716,7 @@ def pytest_sessionfinish(session, exitstatus):
     shutil.rmtree(path=session.config.option.basetemp, ignore_errors=True)
     if not skip_if_pytest_flags_exists(pytest_config=session.config):
         run_in_progress_config_map().clean_up()
+        deploy_run_in_progress_namespace().clean_up()
 
     reporter = session.config.pluginmanager.get_plugin("terminalreporter")
     deselected_str = "deselected"

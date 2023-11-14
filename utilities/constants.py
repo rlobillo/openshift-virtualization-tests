@@ -575,3 +575,8 @@ class UpgradeStreams:
 
 EUS_ERROR_CODE = 98
 EVICTION_STRATEGY = "evictionStrategy"
+POD_SECURITY_NAMESPACE_LABELS = {
+    "pod-security.kubernetes.io/enforce": "privileged",
+    "security.openshift.io/scc.podSecurityLabelSync": "false",
+}
+CNV_TEST_RUN_IN_PROGRESS = "cnv-tests-run-in-progress"

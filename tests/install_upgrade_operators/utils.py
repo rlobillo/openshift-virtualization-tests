@@ -5,7 +5,6 @@ import re
 
 from benedict import benedict
 from kubernetes.dynamic.exceptions import NotFoundError
-from ocp_resources.deployment import Deployment
 from ocp_resources.installplan import InstallPlan
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.operator_condition import OperatorCondition
@@ -139,26 +138,6 @@ def wait_for_install_plan(
                 base_directory=data_collector_dict["data_collector_base_directory"],
             )
         raise
-
-
-def get_deployment_by_name(admin_client, namespace_name, deployment_name):
-    """
-    Gets a deployment object by name
-
-    Args:
-        admin_client (DynamicClient): a DynamicClient object
-        namespace_name (str): name of the associated namespace
-        deployment_name (str): Name of the deployment
-
-    Returns:
-        Deployment: Deployment object
-    """
-    for dp in cluster_resource(Deployment).get(
-        dyn_client=admin_client,
-        namespace=namespace_name,
-        name=deployment_name,
-    ):
-        return dp
 
 
 def get_network_addon_config(admin_client):

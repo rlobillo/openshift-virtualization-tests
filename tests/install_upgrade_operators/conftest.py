@@ -13,13 +13,12 @@ from pytest_testconfig import py_config
 
 from tests.install_upgrade_operators.product_upgrade.utils import get_mcp_conditions
 from tests.install_upgrade_operators.utils import (
-    get_deployment_by_name,
     get_network_addon_config,
     get_resource_from_module_name,
 )
 from utilities.constants import HPP_POOL
 from utilities.hco import ResourceEditorValidateHCOReconcile, get_hco_version
-from utilities.infra import cluster_resource
+from utilities.infra import cluster_resource, get_deployment_by_name
 from utilities.operator import (
     disable_default_sources_in_operatorhub,
     get_machine_config_pool_by_name,
@@ -56,7 +55,6 @@ def cnv_deployment_by_name(
         return hpp_pool_deployments[0]
 
     return get_deployment_by_name(
-        admin_client=admin_client,
         namespace_name=hco_namespace.name,
         deployment_name=cnv_deployment_matrix__function__,
     )

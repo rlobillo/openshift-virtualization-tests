@@ -100,7 +100,7 @@ def internal_http_secret(namespace):
 @pytest.fixture(scope="session")
 def internal_http_deployment(cnv_tests_utilities_namespace):
     """
-    Deploy internal HTTP server Deployment into the kube-system namespace.
+    Deploy internal HTTP server Deployment into the cnv_tests_utilities_namespace namespace.
     This Deployment deploys a pod that runs an HTTP server
     """
     with cluster_resource(HttpDeployment)(

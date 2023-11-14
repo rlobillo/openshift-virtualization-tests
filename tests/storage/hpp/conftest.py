@@ -18,7 +18,7 @@ def utility_daemonset_for_hpp_test(
     cnv_tests_utilities_service_account,
 ):
     """
-    Deploy utility daemonset into the kube-system namespace.
+    Deploy utility daemonset into the cnv_tests_utilities_namespace namespace.
     This daemonset deploys a pod on every node with hostNetwork and the main usage is to run commands on the hosts.
     """
     ds_yaml_file = get_daemonset_yaml_file_with_image_hash(

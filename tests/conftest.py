@@ -30,7 +30,6 @@ from ocp_resources.configmap import ConfigMap
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.datavolume import DataVolume
-from ocp_resources.deployment import Deployment
 from ocp_resources.hostpath_provisioner import HostPathProvisioner
 from ocp_resources.infrastructure import Infrastructure
 from ocp_resources.installplan import InstallPlan
@@ -86,6 +85,7 @@ from utilities.constants import (
     NODE_TYPE_WORKER_LABEL,
     OC_ADM_LOGS_COMMAND,
     OVS_BRIDGE,
+    POD_SECURITY_NAMESPACE_LABELS,
     TIMEOUT_4MIN,
     TIMEOUT_5MIN,
     TIMEOUT_6MIN,
@@ -116,9 +116,9 @@ from utilities.infra import (
     get_clusterversion,
     get_csv_by_name,
     get_daemonset_yaml_file_with_image_hash,
+    get_deployment_by_name,
     get_http_image_url,
     get_hyperconverged_resource,
-    get_kube_system_namespace,
     get_nodes_with_label,
     get_pods,
     get_schedulable_nodes_ips,
@@ -310,17 +310,15 @@ def unprivileged_secret(admin_client, skip_unprivileged_client):
             yield secret
 
         #  Wait for oauth-openshift deployment to update after removing htpass-secret
-        _wait_for_oauth_openshift_deployment(admin_client=admin_client)
+        _wait_for_oauth_openshift_deployment()
 
 
-def _wait_for_oauth_openshift_deployment(admin_client):
-    dp = next(
-        Deployment.get(
-            dyn_client=admin_client,
-            name="oauth-openshift",
-            namespace="openshift-authentication",
-        )
+def _wait_for_oauth_openshift_deployment():
+    dp = get_deployment_by_name(
+        deployment_name="oauth-openshift",
+        namespace_name="openshift-authentication",
     )
+
     _log = f"Wait for {dp.name} -> Type: Progressing -> Reason:"
 
     def _wait_sampler(_reason):
@@ -392,8 +390,7 @@ def unprivileged_client(
             }
         )
         identity_provider_config_editor.update(backup_resources=True)
-        _wait_for_oauth_openshift_deployment(admin_client=admin_client)
-
+        _wait_for_oauth_openshift_deployment()
         current_user = (
             check_output("oc whoami", shell=True).decode().strip()
         )  # Get current admin account
@@ -508,10 +505,7 @@ def cnv_tests_utilities_namespace(admin_client, installing_cnv):
     else:
         yield from create_ns(
             admin_client=admin_client,
-            labels={
-                "pod-security.kubernetes.io/enforce": "privileged",
-                "security.openshift.io/scc.podSecurityLabelSync": "false",
-            },
+            labels=POD_SECURITY_NAMESPACE_LABELS,
             name="cnv-tests-utilities",
         )
 
@@ -782,7 +776,9 @@ def skip_upstream(is_upstream_distribution):
 
 
 @pytest.fixture(scope="session")
-def leftovers_cleanup(admin_client, kube_system_namespace, identity_provider_config):
+def leftovers_cleanup(
+    admin_client, cnv_tests_utilities_namespace, identity_provider_config
+):
     LOGGER.info("Checking for leftover resources")
     secret = Secret(
         client=admin_client,
@@ -790,7 +786,7 @@ def leftovers_cleanup(admin_client, kube_system_namespace, identity_provider_con
         namespace=NamespacesNames.OPENSHIFT_CONFIG,
     )
     ds = DaemonSet(
-        client=admin_client, name=UTILITY, namespace=kube_system_namespace.name
+        client=admin_client, name=UTILITY, namespace=cnv_tests_utilities_namespace.name
     )
     #  Delete Secret and DaemonSet created by us.
     for resource_ in (secret, ds):
@@ -2430,11 +2426,6 @@ def disabled_virt_operator(admin_client, hco_namespace, virt_pods_with_running_s
             f"Here are available virt pods:{sample}"
         )
         raise
-
-
-@pytest.fixture(scope="session")
-def kube_system_namespace():
-    return get_kube_system_namespace()
 
 
 @pytest.fixture(scope="session")
