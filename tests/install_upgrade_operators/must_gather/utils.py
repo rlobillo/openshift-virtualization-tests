@@ -36,7 +36,7 @@ class ResourceFieldEqBugWorkaround(object):
         self.prev_eq_func = ResourceField.__eq__
 
         def new_eq_func(self, other):
-            if type(other) == dict:
+            if isinstance(other, dict):
                 return self.__dict__ == other
             return self.prev_eq_func(self, other)
 

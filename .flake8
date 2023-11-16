@@ -67,6 +67,11 @@ fcn_exclude_functions =
     submit,
     io,
     benedict,
+    usefixtures,
+    find_spec,
+    skip,
+    jira,
+
 
 nit_exclude_imports =
     os_params,

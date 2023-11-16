@@ -98,7 +98,7 @@ class VirtualMachineInstanceTypeForTest(
 
 class VirtualMachinePreferenceCommonFunctionClass:
     def __init__(self):
-        if type(self) == VirtualMachinePreferenceCommonFunctionClass:
+        if isinstance(self, VirtualMachinePreferenceCommonFunctionClass):
             raise NotImplementedError(
                 "VirtualMachinePreferenceCommonFunctionClass is an abstract class and cannot be instantiated directly, "
                 "You can use it by creating the "

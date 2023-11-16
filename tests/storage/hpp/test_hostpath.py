@@ -889,7 +889,7 @@ def test_hpp_operator_scc(hpp_scc, hpp_operator_pod):
         "runAsUser"
     ]
     assert (
-        type(user_id) == int and len(str(user_id)) == 10
+        isinstance(user_id, int) and len(str(user_id)) == 10
     ), f"Container image is not runAsUser with user id {user_id}"
 
 
