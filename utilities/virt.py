@@ -35,6 +35,7 @@ from ocp_resources.virtual_machine_instance_migration import (
 )
 from ocp_utilities.exceptions import CommandExecFailed
 from ocp_utilities.infra import get_client
+from ocp_utilities.utils import run_command
 from pytest_testconfig import config as py_config
 from rrmngmnt import Host, ssh, user
 
@@ -2338,7 +2339,7 @@ def get_oc_image_info(image, pull_secret=None):
             wait_timeout=10,
             sleep=1,
             exceptions_dict={JSONDecodeError: [], TypeError: []},
-            func=utilities.infra.run_command,
+            func=run_command,
             command=shlex.split(base_command),
         ):
             command_out = sample[1]

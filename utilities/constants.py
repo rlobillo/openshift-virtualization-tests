@@ -553,6 +553,7 @@ class StorageClassNames:
     HOSTPATH = "hostpath-provisioner"
     NFS = "nfs"
     TOPOLVM = "lvms-vg1"
+    RH_INTERNAL_NFS = "rh-internal-nfs"
 
 
 # Namespace constants
