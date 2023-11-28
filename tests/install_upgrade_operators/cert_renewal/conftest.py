@@ -73,13 +73,13 @@ def initial_certificates_dates(
 
 @pytest.fixture(scope="module")
 def secrets_with_non_closed_bugs():
-    bugzilla_component_name_dict = {
-        2017415: "ssp-operator-service-cert",
-        2017442: VIRT_TEMPLATE_VALIDATOR_CERTS,
+    jira_component_name_dict = {
+        "CNV-15131": "ssp-operator-service-cert",
+        "CNV-14625": VIRT_TEMPLATE_VALIDATOR_CERTS,
     }
     return tuple(
         component_name
-        for bug_id, component_name in bugzilla_component_name_dict.items()
+        for bug_id, component_name in jira_component_name_dict.items()
         if is_bug_open(
             bug_id=bug_id,
         )

@@ -17,7 +17,6 @@ from configparser import ConfigParser
 from contextlib import contextmanager
 from pathlib import Path
 
-import bugzilla
 import netaddr
 import paramiko
 import pytest
@@ -75,8 +74,7 @@ from utilities.exceptions import UtilityPodNotFoundError
 from utilities.storage import get_images_server_url
 
 
-BUG_STATUS_CLOSED = ("VERIFIED", "ON_QA", "CLOSED", "RELEASE_PENDING")
-JIRA_STATUS_CLOSED = ("closed", "done", "obsolete", "resolved")
+JIRA_STATUS_CLOSED = ("ON_QA", "Verified", "Release Pending", "Closed")
 NON_EXIST_URL = "https://noneexist.test"  # Use 'test' domain rfc6761
 EXCLUDED_FROM_URL_VALIDATION = ("", NON_EXIST_URL)
 INTERNAL_HTTP_SERVER_ADDRESS = "internal-http.cnv-tests-utilities"
@@ -288,25 +286,6 @@ def get_connection_params(conf_file_name):
     for params in parser.items("DEFAULT"):
         params_dict[params[0]] = params[1]
     return params_dict
-
-
-def get_bug(bug_id):
-    """
-    Get bug instance from bugzilla.
-
-    Args:
-        bug_id (int): Bug ID.
-
-    Returns:
-        Bug: Bugzilla bug instance.
-    """
-    bugzilla_connection_params = get_connection_params(conf_file_name="bugzilla.cfg")
-    bzapi = bugzilla.Bugzilla(
-        url=bugzilla_connection_params["bugzilla_url"],
-        user=bugzilla_connection_params["bugzilla_username"],
-        api_key=bugzilla_connection_params["bugzilla_api_key"],
-    )
-    return bzapi.getbug(objid=bug_id)
 
 
 def get_jira_status(jira):
@@ -874,18 +853,19 @@ def get_related_images_name_and_version(csv):
 
 def is_bug_open(bug_id):
     """
-    Check if bug status is open.
+    Check if jira bug status is open.
 
     Args:
-        bug_id (int): Bug ID.
+        bug_id (int): Jira bug ID.
 
     Returns:
-        Bug: Bugzilla bug instance.
+        True: if bug is open
+        False: if bug is closed
     """
-    bug = get_bug(bug_id=bug_id)
-    bug_status = bug.status
-    if bug_status not in BUG_STATUS_CLOSED:
-        LOGGER.info(f"Bug {bug_id}: {bug.summary} status is {bug_status}")
+
+    bug_status = get_jira_status(jira=bug_id)
+    if bug_status not in JIRA_STATUS_CLOSED:
+        LOGGER.info(f"Bug {bug_id}: status is {bug_status}")
         return True
 
     return False
@@ -947,7 +927,7 @@ def get_hco_mismatch_statuses(hco_status_conditions, expected_hco_status):
 
 
 def is_jira_open(jira_id):
-    return get_jira_status(jira=jira_id).lower() not in JIRA_STATUS_CLOSED
+    return get_jira_status(jira=jira_id) not in JIRA_STATUS_CLOSED
 
 
 def get_hyperconverged_resource(client, hco_ns_name):
