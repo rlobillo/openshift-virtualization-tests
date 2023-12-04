@@ -187,11 +187,9 @@ class TestWindowsHyperVFlags:
                 {
                     "vm_name": "win-vm-with-evmcs-feature",
                     "template_labels": WINDOWS_LATEST_LABELS,
+                    "hyperv_dict": {"evmcs": {}},
                 },
-                marks=(
-                    pytest.mark.polarion("CNV-6202"),
-                    pytest.mark.jira("CNV-11966", run=False),
-                ),
+                marks=pytest.mark.polarion("CNV-6202"),
             ),
         ],
         indirect=True,
