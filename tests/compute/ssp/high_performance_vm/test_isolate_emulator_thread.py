@@ -11,7 +11,7 @@ from tests.compute.ssp.high_performance_vm.utils import (
     validate_dedicated_emulatorthread,
 )
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_OS
-from utilities.virt import vm_instance_from_template
+from utilities.virt import migrate_vm_and_verify, vm_instance_from_template
 
 
 LOGGER = logging.getLogger(__name__)
@@ -27,8 +27,10 @@ TEMPLATE_LABELS = {
     "workload": Template.Workload.SERVER,
 }
 
+ISOLATE_EMULATOR_THREAD = "TestIsolateEmulatorThread::isolate_emulator_thread"
 
-@pytest.fixture()
+
+@pytest.fixture(scope="class")
 def isolated_emulatorthread_vm(
     request,
     unprivileged_client,
@@ -45,7 +47,7 @@ def isolated_emulatorthread_vm(
 
 
 @pytest.mark.parametrize(
-    "golden_image_data_volume_scope_class,",
+    ("golden_image_data_volume_scope_class", "isolated_emulatorthread_vm"),
     [
         pytest.param(
             {
@@ -53,6 +55,13 @@ def isolated_emulatorthread_vm(
                 "image": RHEL_LATEST["image_path"],
                 "storage_class": py_config["default_storage_class"],
                 "dv_size": RHEL_LATEST["dv_size"],
+            },
+            {
+                **VM_DICT,
+                "template_labels": {
+                    **TEMPLATE_LABELS,
+                    "flavor": Template.Flavor.MEDIUM,
+                },
             },
         ),
     ],
@@ -63,34 +72,8 @@ class TestIsolateEmulatorThread:
     Test Isolated Emulator Thread is used for QEMU Emulator.
     """
 
-    @pytest.mark.parametrize(
-        "isolated_emulatorthread_vm,",
-        [
-            pytest.param(
-                {
-                    **VM_DICT,
-                    "template_labels": {
-                        **TEMPLATE_LABELS,
-                        "flavor": Template.Flavor.SMALL,
-                    },
-                },
-                marks=pytest.mark.polarion("CNV-6744"),
-                id="test_latest_rhel_template_flavor_small",
-            ),
-            pytest.param(
-                {
-                    **VM_DICT,
-                    "template_labels": {
-                        **TEMPLATE_LABELS,
-                        "flavor": Template.Flavor.LARGE,
-                    },
-                },
-                marks=pytest.mark.polarion("CNV-6745"),
-                id="test_latest_rhel_template_flavor_large",
-            ),
-        ],
-        indirect=True,
-    )
+    @pytest.mark.dependency(name=ISOLATE_EMULATOR_THREAD)
+    @pytest.mark.polarion("CNV-6744")
     def test_isolate_emulator_thread(
         self,
         isolated_emulatorthread_vm,
@@ -106,3 +89,11 @@ class TestIsolateEmulatorThread:
         # nproc should still show the CPU count as 2 ( threads(1) * cores(2) * socket(1))
         # even though the VM is allocated overall 3 dedicated cpus.
         validate_dedicated_emulatorthread(vm=isolated_emulatorthread_vm)
+
+    @pytest.mark.dependency(depends=[ISOLATE_EMULATOR_THREAD])
+    @pytest.mark.polarion("CNV-10554")
+    def test_vm_with_isolate_emulator_thread_live_migrates(
+        self,
+        isolated_emulatorthread_vm,
+    ):
+        migrate_vm_and_verify(vm=isolated_emulatorthread_vm)
