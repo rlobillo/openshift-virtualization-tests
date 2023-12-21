@@ -515,8 +515,7 @@ class HttpDeployment(Deployment):
                             "containers": [
                                 {
                                     "name": "http",
-                                    # TODO replace the tag with detected cnv-tests branch
-                                    "image": "quay.io/openshift-cnv/qe-cnv-tests-internal-http:4.12",
+                                    "image": "quay.io/openshift-cnv/qe-cnv-tests-internal-http:v1.0.0",
                                     "imagePullPolicy": "Always",
                                     "command": ["/usr/sbin/nginx"],
                                     "readinessProbe": {

@@ -21,7 +21,11 @@ from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
-from tests.storage.constants import HPP_STORAGE_CLASSES, REGISTRY_STR
+from tests.storage.constants import (
+    HPP_STORAGE_CLASSES,
+    INTERNAL_HTTP_CONFIGMAP_NAME,
+    REGISTRY_STR,
+)
 from tests.storage.utils import (
     HttpService,
     check_snapshot_indication,
@@ -41,7 +45,12 @@ from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
     hco_cr_jsonpatch_annotations_dict,
 )
-from utilities.infra import INTERNAL_HTTP_SERVER_ADDRESS, cluster_resource, is_jira_open
+from utilities.infra import (
+    INTERNAL_HTTP_SERVER_ADDRESS,
+    ExecCommandOnPod,
+    cluster_resource,
+    is_jira_open,
+)
 from utilities.storage import (
     HttpDeployment,
     create_cirros_dv_for_snapshot_dict,
@@ -75,15 +84,22 @@ def hpp_resources(request, admin_client):
 
 
 @pytest.fixture(scope="module")
-def internal_http_configmap(namespace):
-    path = os.path.join("containers/internal_http/certs", "tls.crt")
-    with open(path, "r") as cert_content:
-        with cluster_resource(ConfigMap)(
-            name="internal-https-configmap",
-            namespace=namespace.name,
-            data={"tlsregistry.crt": cert_content.read()},
-        ) as configmap:
-            yield configmap
+def internal_http_configmap(
+    namespace, internal_http_service, workers_utility_pods, worker_node1
+):
+    svc_ip = internal_http_service.instance.to_dict()["spec"]["clusterIP"]
+    cert = ExecCommandOnPod(utility_pods=workers_utility_pods, node=worker_node1).exec(
+        command=(
+            f"openssl s_client -showcerts -connect {svc_ip}:443 </dev/null 2>/dev/null|"
+            "sed -n '/-----BEGIN/,/-----END/p'"
+        )
+    )
+    with cluster_resource(ConfigMap)(
+        name=INTERNAL_HTTP_CONFIGMAP_NAME,
+        namespace=namespace.name,
+        data={"tlsregistry.crt": cert},
+    ) as configmap:
+        yield configmap
 
 
 @pytest.fixture(scope="module")

@@ -18,3 +18,4 @@ HPP_STORAGE_CLASSES = [
 ]
 
 REGISTRY_STR = "registry"
+INTERNAL_HTTP_CONFIGMAP_NAME = "internal-https-configmap"

@@ -35,7 +35,6 @@ VIRTCTL_DEST := $(BIN_DIR)
 # Expose local binaries to tests
 export PATH := $(BIN_DIR):$(PATH)
 
-
 # Building cnv-tests container for disconnected clusters
 IMAGE_BUILD_CMD = $(shell which podman 2>/dev/null || which docker)
 IMAGE_REGISTRY ?= "quay.io"
@@ -47,10 +46,6 @@ IMAGE_TAG ?= "4.12"
 FULL_OPERATOR_IMAGE ?= "$(IMAGE_REGISTRY)/$(REGISTRY_NAMESPACE)/$(OPERATOR_IMAGE_NAME):$(IMAGE_TAG)"
 POETRY_BIN = poetry
 POETRY_PYTEST_CMD = $(POETRY_BIN) run pytest
-
-# Building qe-cnv-tests-internal-http container
-INTERNAL_HTTP_SERVER_IMAGE_NAME = "qe-cnv-tests-internal-http"
-FULL_INTERNAL_HTTP_IMAGE ?= "$(IMAGE_REGISTRY)/$(REGISTRY_NAMESPACE)/$(INTERNAL_HTTP_SERVER_IMAGE_NAME):$(IMAGE_TAG)"
 
 all: check
 
@@ -73,6 +68,7 @@ cluster-up: $(CLUSTER_UP)
 	$(CLUSTER_UP)
 
 cluster-tests: cluster-up tests cluster-down
+
 cluster-tests-ci: build-container
 
 virtctl:
@@ -87,14 +83,6 @@ push-container:
 
 build-and-push-container: build-container push-container
 
-build-internal-http-server-container:
-	$(IMAGE_BUILD_CMD) build --no-cache -f containers/internal_http/Dockerfile -t $(FULL_INTERNAL_HTTP_IMAGE) containers/internal_http
-
-push-internal-http-server-container:
-	$(IMAGE_BUILD_CMD) push $(FULL_INTERNAL_HTTP_IMAGE)
-
-build-and-push-internal-http-server-container: build-internal-http-server-container push-internal-http-server-container
-
 .PHONY: \
 	check \
 	cluster-down \
@@ -106,6 +94,3 @@ build-and-push-internal-http-server-container: build-internal-http-server-contai
 	build-container \
 	push-container \
 	build-and-push-container \
-	build-internal-http-server-container \
-	push-internal-http-server-container \
-	build-and-push-internal-http-server-container
