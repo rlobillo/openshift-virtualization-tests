@@ -59,7 +59,6 @@ class Images:
         WIN16_IMG = "win_16.qcow2"
         WIN19_IMG = "win_19.qcow2"
         WIN11_IMG = "win_11.qcow2"
-        WIN19_NVIDIA_IMG = "win_19_nv.qcow2"
         WIN19_RAW = "win19.raw"
         WIN2022_IMG = "win_2022.qcow2"
         DIR = f"{BASE_IMAGES_DIR}/windows-images"
