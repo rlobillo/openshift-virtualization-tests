@@ -1,4 +1,0 @@
-from utilities.constants import VIRT_TEMPLATE_VALIDATOR
-
-
-VIRT_TEMPLATE_VALIDATOR_CERTS = f"{VIRT_TEMPLATE_VALIDATOR}-certs"

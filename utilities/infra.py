@@ -851,26 +851,6 @@ def get_related_images_name_and_version(csv):
     return related_images
 
 
-def is_bug_open(bug_id):
-    """
-    Check if jira bug status is open.
-
-    Args:
-        bug_id (int): Jira bug ID.
-
-    Returns:
-        True: if bug is open
-        False: if bug is closed
-    """
-
-    bug_status = get_jira_status(jira=bug_id)
-    if bug_status not in JIRA_STATUS_CLOSED:
-        LOGGER.info(f"Bug {bug_id}: status is {bug_status}")
-        return True
-
-    return False
-
-
 def run_virtctl_command(command, virtctl_binary="virtctl", namespace=None):
     """
     Run virtctl command

@@ -7,22 +7,16 @@ from ocp_resources.api_service import APIService
 from ocp_resources.resource import NamespacedResource
 from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.infra import cluster_resource
 from ocp_utilities.utils import run_command
 
-from tests.install_upgrade_operators.cert_renewal.constants import (
-    VIRT_TEMPLATE_VALIDATOR_CERTS,
-)
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_10MIN, TIMEOUT_20SEC
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-SECRETS = [
-    "kubemacpool-service",
-    "ssp-operator-service-cert",
-    VIRT_TEMPLATE_VALIDATOR_CERTS,
-]
+SECRETS = ["kubemacpool-service"]
 API_SERVICES = [
     f"{NamespacedResource.ApiVersion.V1}.subresources.kubevirt.io",
     f"{NamespacedResource.ApiVersion.V1ALPHA1}.{NamespacedResource.ApiGroup.UPLOAD_CDI_KUBEVIRT_IO}",
@@ -32,7 +26,7 @@ API_SERVICES = [
 
 
 def get_certificates_validity_period_and_checkend_result(
-    hco_namespace_name, tmpdir, secrets_to_skip, seconds=0
+    hco_namespace_name, tmpdir, seconds=0
 ):
     """
     Get CNV certificates dates
@@ -40,7 +34,6 @@ def get_certificates_validity_period_and_checkend_result(
     Args:
         hco_namespace_name (str): HCO namespace string
         tmpdir (py.path.local): temporary folder in which the certificates files will reside
-        secrets_to_skip (tuple): names of secret entries that should not be checked due to open bugs
         seconds (int, default: 0): number of seconds to test whether the certificate will expire or not
             according to openssl -checkend command
 
@@ -51,12 +44,11 @@ def get_certificates_validity_period_and_checkend_result(
     certificates_to_check = dict(
         {
             os.path.join(tmpdir, secret): get_base64_decoded_certificate(
-                certificate_data=Secret(
+                certificate_data=cluster_resource(Secret)(
                     name=secret, namespace=hco_namespace_name
                 ).instance.data["tls.crt"]
             )
             for secret in SECRETS
-            if secret not in secrets_to_skip
         },
         **{
             os.path.join(tmpdir, api_service): get_base64_decoded_certificate(
@@ -113,9 +105,7 @@ def dump_certificates_to_files(certificates_filenames_dict):
             file_object.write(cert_data)
 
 
-def wait_for_certificates_renewal(
-    hco_namespace, initial_certificates_dates, secrets_to_skip, tmpdir
-):
+def wait_for_certificates_renewal(hco_namespace, initial_certificates_dates, tmpdir):
     """
     Wait for certificate renewal to occur, by practically comparing the actual certificates dates (notBefore/notAfter)
     to the initial certificate data.
@@ -123,7 +113,6 @@ def wait_for_certificates_renewal(
     Args:
         hco_namespace (Namespace): HCO namespace
         initial_certificates_dates (dict): dict with the initial certificates data
-        secrets_to_skip (tuple): names of secret entries that should not be checked due to open bugs
         tmpdir (py.path.local): temporary folder in which the certificates files will reside
 
     Raises:
@@ -138,7 +127,6 @@ def wait_for_certificates_renewal(
         func=get_certificates_validity_period_and_checkend_result,
         hco_namespace_name=hco_namespace.name,
         tmpdir=tmpdir,
-        secrets_to_skip=secrets_to_skip,
     )
     sample = None
     try:
@@ -165,7 +153,6 @@ def wait_for_certificates_renewal(
 def verify_certificates_dates_identical_to_initial_dates(
     hco_namespace,
     initial_certificates_dates,
-    secrets_to_skip,
     tmpdir,
 ):
     """
@@ -174,7 +161,6 @@ def verify_certificates_dates_identical_to_initial_dates(
     Args:
         hco_namespace (Namespace): HCO namespace
         initial_certificates_dates (dict): dict with the initial certificates data
-        secrets_to_skip (tuple): names of secret entries that should not be checked due to open bugs
         tmpdir (py.path.local): temporary folder in which the certificates files will reside
 
     Raises:
@@ -189,7 +175,6 @@ def verify_certificates_dates_identical_to_initial_dates(
         func=get_certificates_validity_period_and_checkend_result,
         hco_namespace_name=hco_namespace.name,
         tmpdir=tmpdir,
-        secrets_to_skip=secrets_to_skip,
     )
     try:
         for sample in samples:
