@@ -786,12 +786,16 @@ def leftovers_cleanup(
         name=HTTP_SECRET_NAME,
         namespace=NamespacesNames.OPENSHIFT_CONFIG,
     )
-    ds = DaemonSet(
-        client=admin_client, name=UTILITY, namespace=cnv_tests_utilities_namespace.name
-    )
+    ds = None
+    if cnv_tests_utilities_namespace:
+        ds = DaemonSet(
+            client=admin_client,
+            name=UTILITY,
+            namespace=cnv_tests_utilities_namespace.name,
+        )
     #  Delete Secret and DaemonSet created by us.
     for resource_ in (secret, ds):
-        if resource_.exists:
+        if resource_ and resource_.exists:
             resource_.delete(wait=True)
 
     #  Remove leftovers from OAuth
