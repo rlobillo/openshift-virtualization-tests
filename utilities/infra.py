@@ -74,7 +74,7 @@ from utilities.exceptions import UtilityPodNotFoundError
 from utilities.storage import get_images_server_url
 
 
-JIRA_STATUS_CLOSED = ("ON_QA", "Verified", "Release Pending", "Closed")
+JIRA_STATUS_CLOSED = ("on_qa", "verified", "release pending", "closed")
 NON_EXIST_URL = "https://noneexist.test"  # Use 'test' domain rfc6761
 EXCLUDED_FROM_URL_VALIDATION = ("", NON_EXIST_URL)
 INTERNAL_HTTP_SERVER_ADDRESS = "internal-http.cnv-tests-utilities"
@@ -294,7 +294,7 @@ def get_jira_status(jira):
         token_auth=jira_connection_params["token"],
         options={"server": jira_connection_params["url"]},
     )
-    return jira_connection.issue(id=jira).fields.status.name
+    return jira_connection.issue(id=jira).fields.status.name.lower()
 
 
 def get_pods(dyn_client, namespace, label=None):
@@ -907,7 +907,19 @@ def get_hco_mismatch_statuses(hco_status_conditions, expected_hco_status):
 
 
 def is_jira_open(jira_id):
-    return get_jira_status(jira=jira_id) not in JIRA_STATUS_CLOSED
+    """
+    Check if jira status is open.
+    Args:
+        jira_id (string): Jira card ID in format: "CNV-<jira_id>"
+    Returns:
+        True: if jira is open
+        False: if jira is closed
+    """
+    jira_status = get_jira_status(jira=jira_id)
+    if jira_status not in JIRA_STATUS_CLOSED:
+        LOGGER.info(f"Jira {jira_id}: status is {jira_status}")
+        return True
+    return False
 
 
 def get_hyperconverged_resource(client, hco_ns_name):

@@ -20,11 +20,14 @@ KNOWN_BRANCHES = {
     "cnv-4.9": "4.9",
     "cnv-4.8": "4.8",
 }
-JIRA_STATUS_CLOSED = ("Verified", "Release Pending", "Closed")
+
+
+def jira_connection_params():
+    return get_connection_params(conf_file_name="jira.cfg")
 
 
 def get_jira_metadata(jira_id):
-    connection_params = get_connection_params(conf_file_name="jira.cfg")
+    connection_params = jira_connection_params()
     jira_connection = JIRA(
         token_auth=connection_params["token"],
         options={"server": connection_params["url"]},
@@ -35,7 +38,7 @@ def get_jira_metadata(jira_id):
 
 
 def get_jira_status(jira_metadata):
-    return jira_metadata.status.name
+    return jira_metadata.status.name.lower()
 
 
 def get_jira_type(jira_metadata):
@@ -80,7 +83,7 @@ def is_mismatch_jira_target_version(jira_fix_version, parent_branch):
     try:
         jira_target_release_version = Version(version=jira_fix_version)
         expected_target_branch = Version(version=KNOWN_BRANCHES[EXPECTED_TARGET_BRANCH])
-    except InvalidVersion:
+    except (InvalidVersion, ValueError, TypeError):
         # Ignore bugs with 'vfuture' target release version
         return jira_fix_version != "vfuture"
 
@@ -100,6 +103,7 @@ def is_mismatch_jira_target_version(jira_fix_version, parent_branch):
 
 
 def main():
+    closed_statuses = jira_connection_params()["resolved_statuses"]
     closed_jiras = {}
     parent_branch = get_parent_branch(known_branches=KNOWN_BRANCHES)
     mismatch_bugs_version = {}
@@ -117,7 +121,7 @@ def main():
                     continue
 
                 jira_status = get_jira_status(jira_metadata=jira_metadata)
-                if jira_status in JIRA_STATUS_CLOSED:
+                if jira_status in closed_statuses:
                     closed_jiras.setdefault(filename_for_key, []).append(
                         f"{_jira} [{jira_status}]"
                     )

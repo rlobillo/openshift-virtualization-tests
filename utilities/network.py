@@ -44,6 +44,7 @@ from utilities.constants import (
     WORKERS_TYPE,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
+from utilities.infra import is_jira_open
 
 
 LOGGER = logging.getLogger(__name__)
@@ -511,10 +512,7 @@ def get_vmi_ip_v4_by_name(vm, name):
         TIMEOUT_8MIN
         if (
             (os.environ[WORKERS_TYPE] == utilities.infra.ClusterHosts.Type.PHYSICAL)
-            and (
-                utilities.infra.get_jira_status("CNV-19348")
-                not in utilities.infra.JIRA_STATUS_CLOSED
-            )
+            and is_jira_open(jira_id="CNV-19348")
         )
         else TIMEOUT_2MIN
     )
