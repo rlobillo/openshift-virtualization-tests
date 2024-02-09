@@ -142,6 +142,7 @@ class TestUpgradeCompute:
     )
     def test_windows_vm_before_upgrade(
         self,
+        skip_on_psi_cluster,
         skip_if_sno_cluster_and_jira_19798_open,
         windows_vm,
     ):

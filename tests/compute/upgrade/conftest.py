@@ -5,6 +5,7 @@ from copy import deepcopy
 import pytest
 from ocp_resources.data_source import DataSource
 from ocp_resources.datavolume import DataVolume
+from ocp_resources.infrastructure import Infrastructure
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.template import Template
 from ocp_resources.virtual_machine import VirtualMachine
@@ -322,3 +323,14 @@ def vm_with_updated_machine_type(vms_for_upgrade, machine_type_from_kubevirt_con
     ).update()
     running_vm(vm=vm)
     yield vm
+
+
+@pytest.fixture(scope="session")
+def is_psi_cluster():
+    return Infrastructure(name="cluster").instance.status.platform == "OpenStack"
+
+
+@pytest.fixture(scope="session")
+def skip_on_psi_cluster(is_psi_cluster):
+    if is_psi_cluster:
+        pytest.skip("This test should be skipped on a PSI cluster")
