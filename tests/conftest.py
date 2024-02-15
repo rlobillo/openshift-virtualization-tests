@@ -48,7 +48,6 @@ from ocp_resources.secret import Secret
 from ocp_resources.service_account import ServiceAccount
 from ocp_resources.sriov_network_node_state import SriovNetworkNodeState
 from ocp_resources.storage_class import StorageClass
-from ocp_resources.storage_profile import StorageProfile
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import get_client
@@ -151,7 +150,6 @@ from utilities.storage import (
     data_volume,
     default_storage_class,
     get_images_server_url,
-    get_storage_class_dict_from_matrix,
     is_snapshot_supported_by_sc,
     sc_is_hpp_with_immediate_volume_binding,
 )
@@ -2015,42 +2013,6 @@ def term_handler_scope_session():
 
 
 @pytest.fixture(scope="session")
-def updated_nfs_storage_profile(request, cluster_storage_classes, installing_cnv):
-    if installing_cnv:
-        yield
-    else:
-        nfs_sc_name = StorageClassNames.NFS
-        nfs_sc = [sc for sc in cluster_storage_classes if sc.name == nfs_sc_name]
-        # Update NFS storage profile only if there's no known storage provisioner
-        if (
-            nfs_sc
-            and nfs_sc[0].instance.provisioner == nfs_sc[0].Provisioner.NO_PROVISIONER
-        ):
-            LOGGER.info(f"Automatically executing {request.fixturename} fixture.")
-            nfs_storage_profile = StorageProfile(name=nfs_sc_name)
-            sc_params = get_storage_class_dict_from_matrix(storage_class=nfs_sc_name)[
-                nfs_sc_name
-            ]
-            with ResourceEditor(
-                patches={
-                    nfs_storage_profile: {
-                        "spec": {
-                            "claimPropertySets": [
-                                {
-                                    "accessModes": [sc_params["access_mode"]],
-                                    "volumeMode": sc_params["volume_mode"],
-                                }
-                            ]
-                        }
-                    }
-                }
-            ):
-                yield
-        else:
-            yield
-
-
-@pytest.fixture(scope="session")
 def upgrade_bridge_on_all_nodes(
     skip_if_no_multinic_nodes,
     label_schedulable_nodes,
@@ -2495,7 +2457,6 @@ def autouse_fixtures(
     admin_client,
     cluster_sanity_scope_session,
     cluster_sanity_scope_module,
-    updated_nfs_storage_profile,
 ):
     """call all autouse fixtures"""
 

@@ -115,12 +115,6 @@ legacy_hpp_storage_class_matrix = [
 
 storage_class_matrix = [
     {
-        StorageClassNames.NFS: {
-            "volume_mode": DataVolume.VolumeMode.FILE,
-            "access_mode": DataVolume.AccessMode.RWX,
-        }
-    },
-    {
         StorageClassNames.CEPH_RBD: {
             "volume_mode": DataVolume.VolumeMode.BLOCK,
             "access_mode": DataVolume.AccessMode.RWX,
