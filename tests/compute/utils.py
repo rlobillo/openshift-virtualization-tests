@@ -36,21 +36,6 @@ def get_linux_timezone(ssh_exec):
     )[0]
 
 
-def get_windows_timezone(ssh_exec, get_standard_name=False):
-    """
-    Args:
-        ssh_exec: vm SSH executor
-        get_standard_name (bool, default False): If True, get only Windows StandardName
-    """
-    standard_name_cmd = '| findstr "StandardName"' if get_standard_name else ""
-    timezone_cmd = shlex.split(
-        f'powershell -command "Get-TimeZone {standard_name_cmd}"'
-    )
-    return run_ssh_commands(
-        host=ssh_exec, commands=[timezone_cmd], tcp_timeout=TCP_TIMEOUT_30SEC
-    )[0]
-
-
 def start_and_fetch_processid_on_windows_vm(vm, process_name):
     wait_for_ssh_connectivity(vm=vm)
     run_ssh_commands(

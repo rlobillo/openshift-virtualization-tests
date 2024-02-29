@@ -36,6 +36,7 @@ from utilities.constants import (
     StorageClassNames,
 )
 from utilities.infra import NON_EXIST_URL, cluster_resource, get_http_image_url
+from utilities.ssp import validate_os_info_vmi_vs_windows_os
 from utilities.storage import (
     ErrorMsg,
     PodWithPVC,
@@ -44,7 +45,7 @@ from utilities.storage import (
     get_images_server_url,
     sc_volume_binding_mode_is_wffc,
 )
-from utilities.virt import CIRROS_IMAGE, validate_vmi_ga_info_vs_windows_os_info
+from utilities.virt import CIRROS_IMAGE
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -826,7 +827,7 @@ def test_successful_vm_from_imported_dv_windows(
     vm_instance_from_template_multi_storage_scope_function,
     started_windows_vm,
 ):
-    validate_vmi_ga_info_vs_windows_os_info(
+    validate_os_info_vmi_vs_windows_os(
         vm=vm_instance_from_template_multi_storage_scope_function,
     )
 

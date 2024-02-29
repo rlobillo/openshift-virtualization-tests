@@ -13,11 +13,7 @@ from ocp_utilities.utils import run_ssh_commands
 from packaging import version
 
 from tests.compute.ssp.constants import HYPERV_FEATURES_LABELS_DOM_XML
-from tests.compute.ssp.supported_os.utils import (
-    get_linux_guest_agent_version,
-    guest_agent_version_parser,
-)
-from tests.compute.utils import get_windows_timezone
+from tests.compute.ssp.supported_os.utils import get_linux_guest_agent_version
 from utilities.constants import (
     OS_FLAVOR_RHEL,
     OS_FLAVOR_WINDOWS,
@@ -27,6 +23,7 @@ from utilities.constants import (
     TIMEOUT_90SEC,
 )
 from utilities.infra import raise_multiple_exceptions, run_virtctl_command
+from utilities.ssp import get_windows_os_info
 from utilities.virt import get_guest_os_info, running_vm
 
 
@@ -579,22 +576,6 @@ def validate_user_info_virtctl_vs_windows_os(vm):
     )
 
 
-def validate_os_info_vmi_vs_windows_os(vm):
-    vmi_info = get_guest_os_info(vmi=vm.vmi)
-    assert vmi_info, "VMI doesn't have guest agent data"
-    windows_info = get_windows_os_dict(ssh_exec=vm.ssh_exec)
-    del windows_info["machine"]  # VMI describe doesn't have machine info
-
-    data_mismatch = []
-    for os_param_name, os_param_value in vmi_info.items():
-        if os_param_value not in windows_info[os_param_name]:
-            data_mismatch.append(f"OS data mismatch - {os_param_name}")
-
-    assert (
-        not data_mismatch
-    ), f"Data mismatch {data_mismatch}!\nVMI: {vmi_info}\nOS: {windows_info}"
-
-
 # Guest agent info gather functions.
 def get_virtctl_os_info(vm):
     """
@@ -695,58 +676,6 @@ def get_linux_os_info(ssh_exec):
         },
         "timezone": f"{timezone.name}, {int(timezone.offset) * 36}",
     }
-
-
-def get_windows_os_info(ssh_exec):
-    ga_ver_cmd = shlex.split(
-        r'wmic datafile "C:\\\\Program Files\\\\Qemu-ga\\\\qemu-ga.exe" get Version /value'
-    )
-    ga_ver = run_ssh_commands(
-        host=ssh_exec, commands=ga_ver_cmd, tcp_timeout=TCP_TIMEOUT_30SEC
-    )[0].strip()
-    hostname = wmic_os_get_value(ssh_exec=ssh_exec, _key="CSName")
-    timezone = get_windows_timezone(ssh_exec=ssh_exec)
-
-    return {
-        "guestAgentVersion": guest_agent_version_parser(version_string=ga_ver),
-        "hostname": hostname,
-        "os": get_windows_os_dict(ssh_exec=ssh_exec),
-        "timezone": timezone,
-    }
-
-
-def get_windows_os_dict(ssh_exec):
-    reg_product_name_cmd = shlex.split(
-        'REG QUERY "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" /v "ProductName"'
-    )
-    kernel_release = wmic_os_get_value(ssh_exec=ssh_exec, _key="BuildNumber")
-    version = wmic_os_get_value(ssh_exec=ssh_exec, _key="Caption")
-    win_2012_ver = "2012r2" if "2012" in version else None
-    reg_product_name = run_ssh_commands(
-        host=ssh_exec, commands=reg_product_name_cmd, tcp_timeout=TCP_TIMEOUT_30SEC
-    )[0]
-    kernel_version = wmic_os_get_value(ssh_exec=ssh_exec, _key="Version")
-    machine = wmic_os_get_value(ssh_exec=ssh_exec, _key="OSArchitecture")
-    return {
-        "name": "Microsoft Windows",
-        "kernelRelease": re.search(r"(\d+)", kernel_release).group(1),
-        "version": win_2012_ver or re.search(r"(.+\d+).+", version).group(1),
-        "prettyName": re.search(r"REG_SZ\s+(.+)\r\n", reg_product_name).group(1),
-        "versionId": win_2012_ver or re.search(r"(\d+)", version).group(1),
-        "kernelVersion": re.search(r"(\d+\.\d+)\.", kernel_version).group(1),
-        "machine": "x86_64" if re.search(r"(\d+)", machine).group(1) == "64" else "x86",
-        "id": "mswindows",
-    }
-
-
-def wmic_os_get_value(ssh_exec, _key):
-    cmd_out = run_ssh_commands(
-        host=ssh_exec,
-        commands=shlex.split(f"wmic os get {_key} /value"),
-        tcp_timeout=TCP_TIMEOUT_30SEC,
-    )[0]
-    # WMIC command returns value in <key>=<value> format
-    return cmd_out.strip().split("=", 1)[1]
 
 
 def get_virtctl_fs_info(vm):

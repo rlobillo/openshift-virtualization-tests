@@ -1,9 +1,12 @@
+import json
 import logging
 import re
+import shlex
 
 from ocp_resources.data_import_cron import DataImportCron
 from ocp_resources.ssp import SSP
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_utilities.utils import run_ssh_commands
 from openshift.dynamic.exceptions import NotFoundError
 from pytest_testconfig import config as py_config
 
@@ -13,6 +16,7 @@ from utilities.constants import (
     DEFAULT_RESOURCE_CONDITIONS,
     SSP_KUBEVIRT_HYPERCONVERGED,
     SSP_OPERATOR,
+    TCP_TIMEOUT_30SEC,
     TIMEOUT_2MIN,
     TIMEOUT_3MIN,
     TIMEOUT_6MIN,
@@ -188,3 +192,101 @@ def verify_ssp_pod_is_running(
         else:
             LOGGER.error(f"SSP pod was not running for last {TIMEOUT_6MIN} seconds")
             raise
+
+
+def guest_agent_version_parser(version_string):
+    # Return qemu-guest-agent version (including build number, e.g: "4.2.0-34" or "100.0.0.0" for Windows)
+    return re.search(r"[0-9]+\.[0-9]+\.[0-9]+[.|-][0-9]+", version_string).group(0)
+
+
+def get_windows_timezone(ssh_exec, get_standard_name=False):
+    """
+    Args:
+        ssh_exec: vm SSH executor
+        get_standard_name (bool, default False): If True, get only Windows StandardName
+    """
+    standard_name_cmd = '| findstr "StandardName"' if get_standard_name else ""
+    timezone_cmd = shlex.split(
+        f'powershell -command "Get-TimeZone {standard_name_cmd}"'
+    )
+    return run_ssh_commands(
+        host=ssh_exec, commands=[timezone_cmd], tcp_timeout=TCP_TIMEOUT_30SEC
+    )[0]
+
+
+def get_ga_version(ssh_exec):
+    return run_ssh_commands(
+        host=ssh_exec,
+        commands=shlex.split(
+            r'wmic datafile "C:\\\\Program Files\\\\Qemu-ga\\\\qemu-ga.exe" get Version /value'
+        ),
+        tcp_timeout=TCP_TIMEOUT_30SEC,
+    )[0].strip()
+
+
+def get_cim_instance_json(ssh_exec):
+    return json.loads(
+        run_ssh_commands(
+            host=ssh_exec,
+            commands=shlex.split(
+                'powershell -c "Get-CimInstance -Class Win32_OperatingSystem | ConvertTo-Json"'
+            ),
+        )[0]
+    )
+
+
+def get_reg_product_name(ssh_exec):
+    return run_ssh_commands(
+        host=ssh_exec,
+        commands=shlex.split(
+            'REG QUERY "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" /v "ProductName"'
+        ),
+        tcp_timeout=TCP_TIMEOUT_30SEC,
+    )[0]
+
+
+def get_windows_os_info(ssh_exec):
+    cim_instance_json = get_cim_instance_json(ssh_exec=ssh_exec)
+    is_win_2012 = True if "2012" in cim_instance_json["Caption"] else False
+    return {
+        "guestAgentVersion": guest_agent_version_parser(
+            version_string=get_ga_version(ssh_exec=ssh_exec)
+        ),
+        "hostname": cim_instance_json["CSName"],
+        "os": {
+            "name": "Microsoft Windows",
+            "kernelRelease": cim_instance_json["BuildNumber"],
+            "version": re.search(r"(.+\d+)", cim_instance_json["Caption"]).group(1),
+            "prettyName": re.search(
+                r"REG_SZ\s+(.+)\r\n", get_reg_product_name(ssh_exec=ssh_exec)
+            ).group(1),
+            "versionId": "2012r2"
+            if is_win_2012
+            else re.search(r"\D+(\d+)", cim_instance_json["Caption"]).group(1),
+            "kernelVersion": re.search(
+                r"(\d+\.\d+)\.", cim_instance_json["Version"]
+            ).group(1),
+            "machine": "x86_64"
+            if "64" in cim_instance_json["OSArchitecture"]
+            else "x86",
+            "id": "mswindows",
+        },
+        "timezone": get_windows_timezone(ssh_exec=ssh_exec)
+        if not is_win_2012
+        else None,
+    }
+
+
+def validate_os_info_vmi_vs_windows_os(vm):
+    vmi_info = utilities.virt.get_guest_os_info(vmi=vm.vmi)
+    assert vmi_info, "VMI doesn't have guest agent data"
+    windows_info = get_windows_os_info(ssh_exec=vm.ssh_exec)["os"]
+
+    data_mismatch = []
+    for os_param_name, os_param_value in vmi_info.items():
+        if os_param_value not in windows_info[os_param_name]:
+            data_mismatch.append(f"OS data mismatch - {os_param_name}")
+
+    assert (
+        not data_mismatch
+    ), f"Data mismatch {data_mismatch}!\nVMI: {vmi_info}\nOS: {windows_info}"

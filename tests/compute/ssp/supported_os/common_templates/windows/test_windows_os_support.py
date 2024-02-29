@@ -17,6 +17,7 @@ from tests.compute.utils import (
     validate_libvirt_persistent_domain,
     validate_pause_optional_migrate_unpause_windows_vm,
 )
+from utilities.ssp import validate_os_info_vmi_vs_windows_os
 from utilities.virt import migrate_vm_and_verify, running_vm
 
 
@@ -103,7 +104,7 @@ class TestCommonTemplatesWindows:
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
     ):
         """Test Guest OS agent info."""
-        common_templates_utils.validate_os_info_vmi_vs_windows_os(
+        validate_os_info_vmi_vs_windows_os(
             vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
         )
 

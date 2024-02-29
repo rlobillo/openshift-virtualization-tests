@@ -8,7 +8,7 @@ from ocp_utilities.utils import run_ssh_commands
 from paramiko import ProxyCommandFailure
 from pytest_testconfig import py_config
 
-from tests.compute.utils import get_linux_timezone, get_windows_timezone
+from tests.compute.utils import get_linux_timezone
 from tests.os_params import (
     RHEL_LATEST,
     RHEL_LATEST_LABELS,
@@ -23,6 +23,7 @@ from utilities.constants import (
     TIMEOUT_5MIN,
     TIMEOUT_30MIN,
 )
+from utilities.ssp import get_windows_timezone
 from utilities.virt import (
     vm_instance_from_template,
     wait_for_ssh_connectivity,

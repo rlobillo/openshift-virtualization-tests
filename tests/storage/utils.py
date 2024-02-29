@@ -32,6 +32,7 @@ from utilities.constants import (
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.infra import cluster_resource, get_http_image_url, get_pod_by_name_prefix
+from utilities.ssp import validate_os_info_vmi_vs_windows_os
 from utilities.storage import (
     create_dv,
     is_snapshot_supported_by_sc,
@@ -41,7 +42,6 @@ from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
     running_vm,
-    validate_vmi_ga_info_vs_windows_os_info,
     vm_instance_from_template,
     wait_for_windows_vm,
 )
@@ -203,7 +203,7 @@ def create_windows_vm_validate_guest_agent_info(
         wait_for_windows_vm(
             vm=vm_dv, version=vm_params["os_version"], timeout=TIMEOUT_30MIN
         )
-        validate_vmi_ga_info_vs_windows_os_info(vm=vm_dv)
+        validate_os_info_vmi_vs_windows_os(vm=vm_dv)
 
 
 def upload_image(token, data, asynchronous=False):

@@ -13,9 +13,9 @@ from ocp_utilities.infra import cluster_resource
 from ocp_utilities.utils import run_ssh_commands
 from pytest_testconfig import py_config
 
-from tests.compute.utils import get_windows_timezone
 from tests.os_params import WINDOWS_2019, WINDOWS_2019_OS, WINDOWS_2019_TEMPLATE_LABELS
 from utilities.constants import TCP_TIMEOUT_30SEC, TIMEOUT_5MIN
+from utilities.ssp import get_windows_timezone
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     migrate_vm_and_verify,

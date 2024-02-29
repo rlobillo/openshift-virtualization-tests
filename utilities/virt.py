@@ -1679,26 +1679,6 @@ class MissingTemplateVariables(Exception):
         return f"Missing variables {self.var} for template {self.template}"
 
 
-def validate_vmi_ga_info_vs_windows_os_info(vm):
-    """Compare OS data from VMI object vs Windows guest OS data."""
-    vmi_info = dict(vm.vmi.instance.status.guestOSInfo)
-    os_info = get_windows_os_release(ssh_exec=vm.ssh_exec)
-
-    assert vmi_info, "VMI doesn't have guest agent data!"
-    for key, val in vmi_info.items():
-        if key != "id":
-            assert (
-                val.split("r")[0] if "version" in key else val in os_info
-            ), f"Data mismatch! VMI data {val} not in OS data {os_info}"
-
-
-def get_windows_os_release(ssh_exec):
-    cmd = shlex.split(
-        "wmic os get BuildNumber, Caption, OSArchitecture, Version /value"
-    )
-    return ssh_exec.run_command(command=cmd)[1]
-
-
 def wait_for_windows_vm(vm, version, timeout=TIMEOUT_25MIN):
     """
     Samples Windows VM; wait for it to complete the boot process.
