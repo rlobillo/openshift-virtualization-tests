@@ -613,7 +613,3 @@ It is essential to have a good commit message if you want your change to be revi
   *  paragraphs should not have extra space at the end of the line
 * Use the present tense (fix instead of fixed)
 * Use the past tense when describing the status before this commit
-* Include a Closes Jira issue: <#> line if fixing a Jira issue e.g.
-  * `Closes jira issue: CNV-123`
-  * `Closes jira issues: CNV-123,CNV-234`
-* Include a `Change-Id` line (this should automatically be done for you by the `commit-msg` hook)
