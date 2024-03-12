@@ -9,7 +9,7 @@ from ocp_utilities.infra import cluster_resource
 
 from utilities.constants import TIMEOUT_4MIN, TIMEOUT_5SEC, TIMEOUT_11MIN
 from utilities.exceptions import ResourceValueError
-from utilities.infra import get_pods, is_jira_open
+from utilities.infra import get_pods
 
 
 LOGGER = logging.getLogger(__name__)
@@ -169,7 +169,7 @@ def assert_successful_checkup(unprivileged_client, configmap, job, checkup_ns):
 
 
 def wait_for_job_failure(job):
-    if job.name == "latency-nonexistent-node-job" and is_jira_open(jira_id="CNV-23728"):
+    if job.name == "latency-nonexistent-node-job":
         timeout = TIMEOUT_11MIN
     else:
         timeout = TIMEOUT_4MIN

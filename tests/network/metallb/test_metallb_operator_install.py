@@ -3,7 +3,7 @@ import pytest
 from tests.network.metallb.utils import validate_metallb_pods_running
 
 
-pytestmark = pytest.mark.jira("CNV-29859", run=False)
+pytestmark = pytest.mark.jira("CNV-39919", run=False)
 
 
 @pytest.mark.polarion("CNV-9574")

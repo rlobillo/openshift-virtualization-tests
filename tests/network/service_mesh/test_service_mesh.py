@@ -7,11 +7,6 @@ from tests.network.service_mesh.utils import (
 from tests.network.utils import assert_authentication_request
 
 
-pytestmark = pytest.mark.usefixtures(
-    "skip_if_service_mesh_ovn_and_jira_1097_not_closed",
-)
-
-
 class TestSMTrafficManagement:
     @pytest.mark.polarion("CNV-5782")
     def test_service_mesh_traffic_management(

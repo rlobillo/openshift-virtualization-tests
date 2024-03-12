@@ -44,7 +44,6 @@ from utilities.constants import (
     WORKERS_TYPE,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import is_jira_open
 
 
 LOGGER = logging.getLogger(__name__)
@@ -510,10 +509,7 @@ def get_vmi_ip_v4_by_name(vm, name):
     # workers_type is redundant.
     wait_timeout = (
         TIMEOUT_8MIN
-        if (
-            (os.environ[WORKERS_TYPE] == utilities.infra.ClusterHosts.Type.PHYSICAL)
-            and is_jira_open(jira_id="CNV-19348")
-        )
+        if (os.environ[WORKERS_TYPE] == utilities.infra.ClusterHosts.Type.PHYSICAL)
         else TIMEOUT_2MIN
     )
     sampler = TimeoutSampler(
