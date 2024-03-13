@@ -1,6 +1,5 @@
 import logging
 import multiprocessing
-import os
 
 import pytest
 from kubernetes.client.rest import ApiException
@@ -9,6 +8,7 @@ from ocp_resources.configmap import ConfigMap
 from ocp_resources.datavolume import DataVolume
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutSampler
+from ocp_utilities.infra import cluster_resource
 from pytest_testconfig import config as py_config
 
 import utilities.storage
@@ -21,7 +21,6 @@ from tests.storage.utils import (
     wait_for_importer_container_message,
 )
 from utilities.constants import (
-    CNV_TESTS_CONTAINER,
     OS_FLAVOR_CIRROS,
     TIMEOUT_1MIN,
     TIMEOUT_5MIN,
@@ -30,7 +29,6 @@ from utilities.constants import (
     Images,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import cluster_resource, is_jira_open
 from utilities.storage import ErrorMsg, create_dv
 from utilities.virt import VirtualMachineForTests, running_vm
 
@@ -110,15 +108,6 @@ def update_configmap_with_cert(request, configmap_with_cert):
             }
         }
     ).update()
-
-
-@pytest.fixture()
-def skip_from_container_if_jira_18875_not_closed():
-    jira_id = "CNV-18875"
-    if os.environ.get(CNV_TESTS_CONTAINER) and is_jira_open(jira_id=jira_id):
-        pytest.skip(
-            f"Skipping the test because it's running from the container and jira card {jira_id} not closed"
-        )
 
 
 @pytest.mark.sno
@@ -313,7 +302,6 @@ def test_private_registry_recover_after_missing_configmap(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-2344")
 def test_private_registry_with_untrusted_certificate(
-    skip_from_container_if_jira_18875_not_closed,
     skip_upstream,
     admin_client,
     namespace,
@@ -556,7 +544,6 @@ def test_fqdn_name(
     indirect=["update_configmap_with_cert"],
 )
 def test_inject_invalid_cert_to_configmap(
-    skip_from_container_if_jira_18875_not_closed,
     admin_client,
     dv_name,
     configmap_with_cert,
