@@ -46,6 +46,7 @@ shortuuid = "*"
 podman = "*"
 gitpython = "*"
 deepdiff = "*"
+python-utility-scripts = "*"
 
 [tool.poetry.dev-dependencies]
 ipython = "*"
