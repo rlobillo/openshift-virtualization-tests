@@ -8,7 +8,6 @@ from xml.etree import ElementTree
 import bitmath
 from ocp_resources import pod
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_utilities.exceptions import CommandExecFailed
 from ocp_utilities.utils import run_ssh_commands
 from packaging import version
 
@@ -24,7 +23,7 @@ from utilities.constants import (
 )
 from utilities.infra import raise_multiple_exceptions, run_virtctl_command
 from utilities.ssp import get_windows_os_info
-from utilities.virt import get_guest_os_info, running_vm
+from utilities.virt import get_guest_os_info
 
 
 HVINFO_PATH = "C:\\\\hvinfo\\\\hvinfo.exe"
@@ -117,8 +116,8 @@ def check_windows_vm_hvinfo(vm):
         return failed_recommendations
 
     def _check_hyperv_privileges():
-        # TODO add 'AccessReenlightenmentControls' once jira CNV-20418 is done
         hyperv_windows_privileges_list = [
+            "AccessReenlightenmentControls",
             "AccessVpRunTimeRegs",
             "AccessSynicRegs",
             "AccessSyntheticTimerRegs",
@@ -209,83 +208,6 @@ def check_vm_xml_tablet_device(vm):
         tablet_dict_from_xml["alias"]["@name"]
         == f"ua-{vm_instance_tablet_device_dict['name']}"
     ), "Wrong device name"
-
-
-def add_windows_license(vm, windows_license):
-    LOGGER.info("Add Windows license.")
-    cmd = shlex.split(
-        f"cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /ipk {windows_license}"
-    )
-    addition_status = run_ssh_commands(
-        host=vm.ssh_exec, commands=cmd, tcp_timeout=TCP_TIMEOUT_30SEC
-    )[0]
-    assert re.match(
-        r"Installed product key [a-z0-9-]+ successfully.",
-        addition_status,
-        re.IGNORECASE,
-    ), "Failed to add license."
-
-
-def activate_windows_online(vm):
-    def _activate_windows(vm):
-        cmd = shlex.split("cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /ato")
-        online_activation_status = run_ssh_commands(
-            host=vm.ssh_exec, commands=cmd, tcp_timeout=TCP_TIMEOUT_30SEC
-        )[0]
-        return re.match(
-            r"Activating Windows\(R\), (ServerStandard|Professional|Enterprise) edition "
-            r"\(.*\) \.+.*Product activated successfully",
-            online_activation_status,
-            re.DOTALL,
-        )
-
-    LOGGER.info("Activate Windows license online.")
-    for sample in TimeoutSampler(
-        wait_timeout=TIMEOUT_3MIN,
-        sleep=30,
-        func=_activate_windows,
-        vm=vm,
-        exceptions_dict={CommandExecFailed: []},
-    ):
-        try:
-            if sample:
-                return
-        except TimeoutExpiredError:
-            LOGGER.error("Failed to activate Windows online.")
-            raise
-
-
-def is_windows_activated(vm):
-    """Returns True if license is active else False"""
-
-    cmd = shlex.split("cscript /NoLogo %systemroot%\\\\system32\\\\slmgr.vbs /xpr")
-    return (
-        "The machine is permanently activated"
-        in run_ssh_commands(
-            host=vm.ssh_exec, commands=cmd, tcp_timeout=TCP_TIMEOUT_30SEC
-        )[0]
-    )
-
-
-def check_windows_activated_license(vm, reset_action):
-    """Verify VM activation mode after VM reset (reboot / stop and start)"""
-
-    if "stop_start" in reset_action:
-        vm.stop(wait=True)
-    if "reboot" in reset_action:
-        reboot_vm(vm=vm)
-    running_vm(vm=vm)
-    assert is_windows_activated(vm=vm), "VM license is not activated after restart."
-
-
-def add_activate_windows_license(vm, license_key):
-    """Add Windows license to the VM, activate it online and verify that
-    the activation was successful.
-    """
-
-    add_windows_license(vm=vm, windows_license=license_key)
-    activate_windows_online(vm=vm)
-    assert is_windows_activated(vm=vm), "VM license is not activated."
 
 
 def fetch_osinfo_memory(osinfo_file_path, memory_test, resources_arch):

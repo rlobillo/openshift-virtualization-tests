@@ -192,60 +192,6 @@ class TestCommonTemplatesWindows:
 
     @pytest.mark.sno
     @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
-    @pytest.mark.polarion("CNV-2177")
-    @pytest.mark.jira("CNV-3771", run=False)
-    def test_vm_license_state_after_stop_start(
-        self,
-        skip_upstream,
-        unprivileged_client,
-        namespace,
-        windows_os_matrix__class__,
-        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
-        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-    ):
-
-        common_templates_utils.add_activate_windows_license(
-            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-            license_key=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
-                "license"
-            ],
-        )
-
-        LOGGER.info("Verify VM activation mode is not changed after VM stop/start.")
-        common_templates_utils.check_windows_activated_license(
-            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-            reset_action="stop_start",
-        )
-
-    @pytest.mark.sno
-    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
-    @pytest.mark.polarion("CNV-3415")
-    @pytest.mark.jira("CNV-3771", run=False)
-    def test_vm_license_state_after_reboot(
-        self,
-        skip_upstream,
-        unprivileged_client,
-        namespace,
-        windows_os_matrix__class__,
-        golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
-        golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-    ):
-
-        common_templates_utils.add_activate_windows_license(
-            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-            license_key=windows_os_matrix__class__[[*windows_os_matrix__class__][0]][
-                "license"
-            ],
-        )
-
-        LOGGER.info("Verify VM activation mode is not changed after reboot.")
-        common_templates_utils.check_windows_activated_license(
-            vm=golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-            reset_action="reboot",
-        )
-
-    @pytest.mark.sno
-    @pytest.mark.dependency(depends=[f"{TESTS_CLASS_NAME}::start_vm"])
     @pytest.mark.polarion("CNV-3674")
     def test_vm_machine_type(
         self,

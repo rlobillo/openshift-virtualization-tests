@@ -1291,14 +1291,12 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
 
         # On PSI cluster Windows VM with hyperv/reenlightenment flag can't be migrated,
         # current workaround removes the flag when VM created from the template
-        jira_id = "CNV-20418"
         if (
             os.environ.get(WORKERS_TYPE) == utilities.infra.ClusterHosts.Type.VIRTUAL
             and OS_FLAVOR_WINDOWS in self.os_flavor
-            and utilities.infra.is_jira_open(jira_id=jira_id)
         ):
             LOGGER.warning(
-                f"Removing hyperv/reenlightenment flag for Windows VM on PSI cluster, Jira: {jira_id}"
+                "Removing hyperv/reenlightenment flag for Windows VM on PSI cluster"
             )
             del spec["domain"]["features"]["hyperv"]["reenlightenment"]
 

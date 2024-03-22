@@ -12,7 +12,6 @@ from tests.compute.utils import (
 )
 from utilities.constants import TCP_TIMEOUT_30SEC
 from utilities.hco import update_hco_annotations
-from utilities.infra import is_jira_open
 from utilities.virt import (
     migrate_vm_and_verify,
     verify_vm_migrated,
@@ -129,11 +128,10 @@ def start_stress_on_vm(vm, stress_command):
         command = f"wsl nohup sh -c '{stress_command}'"
     else:
         command = stress_command
-        if is_jira_open(jira_id="CNV-27477"):
-            run_ssh_commands(
-                host=vm.ssh_exec,
-                commands=shlex.split("sudo dnf install -y stress-ng"),
-            )
+        run_ssh_commands(
+            host=vm.ssh_exec,
+            commands=shlex.split("sudo dnf install -y stress-ng"),
+        )
     run_ssh_commands(
         host=vm.ssh_exec,
         commands=shlex.split(command),
