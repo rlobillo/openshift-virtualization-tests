@@ -168,8 +168,6 @@ def get_failed_cluster_operator(admin_client):
 
 
 def wait_for_cluster_operator_stabilize(admin_client):
-    # TODO: Once https://issues.redhat.com/browse/OCPBUGS-4011 is addressed, we would need to adjust the timeout
-    # value to a more reasonable value. Currently reducing it, can make the cluster not usable/responsive
     sampler = TimeoutSampler(
         wait_timeout=TIMEOUT_15MIN,
         sleep=10,
