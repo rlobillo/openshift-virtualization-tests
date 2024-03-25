@@ -25,7 +25,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def vm_static(
+def running_vm_static(
     unprivileged_client,
     namespace,
 ):
@@ -36,12 +36,12 @@ def vm_static(
         body=fedora_vm_body(name=name),
         client=unprivileged_client,
     ) as vm:
-        vm.start(wait=True)
+        running_vm(vm=vm, check_ssh_connectivity=False)
         yield vm
 
 
 @pytest.fixture(scope="module")
-def vm_for_migration(
+def running_vm_for_migration(
     unprivileged_client,
     nodes_common_cpu_model,
     namespace,
@@ -54,18 +54,8 @@ def vm_for_migration(
         client=unprivileged_client,
         cpu_model=nodes_common_cpu_model,
     ) as vm:
-        vm.start(wait=True)
+        running_vm(vm=vm, check_ssh_connectivity=False)
         yield vm
-
-
-@pytest.fixture(scope="module")
-def running_vm_static(vm_static):
-    return running_vm(vm=vm_static, check_ssh_connectivity=False)
-
-
-@pytest.fixture(scope="module")
-def running_vm_for_migration(vm_for_migration):
-    return running_vm(vm=vm_for_migration, check_ssh_connectivity=False)
 
 
 @pytest.fixture()
@@ -115,7 +105,7 @@ def test_connectivity_after_migration(
     using console to ping from migrated_vmi to running_vm_static.
     It is important to connect using console and not ssh because connecting
     through ssh hides the bug.
-    The ping should take place right after vm_for_migration is migrated to
+    The ping should take place right after running_vm_for_migration is migrated to
     the new node.
     the ping command include '-c 10 -w 10' so that in case there is a packet
     loss the exit code will be 1 and not 0.
