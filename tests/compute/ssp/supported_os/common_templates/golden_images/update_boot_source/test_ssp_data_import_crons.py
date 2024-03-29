@@ -18,13 +18,13 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_s
 from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_source.utils import (
     template_labels,
     vm_with_data_source,
-    wait_for_condition_message_value,
 )
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_5MIN, TIMEOUT_10MIN
 from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.ssp import (
     get_data_import_crons,
     matrix_auto_boot_data_import_cron_prefixes,
+    wait_for_condition_message_value,
     wait_for_deleted_data_import_crons,
 )
 from utilities.storage import (

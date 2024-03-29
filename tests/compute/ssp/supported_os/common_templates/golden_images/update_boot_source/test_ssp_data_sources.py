@@ -18,13 +18,11 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_s
     DATA_SOURCE_READY_FOR_CONSUMPTION_MESSAGE,
     DEFAULT_FEDORA_REGISTRY_URL,
 )
-from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_source.utils import (
-    wait_for_condition_message_value,
-)
 from tests.compute.ssp.utils import get_parameters_from_template
 from utilities.constants import DATA_SOURCE_NAME, TIMEOUT_5MIN, TIMEOUT_10MIN, Images
 from utilities.exceptions import ResourceValueError
 from utilities.infra import get_http_image_url
+from utilities.ssp import wait_for_condition_message_value
 
 
 LOGGER = logging.getLogger(__name__)

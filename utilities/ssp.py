@@ -19,6 +19,8 @@ from utilities.constants import (
     TCP_TIMEOUT_30SEC,
     TIMEOUT_2MIN,
     TIMEOUT_3MIN,
+    TIMEOUT_5MIN,
+    TIMEOUT_5SEC,
     TIMEOUT_6MIN,
     TIMEOUT_10SEC,
 )
@@ -125,6 +127,27 @@ def wait_for_ssp_conditions(
         polling_interval=polling_interval,
         consecutive_checks_count=consecutive_checks_count,
     )
+
+
+def wait_for_condition_message_value(resource, expected_message):
+    LOGGER.info(
+        f"Verify {resource.name} conditions contain expected message: {expected_message}"
+    )
+    sample = None
+    try:
+        for sample in TimeoutSampler(
+            wait_timeout=TIMEOUT_5MIN,
+            sleep=TIMEOUT_5SEC,
+            func=lambda: resource.instance.status.conditions,
+        ):
+            if any([condition["message"] == expected_message for condition in sample]):
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"{resource.name} condition message does not match expected message {expected_message}, conditions: "
+            f"{sample}"
+        )
+        raise
 
 
 def is_ssp_pod_running(dyn_client, hco_namespace):

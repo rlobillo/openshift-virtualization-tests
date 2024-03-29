@@ -29,6 +29,7 @@ from utilities.constants import (
     Images,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
+from utilities.ssp import wait_for_condition_message_value
 from utilities.storage import ErrorMsg, create_dv
 from utilities.virt import VirtualMachineForTests, running_vm
 
@@ -413,36 +414,40 @@ def test_public_registry_data_volume(
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-2024")
 def test_public_registry_data_volume_low_capacity(
-    admin_client, namespace, storage_class_matrix__function__
+    namespace,
+    storage_class_matrix__function__,
 ):
+    dv_param = {
+        "dv_name": "import-public-registry-low-capacity-dv",
+        "source": REGISTRY_STR,
+        "url": QUAY_IMAGE,
+        "storage_class": [*storage_class_matrix__function__][0],
+    }
     # negative flow - low capacity volume
     with create_dv(
-        source=REGISTRY_STR,
-        dv_name="import-public-registry-low-capacity-dv",
+        source=dv_param["source"],
+        dv_name=dv_param["dv_name"],
         namespace=namespace.name,
-        url=QUAY_IMAGE,
+        url=dv_param["url"],
         content_type="",
         size="16Mi",
-        storage_class=[*storage_class_matrix__function__][0],
+        storage_class=dv_param["storage_class"],
     ) as dv:
         dv.wait_for_status(
             status=DataVolume.Status.IMPORT_IN_PROGRESS,
             timeout=TIMEOUT_5MIN,
             stop_status=DataVolume.Status.SUCCEEDED,
         )
-        importer_pod = get_importer_pod(dyn_client=admin_client, namespace=dv.namespace)
-        wait_for_importer_container_message(
-            importer_pod=importer_pod,
-            msg=ErrorMsg.LARGER_PVC_REQUIRED,
+        wait_for_condition_message_value(
+            resource=dv, expected_message=ErrorMsg.DATA_VOLUME_TOO_SMALL
         )
-
     # positive flow
     with create_dv(
-        source=REGISTRY_STR,
-        dv_name="import-public-registry-low-capacity-dv",
+        source=dv_param["source"],
+        dv_name=dv_param["dv_name"],
         namespace=namespace.name,
-        url=QUAY_IMAGE,
-        storage_class=[*storage_class_matrix__function__][0],
+        url=dv_param["url"],
+        storage_class=dv_param["storage_class"],
     ) as dv:
         dv.wait_for_dv_success()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:

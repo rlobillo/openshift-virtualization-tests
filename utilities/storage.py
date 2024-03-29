@@ -554,6 +554,7 @@ class ErrorMsg:
         "Unable to process data: Unable to transfer source data to scratch space: "
         "Failed to read registry image: Failed to find VM disk image file in the container image"
     )
+    DATA_VOLUME_TOO_SMALL = "DataVolume too small to contain image"
     LARGER_PVC_REQUIRED = "A larger PVC is required"
     LARGER_PVC_REQUIRED_CLONE = (
         "target resources requests storage size is smaller than the source"
