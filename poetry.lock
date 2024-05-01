@@ -1823,12 +1823,12 @@ setuptools = "*"
 
 [[package]]
 name = "pytest-jira"
-version = "0.3.18"
+version = "0.3.21"
 description = "py.test JIRA integration plugin, using markers"
 optional = false
 python-versions = "*"
 files = [
-    {file = "pytest-jira-0.3.18.zip", hash = "sha256:b57e0681d2fb0bf4e7906e00c5b92df1987cfdcf9a4a69ece54fb03b86b1171a"},
+    {file = "pytest-jira-0.3.18.zip", hash = "sha256:ca0dd9d13a915849507bc00957c8eae6905f9774434f1e4827e7bc6ae937f29e"},
 ]
 
 [package.dependencies]
