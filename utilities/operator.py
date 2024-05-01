@@ -318,7 +318,7 @@ def collect_mcp_data_on_update_timeout(
     LOGGER.error(
         f"Out of MCPs {mcps_to_check}, following MCPs {not_matching_mcps} were not at desired "
         f"condition {condition_type} before timeout.\n"
-        f"Current MCP status={ {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools_list} }"
+        f"Current MCP status={{mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools_list}}"
     )
     if py_config.get("data_collector"):
         data_collector_dict = get_data_collector_dict()

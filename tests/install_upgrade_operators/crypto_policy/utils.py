@@ -255,7 +255,7 @@ def assert_no_crypto_policy_in_hco(
 def compose_openssl_command(service_spec, version, cipher="", extra_arguments=""):
     return (
         f"openssl s_client -connect {service_spec.clusterIP}:{service_spec.ports[0].port} "
-        f"-tls{version.replace('.','_')} {cipher} -brief <<< 'Q' 2>&1 {extra_arguments}"
+        f"-tls{version.replace('.', '_')} {cipher} -brief <<< 'Q' 2>&1 {extra_arguments}"
     )
 
 
