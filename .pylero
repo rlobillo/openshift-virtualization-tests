@@ -1,6 +1,0 @@
-[webservice]
-url=https://polarion.engineering.redhat.com/polarion
-svn_repo=https://polarion.engineering.redhat.com/repo
-user=automation_report
-password=automation_report
-default_project=CNV
