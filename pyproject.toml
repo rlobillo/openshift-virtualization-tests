@@ -6,6 +6,7 @@ name = "cnv-tests-4.12"
 version = "4.12"
 description = "cnv-tests"
 authors = ["cnv-tests"]
+packages = [{ include = "*" }]
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -47,6 +48,8 @@ podman = "*"
 gitpython = "*"
 deepdiff = "*"
 python-utility-scripts = "*"
+kubernetes = "^27.2.0"
+poetry-plugin-export = "^1.7.1"
 
 [tool.poetry.dev-dependencies]
 ipython = "*"
