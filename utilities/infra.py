@@ -13,9 +13,7 @@ import tarfile
 import tempfile
 import time
 import zipfile
-from configparser import ConfigParser
 from contextlib import contextmanager
-from pathlib import Path
 
 import netaddr
 import paramiko
@@ -277,22 +275,14 @@ def authorized_key(private_key_path):
     return f"ssh-rsa {private_to_public_key(key=private_key_path)} root@exec1.rdocloud"
 
 
-def get_connection_params(conf_file_name):
-    conf_file = os.path.join(Path(".").resolve(), conf_file_name)
-    parser = ConfigParser()
-    # Open the file with the correct encoding
-    parser.read(conf_file, encoding="utf-8")
-    params_dict = {}
-    for params in parser.items("DEFAULT"):
-        params_dict[params[0]] = params[1]
-    return params_dict
-
-
 def get_jira_status(jira):
-    jira_connection_params = get_connection_params(conf_file_name="jira.cfg")
+    env_var = os.environ
+    assert env_var.get("PYTEST_JIRA_TOKEN") and env_var.get(
+        "PYTEST_JIRA_URL"
+    ), "Jira environment variables are not set"
     jira_connection = JIRA(
-        token_auth=jira_connection_params["token"],
-        options={"server": jira_connection_params["url"]},
+        token_auth=env_var["PYTEST_JIRA_TOKEN"],
+        options={"server": env_var["PYTEST_JIRA_URL"]},
     )
     return jira_connection.issue(id=jira).fields.status.name.lower()
 
