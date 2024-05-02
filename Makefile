@@ -41,7 +41,7 @@ IMAGE_REGISTRY ?= "quay.io"
 REGISTRY_NAMESPACE ?= "openshift-cnv"
 OPERATOR_IMAGE_NAME="cnv-tests"
 # Need to change when master point to new version of cnv-tests
-IMAGE_TAG ?= "4.12"
+IMAGE_TAG ?= "cnv-4.12"
 
 FULL_OPERATOR_IMAGE ?= "$(IMAGE_REGISTRY)/$(REGISTRY_NAMESPACE)/$(OPERATOR_IMAGE_NAME):$(IMAGE_TAG)"
 POETRY_BIN = poetry
