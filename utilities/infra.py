@@ -1167,3 +1167,14 @@ def get_deployment_by_name(namespace_name, deployment_name):
     raise ResourceNotFoundError(
         f"Deployment: {deployment_name} is not found in namespace: {namespace_name}"
     )
+
+
+def add_scc_to_service_account(namespace, scc_name, sa_name):
+    output = subprocess.check_output(
+        shlex.split(
+            f"oc adm policy add-scc-to-user {scc_name} system:serviceaccount:"
+            f"{namespace}:{sa_name}"
+        )
+    )
+    if f'added: "{sa_name}"' not in str(output):
+        raise AssertionError(f"Unable to add {sa_name} to {scc_name} scc")

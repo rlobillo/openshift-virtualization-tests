@@ -14,19 +14,14 @@ from tests.network.constants import BRCNV, SERVICE_MESH_PORT
 from utilities import console
 from utilities.constants import (
     ISTIO_SYSTEM_DEFAULT_NS,
-    OS_FLAVOR_CIRROS,
+    OS_FLAVOR_FEDORA,
     TIMEOUT_1MIN,
     TIMEOUT_2MIN,
     TIMEOUT_10SEC,
 )
 from utilities.infra import cluster_resource
 from utilities.network import compose_cloud_init_data_dict, get_vmi_ip_v4_by_name, ping
-from utilities.virt import (
-    CIRROS_IMAGE,
-    VirtualMachineForTests,
-    fedora_vm_body,
-    running_vm,
-)
+from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -91,7 +86,7 @@ class ServiceMeshMemberRollForTests(ServiceMeshMemberRoll):
         self.res["spec"] = {"members": self.members}
 
 
-class CirrosVirtualMachineForServiceMesh(VirtualMachineForTests):
+class FedoraVirtualMachineForServiceMesh(VirtualMachineForTests):
     def __init__(
         self,
         name,
@@ -99,16 +94,15 @@ class CirrosVirtualMachineForServiceMesh(VirtualMachineForTests):
         client,
     ):
         """
-        Cirros VM Creation. Used for Service Mesh tests
+        Fedora VM Creation. Used for Service Mesh tests
         """
 
         super().__init__(
             name=name,
             namespace=namespace,
             client=client,
-            os_flavor=OS_FLAVOR_CIRROS,
-            memory_requests=SERVICE_MESH_VM_MEMORY_REQ,
-            image=CIRROS_IMAGE,
+            os_flavor=OS_FLAVOR_FEDORA,
+            body=fedora_vm_body(name=name),
         )
 
     def to_dict(self):
@@ -342,7 +336,8 @@ def assert_service_mesh_request(expected_output, request_response):
 
 
 def assert_authentication_request(vm, service_app_name):
-    expected_output = "127.0.0.1"
+    # Envoy proxy IP
+    expected_output = "127.0.0.6"
     request_response = authentication_request(
         vm=vm,
         service=service_app_name,
@@ -358,7 +353,7 @@ def verify_console_command_output(
     command,
     expected_output,
     timeout=TIMEOUT_1MIN,
-    console_impl=console.Cirros,
+    console_impl=console.Fedora,
 ):
     """
     Run a list of commands inside a VM and check for expected output.
