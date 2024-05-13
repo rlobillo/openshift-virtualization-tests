@@ -10,8 +10,7 @@ EXPECTED_CNAO_COMP_NAMES = [
     "bridge",
     "ovs-cni",
 ]
-HTTPBIN_IMAGE = "quay.io/verygoodsecurity/httpbin:0.1.80"
-HTTPBIN_COMMAND = "gunicorn -b 0.0.0.0:8000 httpbin:app -k gevent"
-PORT_8080 = 8080
-SERVICE_MESH_PORT = 8000
+HTTPBIN_IMAGE = "quay.io/openshifttest/httpbin:1.2.2"
+SERVICE_MESH_PORT = 8080
+HTTPBIN_COMMAND = f"gunicorn -b 0.0.0.0:{SERVICE_MESH_PORT} -w 1 httpbin:app"
 BRCNV = "brcnv"

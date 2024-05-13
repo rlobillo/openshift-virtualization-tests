@@ -11,12 +11,7 @@ from ocp_resources.service_account import ServiceAccount
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_service import VirtualService
 
-from tests.network.constants import (
-    HTTPBIN_COMMAND,
-    HTTPBIN_IMAGE,
-    PORT_8080,
-    SERVICE_MESH_PORT,
-)
+from tests.network.constants import HTTPBIN_COMMAND, HTTPBIN_IMAGE, SERVICE_MESH_PORT
 from tests.network.service_mesh.constants import (
     DESTINATION_RULE_TYPE,
     GATEWAY_SELECTOR,
@@ -34,7 +29,7 @@ from tests.network.service_mesh.constants import (
 )
 from tests.network.service_mesh.utils import traffic_management_request
 from tests.network.utils import (
-    CirrosVirtualMachineForServiceMesh,
+    FedoraVirtualMachineForServiceMesh,
     ServiceMeshDeployments,
     ServiceMeshDeploymentService,
     ServiceMeshMemberRollForTests,
@@ -42,7 +37,12 @@ from tests.network.utils import (
 )
 from utilities import console
 from utilities.constants import PORT_80, TIMEOUT_4MIN, TIMEOUT_10SEC
-from utilities.infra import cluster_resource, create_ns, unique_name
+from utilities.infra import (
+    add_scc_to_service_account,
+    cluster_resource,
+    create_ns,
+    unique_name,
+)
 from utilities.virt import running_vm, vm_console_run_commands, wait_for_console
 
 
@@ -192,7 +192,7 @@ def httpbin_deployment_service_mesh(namespace):
         version=ServiceMeshDeployments.ApiVersion.V1,
         image=HTTPBIN_IMAGE,
         command=shlex.split(HTTPBIN_COMMAND),
-        port=PORT_8080,
+        port=SERVICE_MESH_PORT,
         service_port=SERVICE_MESH_PORT,
         service_account=True,
     ) as dp:
@@ -205,6 +205,11 @@ def httpbin_service_account_service_mesh(httpbin_deployment_service_mesh):
         name=httpbin_deployment_service_mesh.app_name,
         namespace=httpbin_deployment_service_mesh.namespace,
     ) as sa:
+        add_scc_to_service_account(
+            namespace=httpbin_deployment_service_mesh.namespace,
+            scc_name="anyuid",
+            sa_name=sa.name,
+        )
         yield sa
 
 
@@ -227,13 +232,13 @@ def service_mesh_member_roll(skip_if_service_mesh_not_installed, namespace):
 
 
 @pytest.fixture(scope="module")
-def vm_cirros_with_service_mesh_annotation(
+def vm_fedora_with_service_mesh_annotation(
     unprivileged_client,
     namespace,
     service_mesh_member_roll,
 ):
     vm_name = "service-mesh-vm"
-    with cluster_resource(CirrosVirtualMachineForServiceMesh)(
+    with cluster_resource(FedoraVirtualMachineForServiceMesh)(
         client=unprivileged_client,
         name=vm_name,
         namespace=namespace.name,
@@ -247,12 +252,12 @@ def vm_cirros_with_service_mesh_annotation(
 
 
 @pytest.fixture(scope="module")
-def outside_mesh_vm_cirros_with_service_mesh_annotation(
+def outside_mesh_vm_fedora_with_service_mesh_annotation(
     admin_client,
     ns_outside_of_service_mesh,
 ):
     vm_name = "out-service-mesh-vm"
-    with cluster_resource(CirrosVirtualMachineForServiceMesh)(
+    with cluster_resource(FedoraVirtualMachineForServiceMesh)(
         client=admin_client,
         name=vm_name,
         namespace=ns_outside_of_service_mesh.name,
@@ -266,20 +271,20 @@ def outside_mesh_vm_cirros_with_service_mesh_annotation(
 
 
 @pytest.fixture(scope="module")
-def service_mesh_vm_console_connection_ready(vm_cirros_with_service_mesh_annotation):
+def service_mesh_vm_console_connection_ready(vm_fedora_with_service_mesh_annotation):
     wait_for_console(
-        vm=vm_cirros_with_service_mesh_annotation,
-        console_impl=console.Cirros,
+        vm=vm_fedora_with_service_mesh_annotation,
+        console_impl=console.Fedora,
     )
 
 
 @pytest.fixture(scope="module")
 def outside_mesh_console_ready_vm(
-    outside_mesh_vm_cirros_with_service_mesh_annotation,
+    outside_mesh_vm_fedora_with_service_mesh_annotation,
 ):
     wait_for_console(
-        vm=outside_mesh_vm_cirros_with_service_mesh_annotation,
-        console_impl=console.Cirros,
+        vm=outside_mesh_vm_fedora_with_service_mesh_annotation,
+        console_impl=console.Fedora,
     )
 
 
@@ -292,7 +297,7 @@ def server_deployment_v1(namespace):
         image=SERVER_V1_IMAGE,
         strategy=SERVER_DEPLOYMENT_STRATEGY,
         host=SERVER_DEMO_HOST,
-        service_port=PORT_8080,
+        service_port=SERVICE_MESH_PORT,
     ) as dp:
         yield dp
 
@@ -357,7 +362,7 @@ def destination_rule_service_mesh(server_deployment_v1, server_deployment_v2):
 @pytest.fixture(scope="class")
 def traffic_management_service_mesh_convergence(
     istio_system_namespace,
-    vm_cirros_with_service_mesh_annotation,
+    vm_fedora_with_service_mesh_annotation,
     server_deployment_v1,
     server_deployment_v2,
     server_service_service_mesh,
@@ -369,7 +374,7 @@ def traffic_management_service_mesh_convergence(
 ):
     wait_service_mesh_components_convergence(
         func=traffic_management_request,
-        vm=vm_cirros_with_service_mesh_annotation,
+        vm=vm_fedora_with_service_mesh_annotation,
         server=server_deployment_v1,
         destination=service_mesh_ingress_service_addr,
     )
@@ -389,7 +394,7 @@ def service_mesh_ingress_service_addr(admin_client, istio_system_namespace):
 def change_routing_to_v2(
     virtual_service_mesh_service,
     server_deployment_v2,
-    vm_cirros_with_service_mesh_annotation,
+    vm_fedora_with_service_mesh_annotation,
     service_mesh_ingress_service_addr,
 ):
     LOGGER.info(
@@ -415,7 +420,7 @@ def change_routing_to_v2(
     ResourceEditor(patches={virtual_service_mesh_service: patch}).update()
     wait_service_mesh_components_convergence(
         func=traffic_management_request,
-        vm=vm_cirros_with_service_mesh_annotation,
+        vm=vm_fedora_with_service_mesh_annotation,
         server=server_deployment_v2,
         destination=service_mesh_ingress_service_addr,
     )
@@ -434,7 +439,7 @@ def peer_authentication_service_mesh_deployment(
     istio_system_namespace,
     namespace,
     service_mesh_member_roll,
-    vm_cirros_with_service_mesh_annotation,
+    vm_fedora_with_service_mesh_annotation,
     ns_outside_of_service_mesh,
     httpbin_service_service_mesh,
     peer_authentication_strict_service_mesh,
@@ -442,16 +447,16 @@ def peer_authentication_service_mesh_deployment(
 ):
     wait_service_mesh_components_convergence(
         func=authentication_request,
-        vm=vm_cirros_with_service_mesh_annotation,
+        vm=vm_fedora_with_service_mesh_annotation,
         service=httpbin_service_service_mesh.app_name,
     )
 
 
 @pytest.fixture()
-def vmi_http_server(vm_cirros_with_service_mesh_annotation):
+def vmi_http_server(vm_fedora_with_service_mesh_annotation):
     vm_console_run_commands(
-        console_impl=console.Cirros,
-        vm=vm_cirros_with_service_mesh_annotation,
+        console_impl=console.Fedora,
+        vm=vm_fedora_with_service_mesh_annotation,
         commands=[
             f'while true ; do  echo -e "HTTP/1.1 200 OK\n\n $(date)" | nc -l -p {SERVICE_MESH_PORT}  ; done &'
         ],

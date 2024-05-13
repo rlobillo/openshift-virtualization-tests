@@ -9,7 +9,6 @@ import logging
 import os
 import os.path
 import re
-import shlex
 import shutil
 import subprocess
 import tempfile
@@ -105,6 +104,7 @@ from utilities.exceptions import CommonNodesCpusNotFoundError
 from utilities.infra import (
     ClusterHosts,
     ExecCommandOnPod,
+    add_scc_to_service_account,
     base64_encode_str,
     cluster_resource,
     cluster_sanity,
@@ -514,21 +514,15 @@ def cnv_tests_utilities_service_account(cnv_tests_utilities_namespace, installin
     if installing_cnv:
         yield
     else:
-        scc_name = "privileged"
         with cluster_resource(ServiceAccount)(
             name=CNV_TEST_SERVICE_ACCOUNT,
             namespace=cnv_tests_utilities_namespace.name,
         ) as service_account:
-            output = check_output(
-                shlex.split(
-                    f"oc adm policy add-scc-to-user {scc_name} system:serviceaccount:"
-                    f"{cnv_tests_utilities_namespace.name}:{service_account.name}"
-                )
+            add_scc_to_service_account(
+                namespace=cnv_tests_utilities_namespace.name,
+                scc_name="privileged",
+                sa_name=service_account.name,
             )
-            if f'added: "{service_account.name}"' not in str(output):
-                raise AssertionError(
-                    f"Unable to add {service_account.name} to {scc_name} scc"
-                )
             yield service_account
 
 
