@@ -6,8 +6,8 @@ import shlex
 from ocp_resources.data_import_cron import DataImportCron
 from ocp_resources.ssp import SSP
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_utilities.utils import run_ssh_commands
 from openshift.dynamic.exceptions import NotFoundError
+from pyhelper_utils.shell import run_ssh_commands
 from pytest_testconfig import config as py_config
 
 import utilities.infra

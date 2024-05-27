@@ -8,7 +8,7 @@ from ocp_resources.node_network_configuration_policy import (
     NodeNetworkConfigurationPolicy,
 )
 from ocp_utilities.infra import cluster_resource
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from tests.network.host_network.vlan.utils import (
     DHCP_IP_SUBNET,

@@ -51,10 +51,10 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import get_client
-from ocp_utilities.utils import run_command
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from packaging.version import Version
+from pyhelper_utils.shell import run_command
 from pytest_testconfig import config as py_config
 
 import utilities.hco

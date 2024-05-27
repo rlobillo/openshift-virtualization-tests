@@ -10,7 +10,7 @@ from multiprocessing import Process
 
 import pytest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 from pytest_testconfig import py_config
 
 from tests.compute.utils import get_virt_launcher_processes_memory_overuse

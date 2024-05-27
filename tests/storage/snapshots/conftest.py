@@ -10,7 +10,7 @@ import pytest
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from ocp_utilities.infra import cluster_resource
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from tests.storage.snapshots.constants import WINDOWS_DIRECTORY_PATH
 from tests.storage.snapshots.utils import assert_directory_existence

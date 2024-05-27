@@ -5,7 +5,7 @@ import pytest
 from kubernetes.client.rest import ApiException
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from ocp_utilities.infra import cluster_resource
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from tests.storage.snapshots.constants import ERROR_MSG_USER_CANNOT_CREATE_VM_SNAPSHOTS
 from utilities.constants import TIMEOUT_10MIN

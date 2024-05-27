@@ -4,8 +4,8 @@ import shlex
 
 import pytest
 from ocp_resources.utils import TimeoutSampler
-from ocp_utilities.utils import run_ssh_commands
 from paramiko import ProxyCommandFailure
+from pyhelper_utils.shell import run_ssh_commands
 from pytest_testconfig import py_config
 
 from tests.compute.utils import get_linux_timezone

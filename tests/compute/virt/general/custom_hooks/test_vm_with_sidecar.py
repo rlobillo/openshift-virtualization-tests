@@ -5,7 +5,7 @@ VM with sidecar
 import shlex
 
 import pytest
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 

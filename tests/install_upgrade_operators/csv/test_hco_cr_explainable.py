@@ -1,7 +1,7 @@
 import shlex
 
 import pytest
-from ocp_utilities.utils import run_command
+from pyhelper_utils.shell import run_command
 
 
 pytestmark = pytest.mark.sno

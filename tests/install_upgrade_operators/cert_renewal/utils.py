@@ -8,7 +8,7 @@ from ocp_resources.resource import NamespacedResource
 from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import cluster_resource
-from ocp_utilities.utils import run_command
+from pyhelper_utils.shell import run_command
 
 from utilities.constants import TIMEOUT_2MIN, TIMEOUT_10MIN, TIMEOUT_20SEC
 

@@ -35,7 +35,7 @@ from ocp_resources.virtual_machine_instance_migration import (
 )
 from ocp_utilities.exceptions import CommandExecFailed
 from ocp_utilities.infra import get_client
-from ocp_utilities.utils import run_command
+from pyhelper_utils.shell import run_command
 from pytest_testconfig import config as py_config
 from rrmngmnt import Host, ssh, user
 
