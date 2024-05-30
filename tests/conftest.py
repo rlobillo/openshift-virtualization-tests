@@ -19,6 +19,7 @@ from subprocess import PIPE, CalledProcessError, Popen, check_output
 import bcrypt
 import kubernetes
 import packaging.version
+import paramiko
 import pytest
 from ocp_resources.catalog_source import CatalogSource
 from ocp_resources.cdi import CDI
@@ -67,6 +68,7 @@ from utilities.constants import (
     AUDIT_LOGS_PATH,
     CDI_KUBEVIRT_HYPERCONVERGED,
     CNV_TEST_SERVICE_ACCOUNT,
+    CNV_VM_SSH_KEY_PATH,
     CPU_MODEL_LABEL_PREFIX,
     DEFAULT_HCO_CONDITIONS,
     EUS_ERROR_CODE,
@@ -2451,8 +2453,26 @@ def autouse_fixtures(
     admin_client,
     cluster_sanity_scope_session,
     cluster_sanity_scope_module,
+    generated_ssh_key_for_vm_access,
 ):
     """call all autouse fixtures"""
+
+
+@pytest.fixture(scope="session")
+def ssh_key_tmpdir_scope_session(tmpdir_factory):
+    yield tmpdir_factory.mktemp("vm-ssh-key-folder")
+
+
+@pytest.fixture(scope="session")
+def generated_ssh_key_for_vm_access(ssh_key_tmpdir_scope_session):
+    key_generated = paramiko.RSAKey.generate(bits=2048)
+    vm_ssh_key_file = os.path.join(ssh_key_tmpdir_scope_session, "vm_ssh_key.key")
+    os.environ[CNV_VM_SSH_KEY_PATH] = vm_ssh_key_file
+    key_generated.write_private_key_file(filename=vm_ssh_key_file)
+    yield
+    if os.path.isfile(vm_ssh_key_file):
+        os.unlink(vm_ssh_key_file)
+    del os.environ[CNV_VM_SSH_KEY_PATH]
 
 
 @pytest.fixture(scope="session")

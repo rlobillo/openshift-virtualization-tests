@@ -2,6 +2,8 @@
 Test VM with static key injection.
 """
 
+import os
+
 import pytest
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.secret import Secret
@@ -11,7 +13,7 @@ from pytest_testconfig import config as py_config
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_OS
 from utilities.constants import (
     CLOUND_INIT_CONFIG_DRIVE,
-    CNV_SSH_KEY_PATH,
+    CNV_VM_SSH_KEY_PATH,
     OS_FLAVOR_RHEL,
 )
 from utilities.infra import authorized_key, base64_encode_str
@@ -28,7 +30,7 @@ def ssh_secret(namespace):
         namespace=namespace.name,
         data_dict={
             "id_rsa.pub": base64_encode_str(
-                text=authorized_key(private_key_path=CNV_SSH_KEY_PATH)
+                text=authorized_key(private_key_path=os.environ[CNV_VM_SSH_KEY_PATH])
             )
         },
     ) as secret:

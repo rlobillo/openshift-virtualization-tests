@@ -1,5 +1,3 @@
-import os
-
 from ocp_resources.cdi import CDI
 from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.kubevirt import KubeVirt
@@ -284,7 +282,7 @@ KMP_ENABLED_LABEL = "allocate"
 KMP_DISABLED_LABEL = "ignore"
 
 # SSH constants
-CNV_SSH_KEY_PATH = os.path.join(os.getcwd(), "utilities/cnv-qe-jenkins.key")
+CNV_VM_SSH_KEY_PATH = "CNV-SSH-KEY-PATH"
 
 # CPU ARCH
 INTEL = "Intel"

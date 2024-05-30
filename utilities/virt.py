@@ -45,7 +45,7 @@ from utilities.constants import (
     CLOUD_INIT_DISK_NAME,
     CLOUD_INIT_NO_CLOUD,
     CLOUND_INIT_CONFIG_DRIVE,
-    CNV_SSH_KEY_PATH,
+    CNV_VM_SSH_KEY_PATH,
     DATA_SOURCE_NAME,
     DATA_SOURCE_NAMESPACE,
     DEFAULT_KUBEVIRT_CONDITIONS,
@@ -773,7 +773,7 @@ class VirtualMachineForTests(VirtualMachine):
 
         # Add RSA to authorized_keys to enable login using an SSH key
         authorized_key = utilities.infra.authorized_key(
-            private_key_path=CNV_SSH_KEY_PATH
+            private_key_path=os.environ[CNV_VM_SSH_KEY_PATH]
         )
         cloud_init_user_data += f"\nssh_authorized_keys:\n [{authorized_key}]"
 
@@ -1036,7 +1036,7 @@ class VirtualMachineForTests(VirtualMachine):
         self.password = self.password or login_params["password"]
 
         LOGGER.info(
-            f"Username: {self.username}, password: {self.password}, SSH key: {CNV_SSH_KEY_PATH}\n"
+            f"Username: {self.username}, password: {self.password}, SSH key: {os.environ[CNV_VM_SSH_KEY_PATH]}\n"
             f"SSH command: ssh -o 'ProxyCommand={self.virtctl_port_forward_cmd}' {self.username}@{self.name}"
         )
         host = Host(hostname=self.name)
@@ -1046,7 +1046,7 @@ class VirtualMachineForTests(VirtualMachine):
             host_user = user.User(name=self.username, password=self.password)
         else:
             host_user = user.UserWithPKey(
-                name=self.username, private_key=CNV_SSH_KEY_PATH
+                name=self.username, private_key=os.environ[CNV_VM_SSH_KEY_PATH]
             )
         host.executor_user = host_user
         host.executor_factory = ssh.RemoteExecutorFactory(
