@@ -294,7 +294,7 @@ UNPRIVILEGED_PASSWORD = "unprivileged-password"
 
 # Red Hat Subscription Manager credentials.
 RHSM_USER = "cnv-qe-automation-stage"
-RHSM_PASSWD = "redhatredhat"
+RHSM_PASSWD = "Cnvqe@hybridcloud9"
 
 # KUBECONFIG variables
 KUBECONFIG = "KUBECONFIG"
