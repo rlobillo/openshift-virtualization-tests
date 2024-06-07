@@ -661,17 +661,16 @@ def get_build_info_by_version(version, errata_status="true"):
 
 
 def get_iib_images_of_cnv_versions(versions, errata_status="true"):
-    base_image_url = f"{BREW_REGISTERY_SOURCE}/rh-osbs/iib:"
+    base_image_url = f"{BREW_REGISTERY_SOURCE}/rh-osbs/iib"
     version_images = {}
     for version in versions:
         build_info = get_build_info_by_version(
             version=version, errata_status=errata_status
         )
         LOGGER.info(f"Build info for version {version}: {build_info}")
-        version_images[version] = (
-            base_image_url + build_info["successful_builds"][0]["iib"]
-        )
-
+        iib = build_info["successful_builds"][0]["iib"]
+        iib_suffix = "-pub" if iib.startswith("v") else ""
+        version_images[version] = f"{base_image_url}{iib_suffix}:{iib}"
     return version_images
 
 
