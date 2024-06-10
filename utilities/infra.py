@@ -34,7 +34,7 @@ from ocp_resources.node import Node
 from ocp_resources.package_manifest import PackageManifest
 from ocp_resources.pod import Pod
 from ocp_resources.project import Project, ProjectRequest
-from ocp_resources.resource import ResourceEditor
+from ocp_resources.resource import ResourceEditor, get_client
 from ocp_resources.secret import Secret
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
@@ -43,7 +43,6 @@ from ocp_utilities.infra import (
     assert_nodes_in_healthy_condition,
     assert_nodes_schedulable,
     cluster_resource,
-    get_client,
 )
 from ocp_utilities.utils import run_command
 from ocp_wrapper_data_collector.data_collector import (

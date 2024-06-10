@@ -21,7 +21,7 @@ from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.node import Node
 from ocp_resources.pod import Pod
 from ocp_resources.pod_disruption_budget import PodDisruptionBudget
-from ocp_resources.resource import Resource, ResourceEditor
+from ocp_resources.resource import Resource, ResourceEditor, get_client
 from ocp_resources.route import Route
 from ocp_resources.secret import Secret
 from ocp_resources.service import Service
@@ -34,7 +34,6 @@ from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
 from ocp_utilities.exceptions import CommandExecFailed
-from ocp_utilities.infra import get_client
 from ocp_utilities.utils import run_command
 from pytest_testconfig import config as py_config
 from rrmngmnt import Host, ssh, user
