@@ -10,13 +10,13 @@ from ocp_resources.cluster_version import ClusterVersion
 from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_utilities.utils import run_command
 from ocp_wrapper_data_collector.data_collector import (
     collect_resources_yaml_instance,
     write_to_file,
 )
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from packaging.version import Version
+from pyhelper_utils.shell import run_command
 from pytest_testconfig import py_config
 from requests import HTTPError, Timeout, TooManyRedirects
 

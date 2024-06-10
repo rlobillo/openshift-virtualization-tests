@@ -3,7 +3,7 @@ import re
 
 import pytest
 from ocp_resources.route import Route
-from ocp_utilities.utils import run_command
+from pyhelper_utils.shell import run_command
 
 from utilities.constants import (
     HYPERCONVERGED_CLUSTER_CLI_DOWNLOAD,
