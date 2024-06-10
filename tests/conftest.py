@@ -42,7 +42,7 @@ from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.oauth import OAuth
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
-from ocp_resources.resource import Resource, ResourceEditor
+from ocp_resources.resource import Resource, ResourceEditor, get_client
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.secret import Secret
 from ocp_resources.service_account import ServiceAccount
@@ -50,7 +50,6 @@ from ocp_resources.sriov_network_node_state import SriovNetworkNodeState
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_utilities.infra import get_client
 from openshift.dynamic import DynamicClient
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from packaging.version import Version

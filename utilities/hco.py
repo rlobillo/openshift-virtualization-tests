@@ -7,9 +7,8 @@ from ocp_resources.hyperconverged import HyperConverged
 from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.namespace import Namespace
 from ocp_resources.network_addons_config import NetworkAddonsConfig
-from ocp_resources.resource import Resource, ResourceEditor
+from ocp_resources.resource import Resource, ResourceEditor, get_client
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_utilities.infra import get_client
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import py_config
 

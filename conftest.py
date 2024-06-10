@@ -27,6 +27,7 @@ from ocp_resources.persistent_volume import PersistentVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
 from ocp_resources.pod_disruption_budget import PodDisruptionBudget
+from ocp_resources.resource import get_client
 from ocp_resources.service import Service
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.virtual_machine import VirtualMachine
@@ -38,7 +39,7 @@ from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from ocp_resources.volume_snapshot import VolumeSnapshot
 from ocp_resources.volume_snapshot_class import VolumeSnapshotClass
-from ocp_utilities.infra import cluster_resource, get_client
+from ocp_utilities.infra import cluster_resource
 from ocp_wrapper_data_collector.data_collector import (
     collect_pods_data,
     collect_resources_yaml_instance,

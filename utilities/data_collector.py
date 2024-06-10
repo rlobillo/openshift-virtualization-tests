@@ -8,7 +8,8 @@ from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.node import Node
 from ocp_resources.pod import Pod
-from ocp_utilities.infra import cluster_resource, get_client
+from ocp_resources.resource import get_client
+from ocp_utilities.infra import cluster_resource
 from ocp_wrapper_data_collector.data_collector import (
     collect_pods_data,
     collect_resources_yaml_instance,

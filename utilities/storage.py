@@ -17,11 +17,11 @@ from ocp_resources.datavolume import DataVolume
 from ocp_resources.deployment import Deployment
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.pod import Pod
-from ocp_resources.resource import NamespacedResource, ResourceEditor
+from ocp_resources.resource import NamespacedResource, ResourceEditor, get_client
 from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.volume_snapshot_class import VolumeSnapshotClass
-from ocp_utilities.infra import cluster_resource, get_client
+from ocp_utilities.infra import cluster_resource
 from openshift.dynamic.exceptions import NotFoundError
 from pyhelper_utils.shell import run_ssh_commands
 from pytest_testconfig import config as py_config

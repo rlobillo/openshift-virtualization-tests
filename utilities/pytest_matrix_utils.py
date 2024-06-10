@@ -4,10 +4,10 @@ def foo_matrix(matrix):
     <customize matrix code>
     return matrix
 """
+from ocp_resources.resource import get_client
 from ocp_resources.storage_class import StorageClass
-from ocp_utilities.infra import get_client
+from ocp_utilities.infra import cluster_resource
 
-from utilities.infra import cluster_resource
 from utilities.storage import is_snapshot_supported_by_sc
 
 
