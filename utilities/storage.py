@@ -22,8 +22,8 @@ from ocp_resources.storage_class import StorageClass
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.volume_snapshot_class import VolumeSnapshotClass
 from ocp_utilities.infra import cluster_resource
-from ocp_utilities.utils import run_ssh_commands
 from openshift.dynamic.exceptions import NotFoundError
+from pyhelper_utils.shell import run_ssh_commands
 from pytest_testconfig import config as py_config
 
 import utilities.infra

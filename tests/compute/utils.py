@@ -6,7 +6,7 @@ from ocp_resources.pod_disruption_budget import PodDisruptionBudget
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from tests.compute.contants import DISK_SERIAL, RHSM_SECRET_NAME
 from tests.compute.virt.constants import VIRT_PROCESS_MEMORY_LIMITS

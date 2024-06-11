@@ -3,7 +3,7 @@ import re
 import shlex
 
 import xmltodict
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from utilities.infra import ExecCommandOnPod
 

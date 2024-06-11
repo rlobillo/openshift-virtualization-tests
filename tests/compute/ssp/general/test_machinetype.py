@@ -4,8 +4,8 @@ import re
 import shlex
 
 import pytest
-from ocp_utilities.utils import run_ssh_commands
 from openshift.dynamic.exceptions import UnprocessibleEntityError
+from pyhelper_utils.shell import run_ssh_commands
 from pytest_testconfig import py_config
 
 from tests.compute.ssp.constants import MachineTypesNames

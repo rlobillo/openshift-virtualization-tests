@@ -9,7 +9,7 @@ from ocp_resources.pod import Pod
 from ocp_resources.resource import Resource
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from utilities.constants import (
     TIMEOUT_1MIN,

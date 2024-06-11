@@ -3,7 +3,7 @@ import shlex
 from contextlib import contextmanager
 
 from ocp_resources.utils import TimeoutExpiredError
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from tests.compute.utils import (
     fetch_pid_from_linux_vm,

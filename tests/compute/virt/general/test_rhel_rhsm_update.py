@@ -12,7 +12,7 @@ import logging
 import shlex
 
 import pytest
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 from pytest_testconfig import config as py_config
 
 from tests.compute.utils import (

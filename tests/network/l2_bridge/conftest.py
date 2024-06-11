@@ -3,7 +3,7 @@ import shlex
 from ipaddress import ip_interface
 
 import pytest
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from tests.network.constants import DHCP_IP_RANGE_END, DHCP_IP_RANGE_START
 from tests.network.utils import (

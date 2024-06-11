@@ -16,7 +16,7 @@ from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from ocp_utilities.infra import cluster_resource
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from tests.storage import utils
 from tests.storage.utils import create_cirros_dv

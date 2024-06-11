@@ -8,8 +8,8 @@ from xml.etree import ElementTree
 import bitmath
 from ocp_resources import pod
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_utilities.utils import run_ssh_commands
 from packaging import version
+from pyhelper_utils.shell import run_ssh_commands
 
 from tests.compute.ssp.constants import HYPERV_FEATURES_LABELS_DOM_XML
 from tests.compute.ssp.supported_os.utils import get_linux_guest_agent_version

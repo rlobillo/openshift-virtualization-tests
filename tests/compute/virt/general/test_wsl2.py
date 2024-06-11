@@ -11,7 +11,7 @@ import shlex
 import pytest
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutSampler
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 from pytest_testconfig import config as py_config
 
 from utilities.constants import INTEL, TCP_TIMEOUT_30SEC, TIMEOUT_1MIN, Images

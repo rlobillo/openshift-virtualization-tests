@@ -17,7 +17,7 @@ from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
 from ocp_utilities.must_gather import run_must_gather
-from ocp_utilities.utils import run_command
+from pyhelper_utils.shell import run_command
 
 from tests.os_params import (
     FEDORA_LATEST,

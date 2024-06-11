@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import xmltodict
 from ocp_utilities.infra import cluster_resource
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from utilities.constants import Images
 from utilities.virt import VirtualMachineForTests, running_vm

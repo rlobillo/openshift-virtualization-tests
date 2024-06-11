@@ -21,9 +21,9 @@ from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.subscription import Subscription
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import cluster_resource
-from ocp_utilities.utils import run_command
 from ocp_wrapper_data_collector.data_collector import collect_resources_yaml_instance
 from openshift.dynamic.exceptions import ResourceNotFoundError
+from pyhelper_utils.shell import run_command
 from pytest_testconfig import config as py_config
 
 import utilities.infra

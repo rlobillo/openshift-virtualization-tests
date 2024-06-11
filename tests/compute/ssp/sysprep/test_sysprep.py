@@ -10,7 +10,7 @@ from ocp_resources.secret import Secret
 from ocp_resources.template import Template
 from ocp_resources.utils import TimeoutSampler
 from ocp_utilities.infra import cluster_resource
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 from pytest_testconfig import py_config
 
 from tests.os_params import WINDOWS_2019, WINDOWS_2019_OS, WINDOWS_2019_TEMPLATE_LABELS

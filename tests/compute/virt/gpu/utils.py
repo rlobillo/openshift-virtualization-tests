@@ -1,6 +1,6 @@
 import shlex
 
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from utilities.constants import (
     GPU_DEVICE_ID,

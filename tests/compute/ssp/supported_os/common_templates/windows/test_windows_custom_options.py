@@ -7,7 +7,7 @@ from ocp_resources.virtual_machine_instance_migration import (
     VirtualMachineInstanceMigration,
 )
 from ocp_utilities.infra import cluster_resource
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 from pytest_testconfig import py_config
 
 from tests.compute.ssp.constants import VIRTIO

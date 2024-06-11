@@ -6,7 +6,7 @@ from collections import OrderedDict
 import pytest
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutSampler
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from utilities.constants import LINUX_BRIDGE, TIMEOUT_30SEC
 from utilities.infra import cluster_resource, name_prefix

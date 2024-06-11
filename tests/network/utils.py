@@ -8,7 +8,7 @@ from ocp_resources.node_network_state import NodeNetworkState
 from ocp_resources.service import Service
 from ocp_resources.service_mesh_member_roll import ServiceMeshMemberRoll
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from tests.network.constants import BRCNV, SERVICE_MESH_PORT
 from utilities import console

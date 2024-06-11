@@ -9,7 +9,7 @@ import xmltodict
 from ocp_resources.node import Node
 from ocp_resources.sriov_network_node_policy import SriovNetworkNodePolicy
 from ocp_resources.template import Template
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from tests.compute.ssp.constants import VIRTIO
 from tests.compute.ssp.high_performance_vm.utils import (

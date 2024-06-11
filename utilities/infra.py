@@ -44,12 +44,12 @@ from ocp_utilities.infra import (
     assert_nodes_schedulable,
     cluster_resource,
 )
-from ocp_utilities.utils import run_command
 from ocp_wrapper_data_collector.data_collector import (
     collect_resources_yaml_instance,
     write_to_file,
 )
 from openshift.dynamic.exceptions import NotFoundError, ResourceNotFoundError
+from pyhelper_utils.shell import run_command
 from pytest_testconfig import config as py_config
 
 import utilities.virt

@@ -10,7 +10,7 @@ import shlex
 import pytest
 from ocp_resources.service import Service
 from ocp_resources.utils import TimeoutSampler
-from ocp_utilities.utils import run_ssh_commands
+from pyhelper_utils.shell import run_ssh_commands
 
 from tests.network.utils import (
     assert_ssh_alive,
