@@ -1,5 +1,2 @@
-python-bugzilla
 GitPython
-git+https://github.com/RedHatQE/pylero.git
 jira
-pygerrit2
