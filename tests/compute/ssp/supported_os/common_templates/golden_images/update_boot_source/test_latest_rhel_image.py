@@ -16,6 +16,12 @@ from utilities.virt import VirtualMachineForTests, running_vm
 LOGGER = logging.getLogger(__name__)
 
 
+def sorted_keys_for_minor_version(s):
+    sub_strings = re.split(r"(\d+)", str(s))
+    sub_strings = [int(c) if c.isdigit() else c for c in sub_strings]
+    return sub_strings
+
+
 @pytest.fixture()
 def rhel_vm(request, unprivileged_client, namespace):
     with cluster_resource(VirtualMachineForTests)(
@@ -38,9 +44,12 @@ def libosinfo_rhel_minor_ver_num(request, downloaded_latest_libosinfo_db):
 
     list_of_rhel_os_files = list(
         sorted(
-            Path(osinfo_file_folder_path).glob(f"{rhel_version}.*.xml"), reverse=True
+            Path(osinfo_file_folder_path).glob(f"{rhel_version}.*.xml"),
+            key=sorted_keys_for_minor_version,
+            reverse=True,
         )
     )
+
     for file_path in list_of_rhel_os_files:
         with open(file_path) as file:
             parsed_xml = xmltodict.parse(file.read())["libosinfo"]["os"]
