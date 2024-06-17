@@ -45,7 +45,6 @@ def cnv_tuning_vm(
         client=unprivileged_client,
         body=fedora_vm_body(name=name),
         node_selector=worker_node1.hostname,
-        ssh=False,
         cloud_init_data=compose_cloud_init_data_dict(
             network_data=network_data_data,
         ),
@@ -55,4 +54,4 @@ def cnv_tuning_vm(
 
 @pytest.mark.polarion("CNV-7287")
 def test_vm_cnv_tuning_regression(cnv_tuning_vm):
-    running_vm(vm=cnv_tuning_vm, check_ssh_connectivity=False)
+    running_vm(vm=cnv_tuning_vm, wait_for_cloud_init=True)

@@ -191,12 +191,12 @@ def brcnv_vm_for_migration(
 
 @pytest.fixture(scope="module")
 def running_vma(vma):
-    return running_vm(vm=vma)
+    return running_vm(vm=vma, wait_for_cloud_init=True)
 
 
 @pytest.fixture(scope="module")
 def running_vmb(vmb):
-    return running_vm(vm=vmb)
+    return running_vm(vm=vmb, wait_for_cloud_init=True)
 
 
 @pytest.fixture()

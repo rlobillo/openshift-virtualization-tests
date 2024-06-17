@@ -172,12 +172,12 @@ def ovs_linux_bond_bridge_attached_vmb(
 
 @pytest.fixture(scope="class")
 def ovs_linux_bond_bridge_attached_running_vma(ovs_linux_bond_bridge_attached_vma):
-    return running_vm(vm=ovs_linux_bond_bridge_attached_vma)
+    return running_vm(vm=ovs_linux_bond_bridge_attached_vma, wait_for_cloud_init=True)
 
 
 @pytest.fixture(scope="class")
 def ovs_linux_bond_bridge_attached_running_vmb(ovs_linux_bond_bridge_attached_vmb):
-    return running_vm(vm=ovs_linux_bond_bridge_attached_vmb)
+    return running_vm(vm=ovs_linux_bond_bridge_attached_vmb, wait_for_cloud_init=True)
 
 
 class TestBondConnectivity:

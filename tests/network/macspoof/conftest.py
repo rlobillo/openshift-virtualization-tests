@@ -162,12 +162,12 @@ def linux_bridge_attached_vmb(
 
 @pytest.fixture(scope="class")
 def linux_bridge_attached_running_vma(linux_bridge_attached_vma):
-    return running_vm(vm=linux_bridge_attached_vma)
+    return running_vm(vm=linux_bridge_attached_vma, wait_for_cloud_init=True)
 
 
 @pytest.fixture(scope="class")
 def linux_bridge_attached_running_vmb(linux_bridge_attached_vmb):
-    return running_vm(vm=linux_bridge_attached_vmb)
+    return running_vm(vm=linux_bridge_attached_vmb, wait_for_cloud_init=True)
 
 
 @pytest.fixture(scope="class")
@@ -226,4 +226,4 @@ def vms_without_mac_spoof(
         vm.start(wait=True)
 
     for vm in stopped_vms:
-        running_vm(vm=vm)
+        running_vm(vm=vm, wait_for_cloud_init=True)
