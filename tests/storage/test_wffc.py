@@ -87,9 +87,7 @@ def get_dv_template_dict(dv_name, storage_class):
                 "resources": {"requests": {"storage": Images.Cirros.DEFAULT_DV_SIZE}},
                 "storageClassName": storage_class,
             },
-            "source": {
-                "http": {"url": f"{get_images_server_url(schema='http')}{REMOTE_PATH}"}
-            },
+            "source": {"http": {"url": f"{get_images_server_url()}{REMOTE_PATH}"}},
         },
     }
 

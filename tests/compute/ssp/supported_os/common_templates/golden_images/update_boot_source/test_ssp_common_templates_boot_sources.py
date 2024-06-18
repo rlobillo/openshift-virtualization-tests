@@ -19,6 +19,11 @@ from tests.compute.ssp.supported_os.common_templates.utils import (
     validate_os_info_vmi_vs_linux_os,
 )
 from utilities.constants import OS_FLAVOR_RHEL, TIMEOUT_5MIN, Images
+from utilities.infra import (
+    cleanup_artifactory_secret_and_config_map,
+    get_artifactory_config_map,
+    get_artifactory_secret,
+)
 from utilities.virt import running_vm
 
 
@@ -134,11 +139,17 @@ def opted_out_rhel9_data_source(rhel9_data_source):
 def rhel9_dv(
     admin_client, golden_images_namespace, rhel9_data_source, rhel9_http_image_url
 ):
+    artifactory_secret = get_artifactory_secret(namespace=golden_images_namespace.name)
+    artifactory_config_map = get_artifactory_config_map(
+        namespace=golden_images_namespace.name
+    )
     with cluster_resource(DataVolume)(
         client=admin_client,
         name=rhel9_data_source.instance.spec.source.pvc.name,
         namespace=golden_images_namespace.name,
         url=rhel9_http_image_url,
+        secret=artifactory_secret,
+        cert_configmap=artifactory_config_map.name,
         source="http",
         size=Images.Rhel.DEFAULT_DV_SIZE,
         storage_class=py_config["default_storage_class"],
@@ -147,6 +158,10 @@ def rhel9_dv(
     ) as dv:
         dv.wait_for_dv_success()
         yield dv
+    cleanup_artifactory_secret_and_config_map(
+        artifactory_secret=artifactory_secret,
+        artifactory_config_map=artifactory_config_map,
+    )
 
 
 @pytest.mark.polarion("CNV-7586")

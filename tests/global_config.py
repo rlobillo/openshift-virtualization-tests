@@ -14,6 +14,7 @@ from utilities.constants import (
     ALL_CNV_DEPLOYMENTS,
     ALL_CNV_PODS,
     ALL_HCO_RELATED_OBJECTS,
+    BASE_ARTIFACTORY_LOCATION,
     BREW_REGISTERY_SOURCE,
     HCO_CATALOG_SOURCE,
     INTEL,
@@ -69,9 +70,7 @@ windows_password = "Heslo123"
 
 server_url = ""  # Send --tc=server_url:<url> to override servers URL
 servers = {
-    "http_server": "http://{server}/files/",
-    "https_server": "https://{server}/files/",
-    "http_server_auth": "http://{server}/files/mod-auth-basic/",
+    "https_server": "https://{server}" f"/{BASE_ARTIFACTORY_LOCATION}/",
     "registry_server": "docker://{server}",
 }
 

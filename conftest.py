@@ -58,8 +58,8 @@ from utilities.pytest_utils import (
     config_default_storage_class,
     deploy_run_in_progress_config_map,
     deploy_run_in_progress_namespace,
+    get_artifactory_server_url,
     get_base_matrix_name,
-    get_cnv_qe_server_url,
     get_matrix_params,
     reorder_early_fixtures,
     run_in_progress_config_map,
@@ -698,14 +698,13 @@ def pytest_sessionstart(session):
     # Set py_config["servers"]
     # Send --tc=server_url:<url> to override servers URL
     if not skip_if_pytest_flags_exists(pytest_config=session.config):
-        py_config["server_url"] = py_config["server_url"] or get_cnv_qe_server_url(
+        py_config["server_url"] = py_config["server_url"] or get_artifactory_server_url(
             cluster_host_url=get_client().configuration.host
         )
         py_config["servers"] = {
             name: _server.format(server=py_config["server_url"])
             for name, _server in py_config["servers"].items()
         }
-
     # must be at the end to make sure we create it only after all pytest_sessionstart checks pass.
     if not skip_if_pytest_flags_exists(pytest_config=session.config):
         stop_if_run_in_progress()

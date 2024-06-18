@@ -21,7 +21,12 @@ from tests.compute.ssp.supported_os.common_templates.golden_images.update_boot_s
 from tests.compute.ssp.utils import get_parameters_from_template
 from utilities.constants import DATA_SOURCE_NAME, TIMEOUT_5MIN, TIMEOUT_10MIN, Images
 from utilities.exceptions import ResourceValueError
-from utilities.infra import get_http_image_url
+from utilities.infra import (
+    cleanup_artifactory_secret_and_config_map,
+    get_artifactory_config_map,
+    get_artifactory_secret,
+    get_http_image_url,
+)
 from utilities.ssp import wait_for_condition_message_value
 
 
@@ -39,6 +44,8 @@ pytestmark = pytest.mark.post_upgrade
 
 
 def dv_for_data_source(name, data_source, admin_client):
+    artifactory_secret = get_artifactory_secret(namespace=data_source.namespace)
+    artifactory_config_map = get_artifactory_config_map(namespace=data_source.namespace)
     with cluster_resource(DataVolume)(
         client=admin_client,
         name=name,
@@ -48,6 +55,8 @@ def dv_for_data_source(name, data_source, admin_client):
             image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
         ),
         source="http",
+        secret=artifactory_secret,
+        cert_configmap=artifactory_config_map.name,
         size=Images.Cirros.DEFAULT_DV_SIZE,
         storage_class=py_config["default_storage_class"],
         bind_immediate_annotation=True,
@@ -59,6 +68,10 @@ def dv_for_data_source(name, data_source, admin_client):
             expected_message=DATA_SOURCE_READY_FOR_CONSUMPTION_MESSAGE,
         )
         yield dv
+    cleanup_artifactory_secret_and_config_map(
+        artifactory_secret=artifactory_secret,
+        artifactory_config_map=artifactory_config_map,
+    )
 
 
 def opt_in_status_str(opt_in):

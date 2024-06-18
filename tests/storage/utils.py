@@ -31,7 +31,14 @@ from utilities.constants import (
     Images,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import cluster_resource, get_http_image_url, get_pod_by_name_prefix
+from utilities.infra import (
+    cleanup_artifactory_secret_and_config_map,
+    cluster_resource,
+    get_artifactory_config_map,
+    get_artifactory_secret,
+    get_http_image_url,
+    get_pod_by_name_prefix,
+)
 from utilities.ssp import validate_os_info_vmi_vs_windows_os
 from utilities.storage import (
     create_dv,
@@ -436,6 +443,8 @@ def get_hpp_daemonset(hco_namespace, hpp_cr_suffix):
 
 @contextmanager
 def create_windows19_vm(dv_name, namespace, client, vm_name, cpu_model, storage_class):
+    artifactory_secret = get_artifactory_secret(namespace=namespace)
+    artifactory_config_map = get_artifactory_config_map(namespace=namespace)
     dv = cluster_resource(DataVolume)(
         name=dv_name,
         namespace=namespace,
@@ -447,6 +456,8 @@ def create_windows19_vm(dv_name, namespace, client, vm_name, cpu_model, storage_
         size=Images.Windows.DEFAULT_DV_SIZE,
         client=client,
         api_name="storage",
+        secret=artifactory_secret,
+        cert_configmap=artifactory_config_map.name,
     )
     dv.to_dict()
     with cluster_resource(VirtualMachineForTestsFromTemplate)(
@@ -461,6 +472,10 @@ def create_windows19_vm(dv_name, namespace, client, vm_name, cpu_model, storage_
     ) as vm:
         running_vm(vm=vm)
         yield vm
+    cleanup_artifactory_secret_and_config_map(
+        artifactory_secret=artifactory_secret,
+        artifactory_config_map=artifactory_config_map,
+    )
 
 
 @contextmanager
@@ -542,3 +557,29 @@ def check_snapshot_indication(snapshot, is_online):
         assert (
             not snapshot_indications
         ), f"Snapshot should not have indications, current indications: {snapshot_indications}"
+
+
+def wait_for_processes_exit_successfully(processes, timeout):
+    try:
+        for process in processes:
+            process.join(timeout)
+            if process.exception:
+                raise process.exception
+            assert process.exitcode == 0, "The object wasn't created in the given time"
+    except Exception as e:
+        LOGGER.error(f"failed with the exception - {e}")
+        raise
+
+
+def clean_up_multiprocess(processes, object_list):
+    # deleting objects and closing processes
+    for obj in object_list:
+        obj.clean_up()
+    for process in processes:
+        try:
+            if process.is_alive():
+                process.kill()
+        except Exception as e:
+            print(f"Error killing process {process}: {e}")
+        finally:
+            process.close()

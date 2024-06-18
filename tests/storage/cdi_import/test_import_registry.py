@@ -1,33 +1,37 @@
 import logging
-import multiprocessing
+import ssl
 
 import pytest
 from kubernetes.client.rest import ApiException
 from ocp_resources.cdi import CDI
+from ocp_resources.cdi_config import CDIConfig
 from ocp_resources.configmap import ConfigMap
 from ocp_resources.datavolume import DataVolume
-from ocp_resources.resource import ResourceEditor
-from ocp_resources.utils import TimeoutSampler
+from ocp_resources.resource import ResourceEditor, get_client
+from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import cluster_resource
-from pytest_testconfig import config as py_config
 
 import utilities.storage
 from tests.storage import utils
 from tests.storage.constants import REGISTRY_STR
 from tests.storage.utils import (
     check_disk_count_in_vm,
+    clean_up_multiprocess,
     create_vm_from_dv,
     get_importer_pod,
     wait_for_importer_container_message,
+    wait_for_processes_exit_successfully,
 )
 from utilities.constants import (
     OS_FLAVOR_CIRROS,
     TIMEOUT_1MIN,
+    TIMEOUT_1SEC,
     TIMEOUT_5MIN,
     TIMEOUT_10MIN,
     TIMEOUT_20SEC,
     Images,
 )
+from utilities.exceptions import ProcessWithException
 from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.ssp import wait_for_condition_message_value
 from utilities.storage import ErrorMsg, create_dv
@@ -43,31 +47,112 @@ QUAY_IMAGE = "docker://quay.io/kubevirt/cirros-registry-disk-demo"
 PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE = "cirros-registry-disk-demo:latest"
 PRIVATE_REGISTRY_CIRROS_RAW_IMAGE = "cirros.raw:latest"
 PRIVATE_REGISTRY_CIRROS_QCOW2_IMAGE = "cirros.qcow2:latest"
-REGISTRY_TLS_SELF_SIGNED_SERVER = py_config["servers"]["registry_server"]
 REGISTRY_CERT_NAME = f"{REGISTRY_STR}.crt"
 REGISTRY_HTTPS_PORT = 8443
 REGISTRY_HTTP_PORT = 5000
+INSECURE_REGISTRY_STR = "insecureRegistries"
+
+
+def wait_for_cdi_config_registry_updated(
+    cdi_config, registry_server, expected_present=True
+):
+    samples = TimeoutSampler(
+        wait_timeout=TIMEOUT_20SEC,
+        sleep=TIMEOUT_1SEC,
+        func=lambda: registry_server
+        in cdi_config.instance["spec"].get(INSECURE_REGISTRY_STR, []),
+    )
+    try:
+        for sample in samples:
+            if bool(expected_present) == bool(sample):
+                return
+    except TimeoutExpiredError:
+        LOGGER.error(
+            f"Expected:{expected_present}, actual CdiConfig.spec.{INSECURE_REGISTRY_STR} value: {sample}"
+        )
+        raise
+
+
+@pytest.fixture()
+def registry_config_map(namespace, registry_server_certificate):
+    with cluster_resource(ConfigMap)(
+        name=f"{REGISTRY_STR}-cert",
+        namespace=namespace.name,
+        data={"tlsregistry.crt": registry_server_certificate},
+    ) as configmap:
+        yield configmap
+
+
+@pytest.fixture(scope="session")
+def cluster_host_url():
+    return get_client().configuration.host
+
+
+@pytest.fixture(scope="session")
+def registry_server(cluster_host_url):
+    default_server = "cnv-qe-server.rhos-psi.cnv-qe.rhood.us"
+    ibm_server = f"cnv-qe-server.{cluster_host_url.replace('https://api.', '').replace(':6443', '')}"
+    rhood_server = "cnv-qe-server.cnv-qe.rhood.us"
+    servers = {
+        "rhos-psi.cnv-qe.rhood.us": default_server,
+        "ibmc.cnv-qe.rhood.us": ibm_server,
+        "ibmc-upi.cnv-qe.rhood.us": ibm_server,
+        "qe.azure.devcluster.openshift.com": rhood_server,
+        "cnv-ci.rhood.us": rhood_server,
+        "cnv-qe.rhood.us": rhood_server,
+        "lab.eng.tlv2.redhat.com": "cnv-qe-server.apps.cnv2.engineering.redhat.com",
+    }
+    matching_registry_server_url = default_server
+    for domain_key in servers:
+        if domain_key in cluster_host_url:
+            matching_registry_server_url = servers[domain_key]
+            break
+    LOGGER.info(f"Registry server url: {matching_registry_server_url}")
+    return matching_registry_server_url
+
+
+@pytest.fixture(scope="session")
+def registry_server_url(registry_server):
+    return f"docker://{registry_server}"
+
+
+@pytest.fixture(scope="session")
+def registry_server_certificate(registry_server):
+    yield ssl.get_server_certificate(addr=(registry_server, 443))
+
+
+@pytest.fixture()
+def cdi_config_scope_function():
+    cdi_config = CDIConfig(name="config")
+    assert cdi_config.instance is not None
+    return cdi_config
 
 
 @pytest.fixture()
 def insecure_registry(
-    request, hyperconverged_resource_scope_function, cdi_config, configmap_with_cert
+    request,
+    hyperconverged_resource_scope_function,
+    cdi_config_scope_function,
+    registry_server,
 ):
     """
     To disable TLS security for a registry
     """
-    registry_server = request.param["server"].replace("docker://", "")
-
+    updated_registry_server_url = (
+        f"{registry_server}:{request.param['server_port']}"
+        if request.param["server_port"]
+        else registry_server
+    )
     with ResourceEditorValidateHCOReconcile(
         patches={
             hyperconverged_resource_scope_function: {
                 "spec": {
                     "storageImport": {
-                        "insecureRegistries": [
-                            *cdi_config.instance.to_dict()
+                        INSECURE_REGISTRY_STR: [
+                            *cdi_config_scope_function.instance.to_dict()
                             .get("spec", {})
-                            .get("insecureRegistries", []),
-                            registry_server,
+                            .get(INSECURE_REGISTRY_STR, []),
+                            updated_registry_server_url,
                         ]
                     }
                 }
@@ -75,23 +160,25 @@ def insecure_registry(
         },
         list_resource_reconcile=[CDI],
     ):
-        for sample in TimeoutSampler(
-            wait_timeout=TIMEOUT_20SEC,
-            sleep=1,
-            func=lambda: registry_server
-            in cdi_config.instance["spec"].get("insecureRegistries", []),
-        ):
-            if sample:
-                break
+        wait_for_cdi_config_registry_updated(
+            cdi_config=cdi_config_scope_function,
+            registry_server=updated_registry_server_url,
+            expected_present=True,
+        )
         yield
+    wait_for_cdi_config_registry_updated(
+        cdi_config=cdi_config_scope_function,
+        registry_server=updated_registry_server_url,
+        expected_present=False,
+    )
 
 
 @pytest.fixture()
-def configmap_with_cert(namespace, https_server_certificate):
+def configmap_with_cert(namespace, registry_server_certificate):
     with cluster_resource(ConfigMap)(
         name=f"{REGISTRY_STR}-cm-cert",
         namespace=namespace.name,
-        data={REGISTRY_CERT_NAME: https_server_certificate},
+        data={REGISTRY_CERT_NAME: registry_server_certificate},
     ) as configmap:
         yield configmap
 
@@ -130,7 +217,7 @@ def update_configmap_with_cert(request, configmap_with_cert):
 def test_private_registry_cirros(
     skip_upstream,
     namespace,
-    images_private_registry_server,
+    registry_server_url,
     registry_config_map,
     file_name,
     storage_class_matrix__function__,
@@ -139,7 +226,7 @@ def test_private_registry_cirros(
         source=REGISTRY_STR,
         dv_name="import-private-registry-cirros-image",
         namespace=namespace.name,
-        url=f"{images_private_registry_server}:{REGISTRY_HTTPS_PORT}/{file_name}",
+        url=f"{registry_server_url}:{REGISTRY_HTTPS_PORT}/{file_name}",
         cert_configmap=registry_config_map.name,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
@@ -195,8 +282,8 @@ def test_public_registry_multiple_data_volume(
 ):
     dvs = []
     vms = []
-    dvs_processes = []
-    vms_processes = []
+    dvs_processes = {}
+    vms_processes = {}
     try:
         for dv in ("dv1", "dv2", "dv3"):
             rdv = DataVolume(
@@ -212,13 +299,14 @@ def test_public_registry_multiple_data_volume(
                 privileged_client=admin_client,
             )
 
-            dv_process = multiprocessing.Process(target=rdv.create)
+            dv_process = ProcessWithException(target=rdv.create)
             dv_process.start()
-            dvs_processes.append(dv_process)
+            dvs_processes[dv] = dv_process
             dvs.append(rdv)
 
-        for dvp in dvs_processes:
-            dvp.join()
+        wait_for_processes_exit_successfully(
+            processes=dvs_processes, timeout=TIMEOUT_10MIN
+        )
 
         for vm in [vm for vm in dvs]:
             rvm = cluster_resource(VirtualMachineForTests)(
@@ -232,26 +320,26 @@ def test_public_registry_multiple_data_volume(
             vms.append(rvm)
 
         for vm in vms:
-            vm_process = multiprocessing.Process(target=vm.start)
+            vm_process = ProcessWithException(target=vm.start)
             vm_process.start()
-            vms_processes.append(vm_process)
+            vms_processes[vm.name] = vm_process
 
-        for vmp in vms_processes:
-            vmp.join()
-
+        wait_for_processes_exit_successfully(
+            processes=vms_processes, timeout=TIMEOUT_5MIN
+        )
         for vm in vms:
             running_vm(vm=vm, wait_for_interfaces=False)
             check_disk_count_in_vm(vm=vm)
     finally:
-        for rcs in vms + dvs:
-            rcs.delete(wait=True)
+        clean_up_multiprocess(processes=vms_processes, object_list=vms)
+        clean_up_multiprocess(processes=dvs_processes, object_list=dvs)
 
 
 @pytest.mark.parametrize(
     "insecure_registry",
     [
         pytest.param(
-            {"server": f"{REGISTRY_TLS_SELF_SIGNED_SERVER}:{REGISTRY_HTTP_PORT}"},
+            {"server_port": REGISTRY_HTTP_PORT},
         ),
     ],
     indirect=True,
@@ -262,14 +350,14 @@ def test_private_registry_insecured_configmap(
     skip_upstream,
     insecure_registry,
     namespace,
-    images_private_registry_server,
+    registry_server_url,
     storage_class_matrix__function__,
 ):
     with utilities.storage.create_dv(
         source=REGISTRY_STR,
         dv_name="import-private-insecured-registry",
         namespace=namespace.name,
-        url=f"{images_private_registry_server}:{REGISTRY_HTTP_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+        url=f"{registry_server_url}:{REGISTRY_HTTP_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
         dv.wait_for_dv_success()
@@ -282,7 +370,7 @@ def test_private_registry_insecured_configmap(
 def test_private_registry_recover_after_missing_configmap(
     skip_upstream,
     namespace,
-    images_private_registry_server,
+    registry_server_url,
     registry_config_map,
     storage_class_matrix__function__,
 ):
@@ -291,7 +379,7 @@ def test_private_registry_recover_after_missing_configmap(
         source=REGISTRY_STR,
         dv_name="import-private-registry-with-no-configmap",
         namespace=namespace.name,
-        url=f"{images_private_registry_server}:{REGISTRY_HTTPS_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+        url=f"{registry_server_url}:{REGISTRY_HTTPS_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
@@ -306,7 +394,7 @@ def test_private_registry_with_untrusted_certificate(
     skip_upstream,
     admin_client,
     namespace,
-    images_private_registry_server,
+    registry_server_url,
     registry_config_map,
     storage_class_matrix__function__,
 ):
@@ -314,7 +402,7 @@ def test_private_registry_with_untrusted_certificate(
         source=REGISTRY_STR,
         dv_name="import-private-registry-with-untrusted-certificate",
         namespace=namespace.name,
-        url=f"{images_private_registry_server}:{REGISTRY_HTTPS_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+        url=f"{registry_server_url}:{REGISTRY_HTTPS_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=registry_config_map.name,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:
@@ -333,7 +421,7 @@ def test_private_registry_with_untrusted_certificate(
             source=REGISTRY_STR,
             dv_name="import-private-registry-no-certificate",
             namespace=namespace.name,
-            url=f"{images_private_registry_server}:{REGISTRY_HTTPS_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+            url=f"{registry_server_url}:{REGISTRY_HTTPS_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
             cert_configmap=registry_config_map.name,
             content_type="",
             storage_class=[*storage_class_matrix__function__][0],
@@ -477,7 +565,7 @@ def test_public_registry_data_volume_archive(
     "insecure_registry",
     [
         pytest.param(
-            {"server": f"{REGISTRY_TLS_SELF_SIGNED_SERVER}:{REGISTRY_HTTPS_PORT}"},
+            {"server_port": REGISTRY_HTTPS_PORT},
         ),
     ],
     indirect=True,
@@ -488,6 +576,7 @@ def test_fqdn_name(
     namespace,
     configmap_with_cert,
     insecure_registry,
+    registry_server_url,
     storage_class_matrix__function__,
 ):
     """
@@ -500,7 +589,7 @@ def test_fqdn_name(
         dv_name=f"cnv-2347-{storage_class}",
         namespace=namespace.name,
         # Substring of the FQDN name
-        url=f"{REGISTRY_TLS_SELF_SIGNED_SERVER[:22]}{REGISTRY_TLS_SELF_SIGNED_SERVER[30:]}:{REGISTRY_HTTPS_PORT}/"
+        url=f"{registry_server_url[:22]}{registry_server_url[30:]}:{REGISTRY_HTTPS_PORT}/"
         f"{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=configmap_with_cert.name,
         size=Images.Cirros.DEFAULT_DV_SIZE,
@@ -554,7 +643,7 @@ def test_inject_invalid_cert_to_configmap(
     configmap_with_cert,
     update_configmap_with_cert,
     namespace,
-    images_private_registry_server,
+    registry_server_url,
     storage_class_matrix__function__,
 ):
     """
@@ -564,7 +653,7 @@ def test_inject_invalid_cert_to_configmap(
         source=REGISTRY_STR,
         dv_name=dv_name,
         namespace=namespace.name,
-        url=f"{images_private_registry_server}:{REGISTRY_HTTPS_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
+        url=f"{registry_server_url}:{REGISTRY_HTTPS_PORT}/{PRIVATE_REGISTRY_CIRROS_DEMO_IMAGE}",
         cert_configmap=configmap_with_cert.name,
         size=Images.Cirros.DEFAULT_DV_SIZE,
         storage_class=[*storage_class_matrix__function__][0],

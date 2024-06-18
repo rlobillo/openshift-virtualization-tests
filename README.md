@@ -448,8 +448,9 @@ export IMAGE_TAG=<the image tag to use>              # default "latest"
 ```
 
 ### Running containerized tests examples
-
-For running tests you need to have HTTP server with images running and accessible from the cluster.
+For running tests you need to have access to artifactory server with images.
+Environment variables ARTIFACTORY_USER and ARTIFACTORY_TOKEN expected to be set up for local runs.
+For these credentials, please contact devops QE focal point via cnv-qe slack channel.
 
 Also need to create the folder which should contain `kubeconfig`, binaries `oc`, `virtctl` and __ssh key__ for access
 to nodes. This folder should be mounted to container during the run.

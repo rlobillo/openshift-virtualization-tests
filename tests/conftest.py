@@ -101,7 +101,10 @@ from utilities.constants import (
     StorageClassNames,
     UpgradeStreams,
 )
-from utilities.exceptions import CommonNodesCpusNotFoundError
+from utilities.exceptions import (
+    CommonNodesCpusNotFoundError,
+    MissingEnvironmentVariableError,
+)
 from utilities.infra import (
     ClusterHosts,
     ExecCommandOnPod,
@@ -2101,15 +2104,26 @@ def upgrade_br1test_nad(upgrade_namespace_scope_session, upgrade_bridge_on_all_n
 
 
 @pytest.fixture(scope="session")
-def dvs_for_upgrade(admin_client, worker_node1, rhel_latest_os_params):
+def dvs_for_upgrade(
+    admin_client, worker_node1, rhel_latest_os_params, golden_images_namespace_name
+):
+    golden_images_namespace_name = py_config["golden_images_namespace"]
     dvs_list = []
+    artifactory_secret = utilities.infra.get_artifactory_secret(
+        namespace=golden_images_namespace_name
+    )
+    artifactory_config_map = utilities.infra.get_artifactory_config_map(
+        namespace=golden_images_namespace_name
+    )
     for sc in py_config["storage_class_matrix"]:
         storage_class = [*sc][0]
         dv = DataVolume(
             client=admin_client,
             name=f"dv-for-product-upgrade-{storage_class}",
-            namespace=py_config["golden_images_namespace"],
+            namespace=golden_images_namespace_name,
             source="http",
+            secret=artifactory_secret,
+            cert_configmap=artifactory_config_map.name,
             storage_class=storage_class,
             volume_mode=sc[storage_class]["volume_mode"],
             access_modes=sc[storage_class]["access_mode"],
@@ -2130,6 +2144,10 @@ def dvs_for_upgrade(admin_client, worker_node1, rhel_latest_os_params):
 
     for dv in dvs_list:
         dv.clean_up()
+    utilities.infra.cleanup_artifactory_secret_and_config_map(
+        artifactory_secret=artifactory_secret,
+        artifactory_config_map=artifactory_config_map,
+    )
 
 
 @pytest.fixture(scope="session")
@@ -2218,7 +2236,7 @@ def rhel_latest_os_params():
     """
     latest_rhel_dict = py_config["latest_rhel_os_dict"]
     return {
-        "rhel_image_path": f"{get_images_server_url(schema='http')}{latest_rhel_dict['image_path']}",
+        "rhel_image_path": f"{get_images_server_url()}{latest_rhel_dict['image_path']}",
         "rhel_dv_size": latest_rhel_dict["dv_size"],
         "rhel_template_labels": latest_rhel_dict["template_labels"],
     }
@@ -2438,10 +2456,20 @@ def bin_directory_to_os_path(
     os.environ["PATH"] = f"{bin_directory}:{os_path_environment}"
 
 
+@pytest.fixture(scope="session")
+def artifactory_setup():
+    LOGGER.info("Checking for artifactory credentials:")
+    if not (os.environ.get("ARTIFACTORY_TOKEN") and os.environ.get("ARTIFACTORY_USER")):
+        raise MissingEnvironmentVariableError(
+            "Please set ARTIFACTORY_USER and ARTIFACTORY_TOKEN environment variables"
+        )
+
+
 @pytest.fixture(autouse=True)
 @pytest.mark.early(order=0)
 def autouse_fixtures(
     leftovers_cleanup,  # Must be called first to avoid delete created resources.
+    artifactory_setup,
     bin_directory_to_os_path,
     cluster_info,
     term_handler_scope_function,
