@@ -691,18 +691,6 @@ def data_volume_dict_modify_to_source_ref(dv, data_source):
     return dv.res
 
 
-def data_volume_template_with_source_ref_dict(data_source):
-    data_source_pvc_dict_spec = data_source.pvc.instance.to_dict()["spec"]
-    dv = cluster_resource(DataVolume)(
-        name=data_source.name,
-        namespace=data_source.namespace,
-        size=data_source_pvc_dict_spec["resources"]["requests"]["storage"],
-        storage_class=data_source_pvc_dict_spec["storageClassName"],
-        api_name="storage",
-    )
-    return data_volume_dict_modify_to_source_ref(dv=dv, data_source=data_source)
-
-
 def get_images_server_url(schema="https"):
     """
     Fetch http/s server url from config and return if available.

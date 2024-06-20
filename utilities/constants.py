@@ -108,6 +108,7 @@ PORT_80 = 80
 ACTIVE_BACKUP = "active-backup"
 
 #  Time constants
+TIMEOUT_1SEC = 1
 TIMEOUT_5SEC = 5
 TIMEOUT_10SEC = 10
 TIMEOUT_15SEC = 15
