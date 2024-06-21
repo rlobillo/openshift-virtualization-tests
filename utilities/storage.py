@@ -678,19 +678,6 @@ def data_volume_template_dict(
     return dv.res
 
 
-def data_volume_dict_modify_to_source_ref(dv, data_source):
-    dv.to_dict()
-    del dv.res["metadata"]["namespace"]
-    del dv.res["spec"]["source"]
-    del dv.res["spec"]["contentType"]
-    dv.res["spec"]["sourceRef"] = {
-        "kind": data_source.kind,
-        "name": data_source.name,
-        "namespace": data_source.namespace,
-    }
-    return dv.res
-
-
 def get_images_server_url(schema="https"):
     """
     Fetch http/s server url from config and return if available.

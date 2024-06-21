@@ -18,7 +18,7 @@ LOGGER = logging.getLogger(__name__)
 def hvinfo_binary_in_executor(tmpdir_factory):
     executor_hvinfo_dir = tmpdir_factory.mktemp("hvinfo")
     executor_hvinfo_path = os.path.join(executor_hvinfo_dir, "hvinfo.exe")
-    hvinfo_exe_url = f'{py_config["servers"]["http_server"]}binaries/hvinfo/hvinfo.exe'
+    hvinfo_exe_url = f'{py_config["servers"]["https_server"]}binaries/hvinfo/hvinfo.exe'
 
     LOGGER.info(f"Download hvinfo from {hvinfo_exe_url} to: {executor_hvinfo_path}")
     check_output(f"curl {hvinfo_exe_url} -s -o {executor_hvinfo_path}", shell=True)
