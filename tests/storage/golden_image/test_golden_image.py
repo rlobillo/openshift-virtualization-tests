@@ -184,7 +184,7 @@ def test_regular_user_can_create_dv_in_ns_given_proper_rolebinding(
         client=unprivileged_client,
         dv_name="cnv-5275",
         namespace=golden_images_namespace.name,
-        url=f"{get_images_server_url(schema='http')}{LATEST_RHEL_IMAGE}",
+        url=f"{get_images_server_url()}{LATEST_RHEL_IMAGE}",
         size=RHEL_IMAGE_SIZE,
         storage_class=[*storage_class_matrix__function__][0],
     ) as dv:

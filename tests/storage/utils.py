@@ -561,11 +561,14 @@ def check_snapshot_indication(snapshot, is_online):
 
 def wait_for_processes_exit_successfully(processes, timeout):
     try:
-        for process in processes:
+        for object_name in processes:
+            process = processes[object_name]
             process.join(timeout)
             if process.exception:
                 raise process.exception
-            assert process.exitcode == 0, "The object wasn't created in the given time"
+            assert (
+                process.exitcode == 0
+            ), f"The object {object_name} wasn't created in the given time"
     except Exception as e:
         LOGGER.error(f"failed with the exception - {e}")
         raise
@@ -575,11 +578,14 @@ def clean_up_multiprocess(processes, object_list):
     # deleting objects and closing processes
     for obj in object_list:
         obj.clean_up()
-    for process in processes:
+    for object_name in processes:
+        process = processes[object_name]
         try:
             if process.is_alive():
                 process.kill()
         except Exception as e:
-            print(f"Error killing process {process}: {e}")
+            print(
+                f"Error killing process {process}, associated with {object_name}: {e}"
+            )
         finally:
             process.close()
