@@ -177,8 +177,6 @@ class TestCommonTemplatesWindows:
         windows_os_matrix__class__,
         golden_image_data_volume_multi_windows_os_multi_storage_scope_class,
         golden_image_vm_object_from_template_multi_windows_os_multi_storage_scope_class,
-        hvinfo_binary_in_executor,
-        hvinfo_binary_in_windows_vm,
     ):
 
         LOGGER.info("Verify VM HyperV values.")

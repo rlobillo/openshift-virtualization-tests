@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from pytest_testconfig import py_config
 
 from tests.compute.ssp.utils import download_and_extract_tar
+from utilities.infra import get_artifactory_header
 
 
 @pytest.fixture(scope="module")
@@ -34,7 +35,10 @@ def downloaded_latest_libosinfo_db(
 def latest_osinfo_db_file_name(osinfo_repo):
     sorted_osinfo_repo = f"{osinfo_repo}/?C=M;O=A"
     soup_page = BeautifulSoup(
-        markup=requests.get(sorted_osinfo_repo).text, features="html.parser"
+        markup=requests.get(
+            sorted_osinfo_repo, headers=get_artifactory_header(), verify=False
+        ).text,
+        features="html.parser",
     )
     full_link = soup_page.findAll(
         name="a", attrs={"href": re.compile(r"osinfo-db-[0-9]*.tar.xz")}
@@ -65,4 +69,4 @@ def latest_fedora_release_version(downloaded_latest_libosinfo_db):
 
 @pytest.fixture(scope="module")
 def osinfo_repo():
-    return f"{py_config['servers']['http_server']}cnv-tests/osinfo-db/"
+    return f"{py_config['servers']['https_server']}/cnv-tests/osinfo-db/"
