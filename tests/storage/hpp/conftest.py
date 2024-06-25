@@ -5,6 +5,7 @@ import yaml
 from ocp_resources.daemonset import DaemonSet
 from ocp_utilities.infra import cluster_resource
 
+from tests.storage.constants import HPP_STORAGE_CLASSES
 from utilities.infra import (
     get_daemonset_yaml_file_with_image_hash,
     get_utility_pods_from_nodes,
@@ -61,3 +62,15 @@ def utility_pods_for_hpp_test(
         admin_client=admin_client,
         label_selector=f"cnv-test={utility_pod_label}",
     )
+
+
+@pytest.fixture(scope="session")
+def skip_test_if_no_hpp_requested(available_storage_classes_names):
+    # Skip test if HPP is not passed with --storage-class-matrix
+    if not any(
+        storage_class in HPP_STORAGE_CLASSES
+        for storage_class in available_storage_classes_names
+    ):
+        pytest.skip(
+            f"HPP is not passed with --storage-class-matrix: {available_storage_classes_names}"
+        )
