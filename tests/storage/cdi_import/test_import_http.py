@@ -74,10 +74,9 @@ def wait_for_pvc_recreate(pvc, pvc_original_timestamp):
 @pytest.fixture()
 def dv_with_annotation(skip_upstream, admin_client, namespace, linux_nad):
     with create_dv(
-        source="http",
         dv_name="dv-annotation",
         namespace=namespace.name,
-        url=f"{get_images_server_url(schema='http')}{FEDORA_LATEST['image_path']}",
+        url=f"{get_images_server_url()}{FEDORA_LATEST['image_path']}",
         storage_class=py_config["default_storage_class"],
         multus_annotation=linux_nad.name,
     ) as dv:

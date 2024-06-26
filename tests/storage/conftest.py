@@ -21,11 +21,7 @@ from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from openshift.dynamic.exceptions import ResourceNotFoundError
 from pytest_testconfig import config as py_config
 
-from tests.storage.constants import (
-    HPP_STORAGE_CLASSES,
-    INTERNAL_HTTP_CONFIGMAP_NAME,
-    REGISTRY_STR,
-)
+from tests.storage.constants import HPP_STORAGE_CLASSES, INTERNAL_HTTP_CONFIGMAP_NAME
 from tests.storage.utils import (
     HttpService,
     check_snapshot_indication,
@@ -49,6 +45,8 @@ from utilities.infra import (
     INTERNAL_HTTP_SERVER_ADDRESS,
     ExecCommandOnPod,
     cluster_resource,
+    get_artifactory_config_map,
+    get_artifactory_secret,
 )
 from utilities.storage import (
     HttpDeployment,
@@ -142,14 +140,9 @@ def images_internal_http_server(internal_http_deployment, internal_http_service)
     }
 
 
-@pytest.fixture(scope="session")
-def images_private_registry_server():
-    return py_config["servers"]["registry_server"]
-
-
 @pytest.fixture()
 def upload_proxy_route(admin_client):
-    routes = Route.get(admin_client)
+    routes = Route.get(dyn_client=admin_client)
     upload_route = None
     for route in routes:
         if route.exposed_service == CDI_UPLOADPROXY:
@@ -249,16 +242,6 @@ def https_config_map(request, namespace, https_server_certificate):
         name="https-cert",
         namespace=namespace.name,
         data=data,
-    ) as configmap:
-        yield configmap
-
-
-@pytest.fixture()
-def registry_config_map(namespace, https_server_certificate):
-    with cluster_resource(ConfigMap)(
-        name=f"{REGISTRY_STR}-cert",
-        namespace=namespace.name,
-        data={"tlsregistry.crt": https_server_certificate},
     ) as configmap:
         yield configmap
 
@@ -497,16 +480,36 @@ def disabled_cdi_garbage_collector(
             yield
 
 
+@pytest.fixture(scope="module")
+def artifactory_secret_scope_module(namespace):
+    artifactory_secret = get_artifactory_secret(namespace=namespace.name)
+    yield artifactory_secret
+    if artifactory_secret:
+        artifactory_secret.clean_up()
+
+
+@pytest.fixture(scope="module")
+def artifactory_config_map_scope_module(namespace):
+    artifactory_config_map = get_artifactory_config_map(namespace=namespace.name)
+    yield artifactory_config_map
+    if artifactory_config_map:
+        artifactory_config_map.clean_up()
+
+
 @pytest.fixture()
 def cirros_dv_for_snapshot_dict(
     namespace,
     cirros_vm_name,
     storage_class_matrix_snapshot_matrix__module__,
+    artifactory_secret_scope_module,
+    artifactory_config_map_scope_module,
 ):
     yield create_cirros_dv_for_snapshot_dict(
         name=cirros_vm_name,
         namespace=namespace.name,
         storage_class=[*storage_class_matrix_snapshot_matrix__module__][0],
+        artifactory_secret=artifactory_secret_scope_module,
+        artifactory_config_map=artifactory_config_map_scope_module,
     )
 
 

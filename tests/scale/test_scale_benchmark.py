@@ -35,7 +35,13 @@ from utilities.constants import (
     TIMEOUT_30MIN,
     StorageClassNames,
 )
-from utilities.infra import cluster_resource, create_ns
+from utilities.infra import (
+    cleanup_artifactory_secret_and_config_map,
+    cluster_resource,
+    create_ns,
+    get_artifactory_config_map,
+    get_artifactory_secret,
+)
 from utilities.storage import generate_data_source_dict, get_images_server_url
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
@@ -273,6 +279,11 @@ def golden_images_scale_dvs(
     if not keep_resources:
         request.addfinalizer(_delete_resources)
 
+    artifactory_secret = get_artifactory_secret(namespace=golden_images_namespace.name)
+    artifactory_config_map = get_artifactory_config_map(
+        namespace=golden_images_namespace.name
+    )
+
     for os_name, dv_info in dvs_info.items():
         storage_types_used = [
             storage_type_key
@@ -285,16 +296,23 @@ def golden_images_scale_dvs(
                 namespace=golden_images_namespace.name,
                 storage_class=SCALE_STORAGE_TYPES[storage_type],
                 api_name="storage",
-                url=f"{get_images_server_url(schema='http')}{dv_info['url']}",
+                url=f"{get_images_server_url()}{dv_info['url']}",
                 size=dv_info["size"],
                 client=admin_client,
                 source="http",
+                secret=artifactory_secret,
+                cert_configmap=artifactory_config_map.name,
             )
             golden_images_scale_dv.deploy()
             dvs_list.append(golden_images_scale_dv)
     for dv in dvs_list:
         dv.wait_for_status(status=DataVolume.Status.SUCCEEDED, timeout=TIMEOUT_30MIN)
-    return dvs_list
+    yield dvs_list
+
+    cleanup_artifactory_secret_and_config_map(
+        artifactory_secret=artifactory_secret,
+        artifactory_config_map=artifactory_config_map,
+    )
 
 
 @pytest.fixture(scope="class")

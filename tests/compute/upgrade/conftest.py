@@ -253,7 +253,7 @@ def windows_vm(
         client=admin_client,
         dv_name=latest_windows_dict["os_version"],
         namespace=py_config["golden_images_namespace"],
-        url=f"{get_images_server_url(schema='http')}{latest_windows_dict['image_path']}",
+        url=f"{get_images_server_url()}{latest_windows_dict['image_path']}",
         storage_class=py_config["default_storage_class"],
         access_modes=py_config["default_access_mode"],
         volume_mode=py_config["default_volume_mode"],

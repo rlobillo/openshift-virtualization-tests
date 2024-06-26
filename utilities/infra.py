@@ -7,6 +7,7 @@ import os
 import platform
 import re
 import shlex
+import ssl
 import stat
 import subprocess
 import tarfile
@@ -25,6 +26,7 @@ from jira import JIRA
 from kubernetes.client import ApiException
 from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.cluster_version import ClusterVersion
+from ocp_resources.configmap import ConfigMap
 from ocp_resources.console_cli_download import ConsoleCLIDownload
 from ocp_resources.daemonset import DaemonSet
 from ocp_resources.deployment import Deployment
@@ -54,6 +56,7 @@ from pytest_testconfig import config as py_config
 
 import utilities.virt
 from utilities.constants import (
+    ARTIFACTORY_SECRET_NAME,
     AUDIT_LOGS_PATH,
     HCO_CATALOG_SOURCE,
     IMAGE_CRON_STR,
@@ -165,7 +168,7 @@ class FileNotFoundInUrlError(Exception):
 
 def validate_file_exists_in_url(url):
     base_url, file_name = url.rsplit("/", 1)
-    response = requests.get(base_url, verify=False)
+    response = requests.get(base_url, headers=get_artifactory_header(), verify=False)
     if response.status_code != 200:
         raise UrlNotFoundError(url_request=response)
 
@@ -1089,7 +1092,7 @@ def unique_name(name, service_type=None):
 
 
 def get_http_image_url(image_directory, image_name):
-    return f"{get_images_server_url(schema='http')}{image_directory}/{image_name}"
+    return f"{get_images_server_url()}{image_directory}/{image_name}"
 
 
 def get_openshift_pull_secret(client=None):
@@ -1166,6 +1169,50 @@ def get_deployment_by_name(namespace_name, deployment_name):
     raise ResourceNotFoundError(
         f"Deployment: {deployment_name} is not found in namespace: {namespace_name}"
     )
+
+
+def get_artifactory_header():
+    return {"Authorization": f'Bearer {os.environ["ARTIFACTORY_TOKEN"]}'}
+
+
+def get_artifactory_secret(
+    namespace,
+):
+    artifactory_secret = cluster_resource(Secret)(
+        name=ARTIFACTORY_SECRET_NAME,
+        namespace=namespace,
+        accesskeyid=base64_encode_str(os.environ["ARTIFACTORY_USER"]),
+        secretkey=base64_encode_str(os.environ["ARTIFACTORY_TOKEN"]),
+    )
+    if not artifactory_secret.exists:
+        artifactory_secret.deploy()
+    return artifactory_secret
+
+
+def get_artifactory_config_map(
+    namespace,
+):
+    artifactory_cm = cluster_resource(ConfigMap)(
+        name="artifactory-configmap",
+        namespace=namespace,
+        data={
+            "tlsregistry.crt": ssl.get_server_certificate(
+                addr=(py_config["server_url"], 443)
+            )
+        },
+    )
+    if not artifactory_cm.exists:
+        artifactory_cm.deploy()
+    return artifactory_cm
+
+
+def cleanup_artifactory_secret_and_config_map(
+    artifactory_secret=None, artifactory_config_map=None
+):
+    if artifactory_secret:
+        artifactory_secret.clean_up()
+    if artifactory_config_map:
+        artifactory_config_map.clean_up()
 
 
 def add_scc_to_service_account(namespace, scc_name, sa_name):

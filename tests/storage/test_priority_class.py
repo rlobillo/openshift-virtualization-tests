@@ -36,7 +36,7 @@ def dv_dict(namespace, priority_class):
         source="http",
         name="priority-dv",
         namespace=namespace.name,
-        url=f"{get_images_server_url(schema='http')}{RHEL_LATEST['image_path']}",
+        url=f"{get_images_server_url()}{RHEL_LATEST['image_path']}",
         size=RHEL_LATEST["dv_size"],
         storage_class=py_config["default_storage_class"],
         volume_mode=py_config["default_volume_mode"],

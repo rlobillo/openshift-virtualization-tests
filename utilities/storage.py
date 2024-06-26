@@ -2,10 +2,7 @@ import logging
 import math
 import os
 import shlex
-import socket
 import ssl
-import urllib.error
-import urllib.request
 from contextlib import contextmanager
 
 import kubernetes
@@ -121,10 +118,20 @@ def create_dv(
     preallocation=None,
     api_name="storage",
 ):
+    artifactory_secret = None
+    cert_created = None
     if source in ("http", "https"):
         if not utilities.infra.url_excluded_from_validation(url):
             # Make sure URL and the file exists
             utilities.infra.validate_file_exists_in_url(url=url)
+        if not secret:
+            secret = utilities.infra.get_artifactory_secret(namespace=namespace)
+            artifactory_secret = secret
+        if not cert_configmap:
+            cert_created = utilities.infra.get_artifactory_config_map(
+                namespace=namespace
+            )
+            cert_configmap = cert_created.name
 
     with cluster_resource(DataVolume)(
         source=source,
@@ -152,6 +159,9 @@ def create_dv(
         if sc_volume_binding_mode_is_wffc(sc=storage_class) and consume_wffc:
             create_dummy_first_consumer_pod(dv=dv)
         yield dv
+    utilities.infra.cleanup_artifactory_secret_and_config_map(
+        artifactory_secret=artifactory_secret, artifactory_config_map=cert_created
+    )
 
 
 def data_volume(
@@ -214,11 +224,7 @@ def data_volume(
         dv_size = params_dict.get("dv_size")
 
     # Don't need URL for DVs that are not http
-    url = (
-        f"{get_images_server_url(schema=source)}{image}"
-        if source in ("http", "https")
-        else None
-    )
+    url = f"{get_images_server_url()}{image}" if source == "http" else None
 
     is_golden_image = False
     # For golden images; images are created once per module in
@@ -312,10 +318,25 @@ def downloaded_image(remote_name, local_name):
     """
     Download image to local tmpdir path
     """
-    url = f"{get_images_server_url(schema='http')}{remote_name}"
-    assert requests.head(url).status_code == requests.codes.ok
+    artifactory_header = utilities.infra.get_artifactory_header()
+    url = f"{get_images_server_url()}{remote_name}"
+    resp = requests.head(
+        url=url,
+        headers=artifactory_header,
+        verify=False,
+        allow_redirects=True,
+    )
+    assert (
+        resp.status_code == requests.codes.ok
+    ), f"Unable to connect to {url} with error: {resp}."
     LOGGER.info(f"Download {url} to {local_name}")
-    urllib.request.urlretrieve(url, local_name)
+    with requests.get(
+        url=url, headers=artifactory_header, verify=False, stream=True
+    ) as created_request:
+        created_request.raise_for_status()
+        with open(local_name, "wb") as file_downloaded:
+            for chunk in created_request.iter_content(chunk_size=8192):
+                file_downloaded.write(chunk)
     try:
         assert os.path.isfile(local_name)
     except FileNotFoundError as err:
@@ -657,7 +678,7 @@ def data_volume_template_dict(
     return dv.res
 
 
-def get_images_server_url(schema):
+def get_images_server_url(schema="https"):
     """
     Fetch http/s server url from config and return if available.
 
@@ -681,17 +702,16 @@ def get_images_server_url(schema):
         myssl.check_hostname = False
         myssl.verify_mode = ssl.CERT_NONE
 
-    try:
-        LOGGER.info(f"Testing connectivity to {server} {schema.upper()} server")
-        assert (
-            urllib.request.urlopen(server, context=myssl, timeout=60).getcode() == 200
-        )
-        return server
-    except (urllib.error.URLError, socket.timeout) as e:
-        LOGGER.error(
-            f"URL Error when testing connectivity to {server} {schema.upper()} server.\nError: {e}"
-        )
-        raise
+    LOGGER.info(f"Testing connectivity to {server} {schema.upper()} server")
+    resp = requests.get(
+        url=server, headers=utilities.infra.get_artifactory_header(), verify=False
+    )
+    assert resp.status_code == requests.codes.ok, (
+        f"Unable to connect to test image server: {server} "
+        f"{schema.upper()}, with error code: {resp.status_code}, error: {resp.text}"
+    )
+
+    return server
 
 
 def overhead_size_for_dv(image_size, overhead_value):
@@ -877,7 +897,9 @@ def is_snapshot_supported_by_sc(sc_name, client):
     return False
 
 
-def create_cirros_dv_for_snapshot_dict(name, namespace, storage_class):
+def create_cirros_dv_for_snapshot_dict(
+    name, namespace, storage_class, artifactory_secret, artifactory_config_map
+):
     dv = cluster_resource(DataVolume)(
         api_name="storage",
         name=f"dv-{name}",
@@ -888,6 +910,8 @@ def create_cirros_dv_for_snapshot_dict(name, namespace, storage_class):
         ),
         storage_class=storage_class,
         size=Images.Cirros.DEFAULT_DV_SIZE,
+        secret=artifactory_secret,
+        cert_configmap=artifactory_config_map.name,
     )
     dv.to_dict()
     return dv.res

@@ -1,6 +1,10 @@
 import logging
 import tarfile
-import urllib.request
+from io import BytesIO
+
+import requests
+
+from utilities.infra import get_artifactory_header
 
 
 LOGGER = logging.getLogger(__name__)
@@ -36,9 +40,9 @@ def check_smbios_defaults(smbios_defaults, cm_values):
 
 def download_and_extract_tar(tarfile_url, dest_path):
     """Download and Extract the tar file."""
-
-    tar_data = urllib.request.urlopen(tarfile_url)
-    thetarfile = tarfile.open(fileobj=tar_data, mode="r|xz")
+    artifactory_header = get_artifactory_header()
+    request = requests.get(url=tarfile_url, verify=False, headers=artifactory_header)
+    thetarfile = tarfile.open(fileobj=BytesIO(request.content), mode="r|xz")
     thetarfile.extractall(path=dest_path)
 
 

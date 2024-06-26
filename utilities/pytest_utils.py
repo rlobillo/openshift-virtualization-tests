@@ -224,43 +224,30 @@ def skip_if_pytest_flags_exists(pytest_config, skip_upstream=False):
     )
 
 
-def get_cnv_qe_server_url(cluster_host_url):
-    """
-    Get the relevant cnv-qe-server for the cluster.
-    This solves two problems:
-    1) Pulling and downloading the images from a relatively close server.
-    2) There are cnv-qe-servers that are hosted inside of RH internal network,
-       external clusters won't be able to access the server.
-
-    List of servers are taken from:
-    https://gitlab.cee.redhat.com/contra/cnv/-/blob/master/docs/Configure-cnv-qe-server.md#existing-instances
-
-    Args:
-        cluster_host_url (str): Cluster's API hostname.
-
-    Returns:
-        str: cnv-qe-server in the same region of the cluster.
-    """
-    LOGGER.info(f"Getting cnv-qe-server for {cluster_host_url}")
-    default_server = "cnv-qe-server.rhos-psi.cnv-qe.rhood.us"
-    ibm_server = f"cnv-qe-server.{cluster_host_url.replace('https://api.', '').replace(':6443', '')}"
-    rhood_server = "cnv-qe-server.cnv-qe.rhood.us"
-    servers = {
-        "rhos-psi.cnv-qe.rhood.us": default_server,
-        "ibmc.cnv-qe.rhood.us": ibm_server,
-        "ibmc-upi.cnv-qe.rhood.us": ibm_server,
-        "qe.azure.devcluster.openshift.com": rhood_server,
-        "cnv-qe.rhood.us": rhood_server,
-        "lab.eng.tlv2.redhat.com": "cnv-qe-server.lab.eng.tlv2.redhat.com",
-    }
-
-    for domain, server in servers.items():
-        if domain in cluster_host_url:
-            LOGGER.info(f"Server was found for {cluster_host_url}: {server}")
-
-            return server
-
+def get_artifactory_server_url(cluster_host_url):
     LOGGER.info(
-        f"No server was found for {cluster_host_url}, using default server {default_server}"
+        f"Getting artifactory server information using cluster host url: {cluster_host_url}"
     )
-    return default_server
+    default_artifactory_server = "cnv-qe-artifactory.apps.ocp-virt.prod.psi.redhat.com"
+    ibmc_artifactory_server = "ibmc.artifactory.cnv-qe.rhood.us"
+    it_up_artifactory_server = (
+        "cnv-qe-artifactory.apps.int.prod-stable-spoke1-dc-iad2.itup.redhat.com"
+    )
+    servers = {
+        "rhos-psi.cnv-qe.rhood.us": default_artifactory_server,
+        "ibmc.cnv-qe.rhood.us": ibmc_artifactory_server,
+        "ibmc-upi.cnv-qe.rhood.us": ibmc_artifactory_server,
+        "qe.azure.devcluster.openshift.com": ibmc_artifactory_server,
+        "cnv-ci.rhood.us": ibmc_artifactory_server,
+        "cnv-qe.rhood.us": ibmc_artifactory_server,
+        "lab.eng.tlv2.redhat.com": it_up_artifactory_server,
+    }
+    matching_server = [
+        servers[domain_key] for domain_key in servers if domain_key in cluster_host_url
+    ]
+    if matching_server:
+        return matching_server[0]
+    LOGGER.info(
+        f"No server was found for {cluster_host_url}, using default server {default_artifactory_server}"
+    )
+    return default_artifactory_server

@@ -28,7 +28,6 @@ class Images:
         QCOW2_IMG_XZ = "cirros-0.4.0-x86_64-disk.qcow2.xz"
         DISK_DEMO = "cirros-registry-disk-demo"
         DIR = f"{BASE_IMAGES_DIR}/cirros-images"
-        MOD_AUTH_BASIC_DIR = f"{BASE_IMAGES_DIR}/mod-auth-basic/cirros-images"
         DEFAULT_DV_SIZE = "1Gi"
         DEFAULT_MEMORY_SIZE = "64M"
 
@@ -109,6 +108,7 @@ PORT_80 = 80
 ACTIVE_BACKUP = "active-backup"
 
 #  Time constants
+TIMEOUT_1SEC = 1
 TIMEOUT_5SEC = 5
 TIMEOUT_10SEC = 10
 TIMEOUT_15SEC = 15
@@ -581,3 +581,6 @@ POD_SECURITY_NAMESPACE_LABELS = {
     "security.openshift.io/scc.podSecurityLabelSync": "false",
 }
 CNV_TEST_RUN_IN_PROGRESS = "cnv-tests-run-in-progress"
+ARTIFACTORY_SECRET_NAME = "cnv-tests-artifactory-secret"
+CNV_TEST_RUN_IN_PROGRESS_NS = f"{CNV_TEST_RUN_IN_PROGRESS}-ns"
+BASE_ARTIFACTORY_LOCATION = "artifactory/cnv-qe-server-local"
