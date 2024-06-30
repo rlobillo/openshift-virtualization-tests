@@ -65,6 +65,7 @@ def get_certificates_validity_period_and_checkend_result(
         _, out, err = run_command(
             command=[command],
             shell=True,
+            check=False,
         )
         stripped_output = out.strip()
         certificates_results[os.path.basename(cert)] = {
