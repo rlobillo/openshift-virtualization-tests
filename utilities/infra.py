@@ -843,7 +843,7 @@ def get_related_images_name_and_version(csv):
     return related_images
 
 
-def run_virtctl_command(command, virtctl_binary="virtctl", namespace=None):
+def run_virtctl_command(command, virtctl_binary="virtctl", namespace=None, check=False):
     """
     Run virtctl command
 
@@ -851,6 +851,8 @@ def run_virtctl_command(command, virtctl_binary="virtctl", namespace=None):
         command (list): Command to run
         virtctl_binary (str): virtctl binary including full path to binary
         namespace (str, default:None): Namespace to send to virtctl command
+        check (bool, default:False): If check is True and the exit code was non-zero, it raises a
+            CalledProcessError
 
     Returns:
         tuple: True, out if command succeeded, False, err otherwise.
@@ -864,7 +866,7 @@ def run_virtctl_command(command, virtctl_binary="virtctl", namespace=None):
         virtctl_cmd.extend(["--kubeconfig", kubeconfig])
 
     virtctl_cmd.extend(command)
-    res, out, err = run_command(command=virtctl_cmd)
+    res, out, err = run_command(command=virtctl_cmd, check=check)
 
     return res, out, err
 
