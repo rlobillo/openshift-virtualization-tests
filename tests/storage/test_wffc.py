@@ -24,7 +24,11 @@ from utilities.hco import (
     ResourceEditorValidateHCOReconcile,
     hco_cr_jsonpatch_annotations_dict,
 )
-from utilities.infra import cluster_resource
+from utilities.infra import (
+    cluster_resource,
+    get_artifactory_config_map,
+    get_artifactory_secret,
+)
 from utilities.storage import (
     cdi_feature_gate_list_with_added_feature,
     check_cdi_feature_gate_enabled,
@@ -75,19 +79,25 @@ def enable_wffc_feature_gate(hyperconverged_resource_scope_module, cdi_config):
             yield
 
 
-def get_dv_template_dict(dv_name, storage_class):
+def get_dv_template_dict(namespace, dv_name, storage_class):
+    artifactory_secret = get_artifactory_secret(namespace=namespace)
+    artifactory_config_map = get_artifactory_config_map(namespace=namespace)
     return {
         "metadata": {
             "name": f"{dv_name}",
         },
         "spec": {
-            "pvc": {
-                "volumeMode": DataVolume.VolumeMode.FILE,
-                "accessModes": [DataVolume.AccessMode.RWO],
+            "storage": {
                 "resources": {"requests": {"storage": Images.Cirros.DEFAULT_DV_SIZE}},
                 "storageClassName": storage_class,
             },
-            "source": {"http": {"url": f"{get_images_server_url()}{REMOTE_PATH}"}},
+            "source": {
+                "http": {
+                    "certConfigMap": artifactory_config_map.name,
+                    "secretRef": artifactory_secret.name,
+                    "url": f"{get_images_server_url()}{REMOTE_PATH}",
+                }
+            },
         },
     }
 
@@ -328,6 +338,7 @@ def test_wffc_add_dv_to_vm_with_data_volume_template(
         namespace=namespace.name,
         os_flavor=OS_FLAVOR_CIRROS,
         data_volume_template=get_dv_template_dict(
+            namespace=namespace.name,
             dv_name="template-dv",
             storage_class=data_volume_multi_hpp_storage.storage_class,
         ),
@@ -355,6 +366,7 @@ def test_wffc_vm_with_two_data_volume_templates(
         namespace=namespace.name,
         os_flavor=OS_FLAVOR_CIRROS,
         data_volume_template=get_dv_template_dict(
+            namespace=namespace.name,
             dv_name="template-dv-1",
             storage_class=storage_class,
         ),
@@ -363,6 +375,7 @@ def test_wffc_vm_with_two_data_volume_templates(
         storage_utils.add_dv_to_vm(
             vm=vm,
             template_dv=get_dv_template_dict(
+                namespace=namespace.name,
                 dv_name="template-dv-2",
                 storage_class=storage_class,
             ),
