@@ -189,12 +189,12 @@ def bond_bridge_attached_vmb(
 
 @pytest.fixture(scope="class")
 def running_bond_bridge_attached_vma(bond_bridge_attached_vma):
-    return running_vm(vm=bond_bridge_attached_vma)
+    return running_vm(vm=bond_bridge_attached_vma, wait_for_cloud_init=True)
 
 
 @pytest.fixture(scope="class")
 def running_bond_bridge_attached_vmb(bond_bridge_attached_vmb):
-    return running_vm(vm=bond_bridge_attached_vmb)
+    return running_vm(vm=bond_bridge_attached_vmb, wait_for_cloud_init=True)
 
 
 class TestBondJumboFrame:

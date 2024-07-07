@@ -190,7 +190,7 @@ def dhcp_server_vm(
 
 @pytest.fixture(scope="module")
 def running_dhcp_server_vm(dhcp_server_vm):
-    return running_vm(vm=dhcp_server_vm)
+    return running_vm(vm=dhcp_server_vm, wait_for_cloud_init=True)
 
 
 @pytest.fixture(scope="module")

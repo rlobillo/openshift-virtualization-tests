@@ -157,12 +157,12 @@ def nmstate_linux_bridge_attached_vmb(
 
 @pytest.fixture(scope="class")
 def nmstate_linux_bridge_attached_running_vma(nmstate_linux_bridge_attached_vma):
-    return running_vm(vm=nmstate_linux_bridge_attached_vma)
+    return running_vm(vm=nmstate_linux_bridge_attached_vma, wait_for_cloud_init=True)
 
 
 @pytest.fixture(scope="class")
 def nmstate_linux_bridge_attached_running_vmb(nmstate_linux_bridge_attached_vmb):
-    return running_vm(vm=nmstate_linux_bridge_attached_vmb)
+    return running_vm(vm=nmstate_linux_bridge_attached_vmb, wait_for_cloud_init=True)
 
 
 @pytest.fixture(scope="class")

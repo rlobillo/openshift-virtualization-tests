@@ -124,7 +124,7 @@ def vma_with_ovs_based_l2(
 
 @pytest.fixture()
 def running_vma_with_ovs_based_l2(vma_with_ovs_based_l2):
-    return running_vm(vm=vma_with_ovs_based_l2)
+    return running_vm(vm=vma_with_ovs_based_l2, wait_for_cloud_init=True)
 
 
 @pytest.fixture()
@@ -161,7 +161,7 @@ def vmb_with_ovs_based_l2(
 
 @pytest.fixture()
 def running_vmb_with_ovs_based_l2(vmb_with_ovs_based_l2):
-    return running_vm(vm=vmb_with_ovs_based_l2)
+    return running_vm(vm=vmb_with_ovs_based_l2, wait_for_cloud_init=True)
 
 
 @pytest.mark.polarion("CNV-5636")

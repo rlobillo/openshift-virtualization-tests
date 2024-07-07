@@ -61,12 +61,12 @@ def pod_net_vmb(
 
 @pytest.fixture()
 def pod_net_running_vma(pod_net_vma):
-    return running_vm(vm=pod_net_vma)
+    return running_vm(vm=pod_net_vma, wait_for_cloud_init=True)
 
 
 @pytest.fixture()
 def pod_net_running_vmb(pod_net_vmb):
-    return running_vm(vm=pod_net_vmb)
+    return running_vm(vm=pod_net_vmb, wait_for_cloud_init=True)
 
 
 @pytest.fixture(scope="module")

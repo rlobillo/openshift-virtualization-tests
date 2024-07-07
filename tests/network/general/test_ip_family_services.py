@@ -76,7 +76,7 @@ def running_vm_for_exposure(
         cloud_init_data=cloud_init_data,
         client=unprivileged_client,
     ) as vm:
-        running_vm(vm=vm, check_ssh_connectivity=False)
+        running_vm(vm=vm, wait_for_cloud_init=True)
         yield vm
 
 
