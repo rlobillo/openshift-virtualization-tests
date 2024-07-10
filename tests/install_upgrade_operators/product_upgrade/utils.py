@@ -350,7 +350,8 @@ def get_dict_diff(before_upgrade, after_upgrade):
     Returns:
         dict: dictionary indicating difference
     """
-    return {
+
+    diff_dict = {
         node_name: {
             "before": before_upgrade[node_name],
             "after": after_upgrade[node_name],
@@ -358,6 +359,7 @@ def get_dict_diff(before_upgrade, after_upgrade):
         for node_name in after_upgrade
         if after_upgrade[node_name] != before_upgrade[node_name]
     }
+    return diff_dict
 
 
 def wait_for_hco_upgrade(dyn_client, hco_namespace, cnv_target_version):

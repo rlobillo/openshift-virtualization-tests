@@ -23,10 +23,6 @@ from utilities.data_collector import collect_alerts_data, collect_cnv_informatio
 
 LOGGER = logging.getLogger(__name__)
 
-pytestmark = pytest.mark.usefixtures(
-    "nodes_taints_before_upgrade",
-    "nodes_labels_before_upgrade",
-)
 ALERT_ERROR = "Following alerts were fired during upgrade:"
 DEPENDENCIES_NODE_ID_PREFIX = "tests/install_upgrade_operators/product_upgrade/test_upgrade_iuo.py::TestUpgradeIUO"
 
