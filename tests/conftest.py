@@ -2105,7 +2105,9 @@ def upgrade_br1test_nad(upgrade_namespace_scope_session, upgrade_bridge_on_all_n
 
 @pytest.fixture(scope="session")
 def dvs_for_upgrade(
-    admin_client, worker_node1, rhel_latest_os_params, golden_images_namespace_name
+    admin_client,
+    worker_node1,
+    rhel_latest_os_params,
 ):
     golden_images_namespace_name = py_config["golden_images_namespace"]
     dvs_list = []
