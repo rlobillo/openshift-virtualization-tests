@@ -5,7 +5,11 @@ from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 from ocp_utilities.infra import cluster_resource
 
 from utilities.constants import Images
-from utilities.infra import get_http_image_url
+from utilities.infra import (
+    get_artifactory_config_map,
+    get_artifactory_secret,
+    get_http_image_url,
+)
 from utilities.storage import write_file
 from utilities.virt import VirtualMachineForTests
 
@@ -14,7 +18,10 @@ from utilities.virt import VirtualMachineForTests
 def create_vm_for_snapshot_upgrade_tests(
     vm_name, namespace, client, storage_class_for_snapshot
 ):
-    dv = DataVolume(
+    artifactory_secret = get_artifactory_secret(namespace=namespace)
+    artifactory_config_map = get_artifactory_config_map(namespace=namespace)
+
+    dv = cluster_resource(DataVolume)(
         name=f"dv-{vm_name}",
         namespace=namespace,
         source="http",
@@ -24,12 +31,14 @@ def create_vm_for_snapshot_upgrade_tests(
         storage_class=storage_class_for_snapshot,
         size=Images.Cirros.DEFAULT_DV_SIZE,
         api_name="storage",
+        secret=artifactory_secret,
+        cert_configmap=artifactory_config_map.name,
     )
     dv.to_dict()
     with cluster_resource(VirtualMachineForTests)(
         client=client,
         name=f"vm-{vm_name}",
-        namespace=dv.res["metadata"]["namespace"],
+        namespace=namespace,
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
         data_volume_template={"metadata": dv.res["metadata"], "spec": dv.res["spec"]},
         eviction=None,
