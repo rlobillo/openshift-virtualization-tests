@@ -228,6 +228,12 @@ def get_artifactory_server_url(cluster_host_url):
     LOGGER.info(
         f"Getting artifactory server information using cluster host url: {cluster_host_url}"
     )
+    artifactory_server = os.environ.get("ARTIFACTORY_SERVER")
+    if artifactory_server:
+        LOGGER.warning(
+            f"Using user requested ARTIFACTORY_SERVER environment variable: {artifactory_server}"
+        )
+        return artifactory_server
     default_artifactory_server = "cnv-qe-artifactory.apps.ocp-virt.prod.psi.redhat.com"
     ibmc_artifactory_server = "ibmc.artifactory.cnv-qe.rhood.us"
     it_up_artifactory_server = (
