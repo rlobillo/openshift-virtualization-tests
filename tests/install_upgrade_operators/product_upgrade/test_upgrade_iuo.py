@@ -1,5 +1,4 @@
 import logging
-import os
 
 import pytest
 from ocp_utilities.infra import (
@@ -14,7 +13,7 @@ from tests.install_upgrade_operators.product_upgrade.utils import (
     verify_nodes_taints_after_upgrade,
 )
 from tests.upgrade_params import (
-    COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID,
+    IMAGE_UPDATE_AFTER_UPGRADE_NODE_ID,
     IUO_CNV_POD_ORDERING_NODE_ID,
     IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID,
 )
@@ -29,7 +28,7 @@ pytestmark = pytest.mark.usefixtures(
     "nodes_labels_before_upgrade",
 )
 ALERT_ERROR = "Following alerts were fired during upgrade:"
-DEPENDENCIES_NODE_ID_PREFIX = f"{os.path.abspath(__file__)}::TestUpgradeIUO"
+DEPENDENCIES_NODE_ID_PREFIX = "tests/install_upgrade_operators/product_upgrade/test_upgrade_iuo.py::TestUpgradeIUO"
 
 NODE_READY_ORDERING_NODE_ID = (
     f"{DEPENDENCIES_NODE_ID_PREFIX}::test_nodes_ready_after_upgrade"
@@ -42,7 +41,7 @@ class TestUpgradeIUO:
     """Post-upgrade tests"""
 
     @pytest.mark.polarion("CNV-9081")
-    @pytest.mark.order(before=IUO_CNV_POD_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IMAGE_UPDATE_AFTER_UPGRADE_NODE_ID)
     @pytest.mark.dependency(
         depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -65,7 +64,7 @@ class TestUpgradeIUO:
             raise AssertionError(f"{ALERT_ERROR}: {fired_alerts_during_ocp_upgrade}")
 
     @pytest.mark.polarion("CNV-9079")
-    @pytest.mark.order(before=IUO_CNV_POD_ORDERING_NODE_ID)
+    @pytest.mark.order(before=IMAGE_UPDATE_AFTER_UPGRADE_NODE_ID)
     @pytest.mark.dependency(
         depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -87,7 +86,6 @@ class TestUpgradeIUO:
             raise AssertionError(f"{ALERT_ERROR}: {fired_alerts_during_cnv_upgrade}")
 
     @pytest.mark.polarion("CNV-4509")
-    @pytest.mark.order(before=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
     @pytest.mark.dependency(
         name=IUO_CNV_POD_ORDERING_NODE_ID,
         depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID],
@@ -100,10 +98,12 @@ class TestUpgradeIUO:
         )
 
     @pytest.mark.polarion("CNV-4510")
-    @pytest.mark.order(before=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
+    @pytest.mark.order(
+        before=IMAGE_UPDATE_AFTER_UPGRADE_NODE_ID, after=IUO_CNV_POD_ORDERING_NODE_ID
+    )
     @pytest.mark.dependency(
         name=NODE_READY_ORDERING_NODE_ID,
-        depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID, IUO_CNV_POD_ORDERING_NODE_ID],
+        depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,
     )
     def test_nodes_ready_after_upgrade(self, nodes):
@@ -113,7 +113,9 @@ class TestUpgradeIUO:
         )
 
     @pytest.mark.polarion("CNV-6865")
-    @pytest.mark.order(before=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
+    @pytest.mark.order(
+        before=IMAGE_UPDATE_AFTER_UPGRADE_NODE_ID, after=IUO_CNV_POD_ORDERING_NODE_ID
+    )
     @pytest.mark.dependency(
         depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID, NODE_READY_ORDERING_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -126,7 +128,9 @@ class TestUpgradeIUO:
         assert_nodes_schedulable(nodes=nodes)
 
     @pytest.mark.polarion("CNV-6866")
-    @pytest.mark.order(before=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
+    @pytest.mark.order(
+        before=IMAGE_UPDATE_AFTER_UPGRADE_NODE_ID, after=IUO_CNV_POD_ORDERING_NODE_ID
+    )
     @pytest.mark.dependency(
         depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID, NODE_READY_ORDERING_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,
@@ -140,7 +144,9 @@ class TestUpgradeIUO:
         )
 
     @pytest.mark.polarion("CNV-6924")
-    @pytest.mark.order(before=COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID)
+    @pytest.mark.order(
+        before=IMAGE_UPDATE_AFTER_UPGRADE_NODE_ID, after=IUO_CNV_POD_ORDERING_NODE_ID
+    )
     @pytest.mark.dependency(
         depends=[IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID, NODE_READY_ORDERING_NODE_ID],
         scope=DEPENDENCY_SCOPE_SESSION,

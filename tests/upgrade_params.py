@@ -20,12 +20,14 @@ IUO_UPGRADE_TEST_ORDERING_NODE_ID = (
     IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID
 ) = f"{file_name}::{upgrade_class}::{test_name}"
 
-
-COMPUTE_VMS_RUNNING_AFTER_UPGRADE_TEST_NODE_ID = (
-    "tests/compute/upgrade/test_upgrade_compute.py::TestUpgradeCompute::"
-    "test_is_vm_running_after_upgrade"
-)
 IUO_CNV_POD_ORDERING_NODE_ID = (
     "tests/install_upgrade_operators/product_upgrade/test_upgrade_iuo.py::TestUpgradeIUO::"
     "test_cnv_pods_running_after_upgrade"
+)
+
+COMPUTE_NODE_ID_PREFIX = (
+    "tests/compute/upgrade/test_upgrade_compute.py::TestUpgradeCompute"
+)
+IMAGE_UPDATE_AFTER_UPGRADE_NODE_ID = (
+    f"{COMPUTE_NODE_ID_PREFIX}::test_vmi_pod_image_updates_after_upgrade_optin"
 )
