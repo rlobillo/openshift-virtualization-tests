@@ -132,7 +132,7 @@ class TestUpgradeIUO:
         scope=DEPENDENCY_SCOPE_SESSION,
     )
     def test_nodes_taints_after_upgrade(
-        self, admin_client, nodes, nodes_taints_before_upgrade
+        self, skip_on_eus_upgrade, admin_client, nodes, nodes_taints_before_upgrade
     ):
         LOGGER.info("Verify nodes taints after upgrade.")
         verify_nodes_taints_after_upgrade(
@@ -149,6 +149,7 @@ class TestUpgradeIUO:
     )
     def test_nodes_labels_after_upgrade(
         self,
+        skip_on_eus_upgrade,
         admin_client,
         nodes,
         nodes_labels_before_upgrade,

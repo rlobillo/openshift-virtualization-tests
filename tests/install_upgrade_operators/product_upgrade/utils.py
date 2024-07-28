@@ -332,34 +332,73 @@ def verify_nodes_labels_after_upgrade(nodes, nodes_labels_before_upgrade, cnv_up
         AssertionError: Asserts on node label mismatch
     """
     nodes_labels_after_upgrade = get_nodes_labels(nodes=nodes, cnv_upgrade=cnv_upgrade)
-    label_diff = get_dict_diff(
-        before_upgrade=nodes_labels_before_upgrade,
-        after_upgrade=nodes_labels_after_upgrade,
+    nodes_changed = get_nodes_with_labels_value_diff(
+        labels_before_upgrade=nodes_labels_before_upgrade,
+        labels_after_upgrade=nodes_labels_after_upgrade,
     )
-    assert not label_diff, f"Mismatch in node labels after upgrade: {label_diff}"
+    assert (
+        not nodes_changed
+    ), f"Mismatch in the following nodes labels after upgrade: {nodes_changed}"
 
 
-def get_dict_diff(before_upgrade, after_upgrade):
+def get_nodes_with_labels_value_diff(labels_before_upgrade, labels_after_upgrade):
     """
-    Compare before and after upgrade values and create a dict with difference, incase of change in values post upgrade
+    Compare before & after upgrade labels values and create a list of the nodes,in case of change in values post upgrade
 
     Args:
-        before_upgrade(dict): before upgrade values
-        after_upgrade(dict): after upgrade value
+        labels_before_upgrade(dict): before upgrade values
+        labels_after_upgrade(dict): after upgrade value
 
     Returns:
-        dict: dictionary indicating difference
+        list: nodes with labels value difference.
     """
+    return [
+        get_labels_differences_for_node(
+            labels_before_upgrade=labels_before_upgrade[node_name],
+            labels_after_upgrade=labels_after_upgrade[node_name],
+            node_name=node_name,
+        )
+        for node_name in labels_after_upgrade
+        if labels_after_upgrade[node_name] != labels_before_upgrade[node_name]
+    ]
 
-    diff_dict = {
-        node_name: {
-            "before": before_upgrade[node_name],
-            "after": after_upgrade[node_name],
-        }
-        for node_name in after_upgrade
-        if after_upgrade[node_name] != before_upgrade[node_name]
+
+def get_labels_differences_for_node(
+    labels_before_upgrade, labels_after_upgrade, node_name
+):
+    """
+    Logging the labels values changes by category for a specific node.
+
+    Args:
+        labels_before_upgrade(dict): before upgrade labels values.
+        labels_after_upgrade(dict): after upgrade labels values.
+        node_name(string): the name of the node.
+
+    Returns:
+        string: the name of the node.
+    """
+    before_keys = set(labels_before_upgrade.keys())
+    after_keys = set(labels_after_upgrade.keys())
+
+    removed = {key: labels_before_upgrade[key] for key in before_keys - after_keys}
+    added = {key: labels_after_upgrade[key] for key in after_keys - before_keys}
+    changed_value = {
+        key: (labels_before_upgrade[key], labels_after_upgrade[key])
+        for key in before_keys & after_keys
+        if labels_before_upgrade[key] != labels_after_upgrade[key]
     }
-    return diff_dict
+
+    LOGGER.error(
+        f"Mismatch in {node_name}:\n"
+        f"\tRemoved:\n {format_dict_output(diff_dict=removed)}"
+        f"\tAdded:\n {format_dict_output(diff_dict=added)}"
+        f"\tChanged value:\n {format_dict_output(diff_dict=changed_value)}"
+    )
+    return node_name
+
+
+def format_dict_output(diff_dict):
+    return "".join(f"\t\t{label}: {value}\n" for label, value in diff_dict.items())
 
 
 def wait_for_hco_upgrade(dyn_client, hco_namespace, cnv_target_version):
