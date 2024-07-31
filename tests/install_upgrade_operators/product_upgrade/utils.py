@@ -638,12 +638,12 @@ def get_shortest_upgrade_path(target_version):
     base_version = None
     upgrade_path = None
     for path in get_upgrade_path(target_version=target_version)["path"]:
-        start_version = path["startVersion"][1:]
+        start_version = path["startVersion"]
         if "-hotfix" in start_version:  # Skip -hotfix versions
             continue
         if base_version:
             if Version(base_version) < Version(start_version):
-                base_version = path["startVersion"]
+                base_version = start_version
                 upgrade_path = path
         else:
             base_version = start_version
@@ -666,11 +666,13 @@ def get_iib_images_of_cnv_versions(versions, errata_status="true"):
     for version in versions:
         build_info = get_build_info_by_version(
             version=version, errata_status=errata_status
-        )
-        LOGGER.info(f"Build info for version {version}: {build_info}")
-        iib = build_info["successful_builds"][0]["iib"]
-        iib_suffix = "-pub" if iib.startswith("v") else ""
-        version_images[version] = f"{base_image_url}{iib_suffix}:{iib}"
+        )["successful_builds"][0]
+
+        if build_info["errata_status"] == "SHIPPED_LIVE":
+            LOGGER.info(f"Build info for version {version}: {build_info}")
+            iib = build_info["iib"]
+            iib_suffix = "-pub" if iib.startswith("v") else ""
+            version_images[version] = f"{base_image_url}{iib_suffix}:{iib}"
     return version_images
 
 
