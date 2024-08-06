@@ -757,7 +757,7 @@ def ping(
     rc, out, err = src_vm.ssh_exec.run_command(command=shlex.split(ping_cmd))
     out_to_process = err or out
     for line in out_to_process.splitlines():
-        match = re.search("([0-9]+)% packet loss, ", line)
+        match = re.search(r"(\d*\.?\d+)% packet loss, ", line)
         if match:
             LOGGER.info(f"ping returned {match.string.strip()}")
             return match.groups()
