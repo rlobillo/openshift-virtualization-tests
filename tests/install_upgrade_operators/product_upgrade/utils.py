@@ -2,8 +2,10 @@ import json
 import logging
 import re
 from multiprocessing import Process
+from pprint import pformat
 
 import requests
+from deepdiff import DeepDiff
 from ocp_resources.cluster_operator import ClusterOperator
 from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.cluster_version import ClusterVersion
@@ -332,32 +334,53 @@ def verify_nodes_labels_after_upgrade(nodes, nodes_labels_before_upgrade, cnv_up
         AssertionError: Asserts on node label mismatch
     """
     nodes_labels_after_upgrade = get_nodes_labels(nodes=nodes, cnv_upgrade=cnv_upgrade)
-    label_diff = get_dict_diff(
-        before_upgrade=nodes_labels_before_upgrade,
-        after_upgrade=nodes_labels_after_upgrade,
-    )
-    assert not label_diff, f"Mismatch in node labels after upgrade: {label_diff}"
+    nodes_changed = [
+        node_with_label_diff
+        for node_name in nodes_labels_after_upgrade
+        if (
+            node_with_label_diff := get_node_with_label_value_diff(
+                labels_before_upgrade=nodes_labels_before_upgrade[node_name],
+                labels_after_upgrade=nodes_labels_after_upgrade[node_name],
+                node_name=node_name,
+            )
+        )
+    ]
+    assert (
+        not nodes_changed
+    ), f"Mismatch in the following nodes labels after upgrade: {nodes_changed}"
 
 
-def get_dict_diff(before_upgrade, after_upgrade):
+def get_node_with_label_value_diff(
+    labels_before_upgrade, labels_after_upgrade, node_name
+):
     """
-    Compare before and after upgrade values and create a dict with difference, incase of change in values post upgrade
+    Logging the labels values changes by category for a specific node.
 
     Args:
-        before_upgrade(dict): before upgrade values
-        after_upgrade(dict): after upgrade value
+        labels_before_upgrade(dict): before upgrade labels values.
+        labels_after_upgrade(dict): after upgrade labels values.
+        node_name(string): the name of the node.
 
     Returns:
-        dict: dictionary indicating difference
+        string: the name of the node.
     """
-    return {
-        node_name: {
-            "before": before_upgrade[node_name],
-            "after": after_upgrade[node_name],
+    diff_dict = DeepDiff(
+        t1=labels_before_upgrade, t2=labels_after_upgrade, verbose_level=2
+    )
+    if diff_dict:
+        format_dict_output(diff_dict=diff_dict)
+        LOGGER.error(f"Mismatch for {node_name}:\n" f"{pformat(diff_dict)}")
+        return node_name
+
+
+def format_dict_output(diff_dict):
+    # removes the '[root]' chars around each label name
+    for key, labels_dict in diff_dict.items():
+        formatted_labels_dict = {
+            label_name.lstrip("root[").strip("']"): label_value
+            for label_name, label_value in labels_dict.items()
         }
-        for node_name in after_upgrade
-        if after_upgrade[node_name] != before_upgrade[node_name]
-    }
+        diff_dict.update({key: formatted_labels_dict})
 
 
 def wait_for_hco_upgrade(dyn_client, hco_namespace, cnv_target_version):

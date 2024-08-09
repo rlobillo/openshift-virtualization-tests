@@ -9,6 +9,11 @@ from tests.install_upgrade_operators.product_upgrade.utils import (
 from tests.upgrade_params import IUO_UPGRADE_TEST_DEPENDENCY_NODE_ID
 
 
+pytestmark = pytest.mark.usefixtures(
+    "nodes_taints_before_upgrade",
+    "nodes_labels_before_upgrade",
+)
+
 LOGGER = logging.getLogger(__name__)
 
 

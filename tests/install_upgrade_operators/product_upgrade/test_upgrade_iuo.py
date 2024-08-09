@@ -23,10 +23,6 @@ from utilities.data_collector import collect_alerts_data, collect_cnv_informatio
 
 LOGGER = logging.getLogger(__name__)
 
-pytestmark = pytest.mark.usefixtures(
-    "nodes_taints_before_upgrade",
-    "nodes_labels_before_upgrade",
-)
 ALERT_ERROR = "Following alerts were fired during upgrade:"
 DEPENDENCIES_NODE_ID_PREFIX = "tests/install_upgrade_operators/product_upgrade/test_upgrade_iuo.py::TestUpgradeIUO"
 
@@ -136,7 +132,7 @@ class TestUpgradeIUO:
         scope=DEPENDENCY_SCOPE_SESSION,
     )
     def test_nodes_taints_after_upgrade(
-        self, admin_client, nodes, nodes_taints_before_upgrade
+        self, skip_on_eus_upgrade, admin_client, nodes, nodes_taints_before_upgrade
     ):
         LOGGER.info("Verify nodes taints after upgrade.")
         verify_nodes_taints_after_upgrade(
@@ -153,6 +149,7 @@ class TestUpgradeIUO:
     )
     def test_nodes_labels_after_upgrade(
         self,
+        skip_on_eus_upgrade,
         admin_client,
         nodes,
         nodes_labels_before_upgrade,
