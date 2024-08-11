@@ -756,11 +756,10 @@ def ping(
 
     rc, out, err = src_vm.ssh_exec.run_command(command=shlex.split(ping_cmd))
     out_to_process = err or out
-    for line in out_to_process.splitlines():
-        match = re.search(r"(\d*\.?\d+)% packet loss, ", line)
-        if match:
-            LOGGER.info(f"ping returned {match.string.strip()}")
-            return match.groups()
+    match = re.search(r"(\d*\.?\d+)% packet loss, ", out_to_process)
+    if match:
+        LOGGER.info(f"ping returned {match.string.strip()}")
+        return match.groups()
 
 
 def assert_ping_successful(src_vm, dst_ip, packet_size=None, count=None):
