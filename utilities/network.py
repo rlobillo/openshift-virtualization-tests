@@ -759,7 +759,7 @@ def ping(
     match = re.search(r"(\d*\.?\d+)% packet loss, ", out_to_process)
     if match:
         LOGGER.info(f"ping returned {match.string.strip()}")
-        return match.groups()
+        return match.group(1)
 
 
 def assert_ping_successful(src_vm, dst_ip, packet_size=None, count=None):
@@ -769,7 +769,13 @@ def assert_ping_successful(src_vm, dst_ip, packet_size=None, count=None):
         packet_size = packet_size - ip_header - icmp_header
 
     assert (
-        ping(src_vm=src_vm, dst_ip=dst_ip, packet_size=packet_size, count=count)[0]
+        ping(
+            src_vm=src_vm,
+            dst_ip=dst_ip,
+            packet_size=packet_size,
+            count=count,
+            interface=interface,
+        )
         == "0"
     )
 
@@ -1049,7 +1055,7 @@ def is_destination_pingable_from_vm(
         dst_ip=dst_ip,
         count=count,
         interface=interface,
-    )[0]
+    )
     return float(ping_stat) < 100
 
 

@@ -29,7 +29,7 @@ def wait_for_no_packet_loss_after_connection(src_vm, dst_ip, interface=None):
                 dst_ip=dst_ip,
                 count=sleep_count_value,
                 interface=interface,
-            )[0]
+            )
             == "0"
         )
 

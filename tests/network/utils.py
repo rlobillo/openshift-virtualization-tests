@@ -200,10 +200,7 @@ class ServiceMeshDeployments(Deployment):
 
 
 def assert_no_ping(src_vm, dst_ip, packet_size=None, count=None):
-    assert (
-        ping(src_vm=src_vm, dst_ip=dst_ip, packet_size=packet_size, count=count)[0]
-        == "100"
-    )
+    assert ping(src_vm=src_vm, dst_ip=dst_ip, packet_size=packet_size, count=count) == "100"
 
 
 def update_cloud_init_extra_user_data(cloud_init_data, cloud_init_extra_user_data):
