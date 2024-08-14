@@ -774,7 +774,6 @@ def assert_ping_successful(src_vm, dst_ip, packet_size=None, count=None):
             dst_ip=dst_ip,
             packet_size=packet_size,
             count=count,
-            interface=interface,
         )
         == 0
     )
