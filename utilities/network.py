@@ -744,7 +744,7 @@ def ping(
         interface: interface (ping -I option)
 
     Returns:
-        tuple or None: The packet loss amount in a number (Range - 0 to 100).
+        float or None: The packet loss amount in a number (Range - 0 to 100).
     """
     ping_ipv6 = "-6" if get_valid_ip_address(dst_ip=dst_ip, family=IPV6_STR) else ""
 
@@ -759,7 +759,7 @@ def ping(
     match = re.search(r"(\d*\.?\d+)%", out_to_process)
     if match:
         LOGGER.info(f"ping returned {match.string.strip()}")
-        return match.group(1)
+        return float(match.group(1))
 
 
 def assert_ping_successful(src_vm, dst_ip, packet_size=None, count=None):
@@ -776,7 +776,7 @@ def assert_ping_successful(src_vm, dst_ip, packet_size=None, count=None):
             count=count,
             interface=interface,
         )
-        == "0"
+        == 0
     )
 
 
@@ -1056,7 +1056,7 @@ def is_destination_pingable_from_vm(
         count=count,
         interface=interface,
     )
-    return float(ping_stat) < 100
+    return ping_stat < 100
 
 
 def get_cluster_cni_type(admin_client):
