@@ -150,14 +150,12 @@ def hco_version_scope_class(admin_client, hco_namespace):
 
 
 @pytest.fixture()
-def disabled_default_sources_in_operatorhub(
-    admin_client, installing_cnv, is_production_source, cnv_source
-):
-    if not installing_cnv or not is_production_source or cnv_source != HOTFIX_STR:
+def disabled_default_sources_in_operatorhub(admin_client, installing_cnv, cnv_source):
+    if installing_cnv or cnv_source in ["production", HOTFIX_STR]:
+        yield
+    else:
         with disable_default_sources_in_operatorhub(admin_client=admin_client):
             yield
-    else:
-        yield
 
 
 @pytest.fixture(scope="session")
