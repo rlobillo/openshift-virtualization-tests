@@ -8,6 +8,7 @@ from datetime import datetime
 from pprint import pformat
 
 from ocp_resources.catalog_source import CatalogSource
+from ocp_resources.cluster_operator import ClusterOperator
 from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.image_content_source_policy import ImageContentSourcePolicy
 from ocp_resources.installplan import InstallPlan
@@ -30,6 +31,7 @@ import utilities.infra
 from utilities.constants import (
     BASE_EXCEPTIONS_DICT,
     BREW_REGISTERY_SOURCE,
+    DEFAULT_RESOURCE_CONDITIONS,
     FILTER_BY_OS_OPTION,
     ICSP_FILE,
     TIMEOUT_5MIN,
@@ -731,3 +733,76 @@ def update_subscription_source(subscription, subscription_source):
             }
         }
     ).update()
+
+
+def get_cluster_operator_status_conditions(admin_client, operator_conditions=None):
+    operator_conditions = operator_conditions or DEFAULT_RESOURCE_CONDITIONS
+    cluster_operator_status = {}
+    for cluster_operator in list(ClusterOperator.get(dyn_client=admin_client)):
+        operator_name = cluster_operator.name
+        cluster_operator_status[operator_name] = {}
+        for condition in cluster_operator.instance.get("status", {}).get(
+            "conditions", []
+        ):
+            if condition["type"] in operator_conditions:
+                if (
+                    operator_name == "console"
+                    and condition["type"] == Resource.Condition.DEGRADED
+                    and condition["status"]
+                    and "ConsoleNotificationSyncDegraded" in condition["message"]
+                ):
+                    cluster_operator_status[operator_name][
+                        condition["type"]
+                    ] = Resource.Condition.Status.FALSE
+                else:
+                    cluster_operator_status[operator_name][
+                        condition["type"]
+                    ] = condition["status"]
+
+    return cluster_operator_status
+
+
+def get_failed_cluster_operator(admin_client):
+    cluster_operators_status_conditions = get_cluster_operator_status_conditions(
+        admin_client=admin_client
+    )
+    failed_operators = {}
+    for cluster_operator in cluster_operators_status_conditions:
+        if sorted(
+            cluster_operators_status_conditions[cluster_operator].items()
+        ) != sorted(DEFAULT_RESOURCE_CONDITIONS.items()):
+            LOGGER.info(
+                f"{cluster_operator} current status condition: {cluster_operators_status_conditions[cluster_operator]}"
+            )
+            failed_operators[cluster_operator] = cluster_operators_status_conditions[
+                cluster_operator
+            ]
+    return failed_operators
+
+
+def wait_for_cluster_operator_stabilize(admin_client, wait_timeout=TIMEOUT_20MIN):
+    sampler = TimeoutSampler(
+        wait_timeout=wait_timeout,
+        sleep=10,
+        func=get_failed_cluster_operator,
+        admin_client=admin_client,
+    )
+    consecutive_check = 0
+    sample = None
+    try:
+        for sample in sampler:
+            if not sample:
+                LOGGER.info(f"Found stable cluster operator: {consecutive_check} time.")
+                consecutive_check += 1
+            else:
+                LOGGER.info(
+                    f"Following cluster operators are not yet stable: {sample}."
+                )
+                consecutive_check = 0
+            if consecutive_check == 3:
+                return
+
+    except TimeoutExpiredError:
+        LOGGER.error(f"Following cluster operators failed to stabilize: {sample}")
+        if sample:
+            raise
