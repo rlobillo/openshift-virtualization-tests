@@ -3,9 +3,8 @@ from contextlib import contextmanager
 
 import deepdiff
 from benedict import benedict
-from ocp_resources.cluster_operator import ClusterOperator
 from ocp_resources.hyperconverged import HyperConverged
-from ocp_resources.resource import Resource, ResourceEditor
+from ocp_resources.resource import ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import cluster_resource
 from packaging.version import Version
@@ -20,15 +19,10 @@ from tests.install_upgrade_operators.crypto_policy.constants import (
     RESOURCE_NAMESPACE_STR,
     TLS_INTERMEDIATE_CIPHERS_IANA_OPENSSL_SYNTAX,
 )
-from utilities.constants import (
-    CLUSTER,
-    DEFAULT_RESOURCE_CONDITIONS,
-    TIMEOUT_2MIN,
-    TIMEOUT_15MIN,
-    TLS_SECURITY_PROFILE,
-)
+from utilities.constants import CLUSTER, TIMEOUT_2MIN, TLS_SECURITY_PROFILE
 from utilities.hco import ResourceEditorValidateHCOReconcile, wait_for_hco_conditions
 from utilities.infra import ExecCommandOnPod
+from utilities.operator import wait_for_cluster_operator_stabilize
 from utilities.ssp import verify_ssp_pod_is_running
 
 
@@ -118,81 +112,6 @@ def wait_for_crypto_policy_update(
         )
         LOGGER.error(error_message)
         return error_message
-
-
-def get_cluster_operator_status_conditions(admin_client, operator_conditions=None):
-    operator_conditions = operator_conditions or DEFAULT_RESOURCE_CONDITIONS
-    cluster_operator_status = {}
-    for cluster_operator in list(
-        cluster_resource(ClusterOperator).get(dyn_client=admin_client)
-    ):
-        operator_name = cluster_operator.name
-        cluster_operator_status[operator_name] = {}
-        for condition in cluster_operator.instance.get("status", {}).get(
-            "conditions", []
-        ):
-            if condition["type"] in operator_conditions:
-                if (
-                    operator_name == "console"
-                    and condition["type"] == Resource.Condition.DEGRADED
-                    and condition["status"]
-                    and "ConsoleNotificationSyncDegraded" in condition["message"]
-                ):
-                    cluster_operator_status[operator_name][
-                        condition["type"]
-                    ] = Resource.Condition.Status.FALSE
-                else:
-                    cluster_operator_status[operator_name][
-                        condition["type"]
-                    ] = condition["status"]
-
-    return cluster_operator_status
-
-
-def get_failed_cluster_operator(admin_client):
-    cluster_operators_status_conditions = get_cluster_operator_status_conditions(
-        admin_client=admin_client
-    )
-    failed_operators = {}
-    for cluster_operator in cluster_operators_status_conditions:
-        if sorted(
-            cluster_operators_status_conditions[cluster_operator].items()
-        ) != sorted(DEFAULT_RESOURCE_CONDITIONS.items()):
-            LOGGER.info(
-                f"{cluster_operator} current status condition: {cluster_operators_status_conditions[cluster_operator]}"
-            )
-            failed_operators[cluster_operator] = cluster_operators_status_conditions[
-                cluster_operator
-            ]
-    return failed_operators
-
-
-def wait_for_cluster_operator_stabilize(admin_client):
-    sampler = TimeoutSampler(
-        wait_timeout=TIMEOUT_15MIN,
-        sleep=10,
-        func=get_failed_cluster_operator,
-        admin_client=admin_client,
-    )
-    consecutive_check = 0
-    sample = None
-    try:
-        for sample in sampler:
-            if not sample:
-                LOGGER.info(f"Found stable cluster operator: {consecutive_check} time.")
-                consecutive_check += 1
-            else:
-                LOGGER.info(
-                    f"Following cluster operators are not yet stable: {sample}."
-                )
-                consecutive_check = 0
-            if consecutive_check == 3:
-                return
-
-    except TimeoutExpiredError:
-        LOGGER.error(f"Following cluster operators failed to stabilize: {sample}")
-        if sample:
-            raise
 
 
 def assert_crypto_policy_propagated_to_components(

@@ -1,5 +1,4 @@
 import base64
-import http
 import io
 import json
 import logging
@@ -601,6 +600,15 @@ class ExecCommandOnPod:
         return release_info
 
 
+def storage_sanity_check(cluster_storage_classes_names):
+    config_sc = list([[*csc][0] for csc in py_config["storage_class_matrix"]])
+    exists_sc = [scn for scn in config_sc if scn in cluster_storage_classes_names]
+    if sorted(config_sc) != sorted(exists_sc):
+        LOGGER.error(f"Expected {config_sc}, On cluster {exists_sc}")
+        return False
+    return True
+
+
 def cluster_sanity(
     request,
     admin_client,
@@ -614,15 +622,6 @@ def cluster_sanity(
     if "cluster_health_check" in request.config.getoption("-m"):
         LOGGER.warning("Skipping cluster sanity test, got -m cluster_health_check")
         return
-
-    def _storage_sanity_check():
-        config_sc = list([[*csc][0] for csc in py_config["storage_class_matrix"]])
-        exists_sc = [scn for scn in config_sc if scn in cluster_storage_classes_names]
-        if sorted(config_sc) != sorted(exists_sc):
-            raise ClusterSanityError(
-                err_str=f"Cluster is missing storage class. Expected {config_sc}, On cluster {exists_sc}\n"
-                f"either run with '--storage-class-matrix' or with '{skip_storage_classes_check}'"
-            )
 
     skip_cluster_sanity_check = "--cluster-sanity-skip-check"
     skip_storage_classes_check = "--cluster-sanity-skip-storage-check"
@@ -648,7 +647,13 @@ def cluster_sanity(
                 f"Check storage classes sanity. (To skip storage class sanity check pass {skip_storage_classes_check} "
                 f"to pytest)"
             )
-            _storage_sanity_check()
+            if not storage_sanity_check(
+                cluster_storage_classes_names=cluster_storage_classes_names
+            ):
+                raise ClusterSanityError(
+                    err_str=f"Cluster is missing storage class.\n"
+                    f"either run with '--storage-class-matrix' or with '{skip_storage_classes_check}'"
+                )
 
         # Check nodes only if --cluster-sanity-skip-nodes-check not passed to pytest.
         if request.session.config.getoption(skip_nodes_check):
@@ -1002,24 +1007,28 @@ def download_and_extract_file_from_cluster(tmpdir, url):
         list: list of extracted filenames
     """
     zip_file_extension = ".zip"
-    LOGGER.info(f"Downloading archive: url={url}")
+    LOGGER.info(f"Downloading archive using: url={url}")
     urllib3.disable_warnings()  # TODO: remove this when we fix the SSL warning
-    response = requests.get(url, verify=False)
-    assert (
-        response.status_code == http.HTTPStatus.OK
-    ), f"Response status code: {response.status_code}"
-    archive_file_data = io.BytesIO(initial_bytes=response.content)
-    LOGGER.info("Extract the archive")
+    local_file_name = os.path.join(tmpdir, url.split("/")[-1])
+    with requests.get(url, verify=False, stream=True) as created_request:
+        created_request.raise_for_status()
+        with open(local_file_name, "wb") as file_downloaded:
+            for chunk in created_request.iter_content(chunk_size=8192):
+                file_downloaded.write(chunk)
+    LOGGER.info("Extract the downloaded archive.")
     if url.endswith(zip_file_extension):
-        archive_file_object = zipfile.ZipFile(file=archive_file_data)
+        archive_file_object = zipfile.ZipFile(file=local_file_name)
     else:
-        archive_file_object = tarfile.open(fileobj=archive_file_data, mode="r")
+        archive_file_object = tarfile.open(name=local_file_name, mode="r")
     archive_file_object.extractall(path=tmpdir)
     extracted_filenames = (
         archive_file_object.namelist()
         if url.endswith(zip_file_extension)
         else archive_file_object.getnames()
     )
+    LOGGER.info(f"Downloaded file: {extracted_filenames}")
+    if os.path.isfile(local_file_name):
+        os.remove(local_file_name)
     return [os.path.join(tmpdir.strpath, namelist) for namelist in extracted_filenames]
 
 
