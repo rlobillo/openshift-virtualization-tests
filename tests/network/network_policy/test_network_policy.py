@@ -5,7 +5,7 @@ import shlex
 
 import pytest
 from ocp_resources.network_policy import NetworkPolicy
-from ocp_utilities.exceptions import CommandExecFailed
+from pyhelper_utils.exceptions import CommandExecFailed
 from pyhelper_utils.shell import run_ssh_commands
 
 from utilities.constants import PORT_80
