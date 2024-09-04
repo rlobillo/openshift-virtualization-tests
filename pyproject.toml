@@ -12,7 +12,7 @@ packages = [{ include = "*" }]
 python = "^3.8"
 pexpect = "*"
 PyYAML = "*"
-pytest = "*"
+pytest = "7.4.*"
 bitmath = "*"
 urllib3 = "*"
 netaddr = "*"

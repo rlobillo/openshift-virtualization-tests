@@ -6,7 +6,6 @@ from datetime import datetime, timedelta, timezone
 from xml.etree import ElementTree
 
 import bitmath
-from ocp_resources import pod
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from packaging import version
 from pyhelper_utils.shell import run_ssh_commands
@@ -28,20 +27,6 @@ from utilities.virt import get_guest_os_info
 
 HVINFO_PATH = "C:\\\\hvinfo\\\\hvinfo.exe"
 LOGGER = logging.getLogger(__name__)
-
-
-def reboot_vm(vm):
-    try:
-        run_ssh_commands(
-            host=vm.ssh_exec,
-            commands=shlex.split("powershell restart-computer -force"),
-            tcp_timeout=TCP_TIMEOUT_30SEC,
-        )[0]
-    # When a reboot command is executed, a resources.pod.ExecOnPodError exception is raised:
-    # "connection reset by peer"
-    except pod.ExecOnPodError as e:
-        if "connection reset by peer" in e.out:
-            return
 
 
 def vm_os_version(vm):
