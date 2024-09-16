@@ -293,6 +293,7 @@ def bad_syntax_br(static_primary_interface_worker_1):
     bad_br.delete()
 
 
+@pytest.mark.destructive
 class TestNmpolicy:
     @pytest.mark.polarion("CNV-7595")
     def test_nmpolicy_configuration_collection(
