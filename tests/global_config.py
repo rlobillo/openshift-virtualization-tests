@@ -168,7 +168,6 @@ WORKLOAD_STR = "workload"
 FLAVOR_STR = "flavor"
 LATEST_RELEASE_STR = "latest_released"
 OS_VERSION_STR = "os_version"
-LICENSE_STR = "license"
 
 rhel_os_matrix = [
     {
@@ -277,7 +276,6 @@ windows_os_matrix = [
                 WORKLOAD_STR: Template.Workload.DESKTOP,
                 FLAVOR_STR: Template.Flavor.MEDIUM,
             },
-            LICENSE_STR: "BRNVR-4HQGD-GH2WT-Y2CXR-W8F8R",
         }
     },
     {
@@ -291,7 +289,6 @@ windows_os_matrix = [
                 WORKLOAD_STR: Template.Workload.SERVER,
                 FLAVOR_STR: Template.Flavor.MEDIUM,
             },
-            LICENSE_STR: "CKN69-V8PF9-KT726-Y23JM-XBRRY",
         }
     },
     {
@@ -305,7 +302,6 @@ windows_os_matrix = [
                 WORKLOAD_STR: Template.Workload.SERVER,
                 FLAVOR_STR: Template.Flavor.MEDIUM,
             },
-            LICENSE_STR: "8KHNW-H9K6W-4XXX8-8WKW9-3RT3F",
         }
     },
     {
@@ -320,7 +316,6 @@ windows_os_matrix = [
                 WORKLOAD_STR: Template.Workload.SERVER,
                 FLAVOR_STR: Template.Flavor.MEDIUM,
             },
-            LICENSE_STR: "NQJPH-YJBCM-K9F34-YMKPW-Q7CHQ",
         }
     },
     {
@@ -334,7 +329,6 @@ windows_os_matrix = [
                 WORKLOAD_STR: Template.Workload.DESKTOP,
                 FLAVOR_STR: Template.Flavor.MEDIUM,
             },
-            LICENSE_STR: "FMJBN-MMJ6V-TGTWY-XKY73-BG9TT",
         }
     },
     {
@@ -350,7 +344,6 @@ windows_os_matrix = [
                 WORKLOAD_STR: Template.Workload.SERVER,
                 FLAVOR_STR: Template.Flavor.MEDIUM,
             },
-            LICENSE_STR: "VTVFN-R9H2P-GBXF7-TBY2B-XBW9Y",
         }
     },
 ]
