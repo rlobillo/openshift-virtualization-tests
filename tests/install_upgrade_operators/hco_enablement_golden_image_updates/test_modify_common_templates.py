@@ -4,6 +4,7 @@ import logging
 import pytest
 from benedict import benedict
 from ocp_resources.cdi import CDI
+from ocp_resources.data_import_cron import DataImportCron
 from ocp_resources.ssp import SSP
 from openshift.dynamic.exceptions import ResourceNotFoundError
 
@@ -57,6 +58,18 @@ def validate_template_change(template_dict, expected_dict):
 
 
 @pytest.fixture()
+def common_templates_enabled(common_templates_scope_session):
+    return [
+        template
+        for template in common_templates_scope_session
+        if template["metadata"]["annotations"].get(
+            f"{DataImportCron.ApiGroup.DATA_IMPORT_CRON_TEMPLATE_KUBEVIRT_IO}/enable"
+        )
+        != "false"
+    ]
+
+
+@pytest.fixture()
 def updated_template_names(updated_common_template):
     return [template["metadata"]["name"] for template in updated_common_template]
 
@@ -64,7 +77,7 @@ def updated_template_names(updated_common_template):
 @pytest.fixture()
 def updated_common_template(
     request,
-    common_templates_scope_session,
+    common_templates_enabled,
     hyperconverged_resource_scope_function,
     admin_client,
     hco_namespace,
@@ -72,8 +85,9 @@ def updated_common_template(
 ):
     updated_templates = []
     updated_common_template_dict_list = []
+
     for index in range(request.param.get("num_templates")):
-        template = common_templates_scope_session[index]
+        template = common_templates_enabled[index]
         updated_templates.append(template)
         updated_common_template_dict_list.append(
             get_common_template_updated_dict(
