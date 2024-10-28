@@ -81,10 +81,11 @@ def test_custom_template_no_disable(
         hyperconverged_status_templates_scope_function,
         ssp_spec_templates_scope_function,
     ]:
-        assert get_template_dict_by_name(
+        # Disabled custom template should not be available in status
+        assert not get_template_dict_by_name(
             template_name=custom_template_name,
             templates=status_template,
-        ), f"Expected {custom_template_name} to be enabled, found: {status_template}"
+        ), f"Disabled custom template {custom_template_name} is found in status: {status_template}"
 
 
 @pytest.mark.polarion("CNV-8709")
