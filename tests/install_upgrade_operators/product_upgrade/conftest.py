@@ -9,6 +9,7 @@ from ocp_resources.kubevirt import KubeVirt
 from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.resource import ResourceEditor
 from ocp_utilities.infra import cluster_resource
+from packaging.version import Version
 from pytest_testconfig import py_config
 
 from tests.install_upgrade_operators.constants import (
@@ -519,7 +520,9 @@ def source_eus_to_non_eus_cnv_upgraded(
     hyperconverged_resource_scope_function,
     updated_cnv_subscription_source,
 ):
-    for version, cnv_image_url in sorted(eus_cnv_upgrade_path["non-eus"].items()):
+    for version, cnv_image_url in sorted(
+        eus_cnv_upgrade_path["non-eus"].items(), key=lambda item: Version(item[0])
+    ):
         LOGGER.info(f"Cnv upgrade to version {version} using image: {cnv_image_url}")
         perform_cnv_upgrade(
             admin_client=admin_client,
