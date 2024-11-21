@@ -9,7 +9,7 @@ export OPENSHIFT_PYTHON_WRAPPER_LOG_LEVEL=DEBUG
 IMAGE_BUILD_CMD = $(shell which podman 2>/dev/null || which docker)
 IMAGE_REGISTRY ?= "quay.io"
 REGISTRY_NAMESPACE ?= "openshift-cnv"
-OPERATOR_IMAGE_NAME="cnv-tests"
+OPERATOR_IMAGE_NAME="cnv-tests-github"
 # Need to change when master point to new version of cnv-tests
 IMAGE_TAG ?= "cnv-4.12"
 
