@@ -7,7 +7,12 @@ from pytest_testconfig import config as py_config
 
 from tests.storage.oadp.utils import VeleroBackup, VeleroRestore
 from utilities.constants import TIMEOUT_10MIN, Images
-from utilities.infra import cluster_resource
+from utilities.infra import (
+    cleanup_artifactory_secret_and_config_map,
+    cluster_resource,
+    get_artifactory_config_map,
+    get_artifactory_secret,
+)
 from utilities.storage import create_dv
 from utilities.virt import VirtualMachineForTestsFromTemplate, running_vm
 
@@ -75,18 +80,28 @@ def rhel_dv_dict(
     namespace_for_backup2,
     rhel9_http_image_url,
 ):
+    namespace = namespace_for_backup2.name
+    artifactory_secret = get_artifactory_secret(namespace=namespace)
+    artifactory_config_map = get_artifactory_config_map(namespace=namespace)
     dv = cluster_resource(DataVolume)(
         name="dv-from-template",
-        namespace=namespace_for_backup2.name,
+        namespace=namespace,
         storage_class=[*storage_class_matrix_snapshot_matrix__function__][0],
         source="http",
         url=rhel9_http_image_url,
         size=Images.Rhel.DEFAULT_DV_SIZE,
         client=admin_client,
         api_name="storage",
+        secret=artifactory_secret,
+        cert_configmap=artifactory_config_map.name,
     )
     dv.to_dict()
-    return dv.res
+    yield dv.res
+
+    cleanup_artifactory_secret_and_config_map(
+        artifactory_secret=artifactory_secret,
+        artifactory_config_map=artifactory_config_map,
+    )
 
 
 @pytest.fixture()
