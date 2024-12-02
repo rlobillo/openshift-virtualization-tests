@@ -20,6 +20,7 @@ from ocp_resources.storage_profile import StorageProfile
 from ocp_resources.template import Template
 from ocp_resources.upload_token_request import UploadTokenRequest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.virtual_machine import VirtualMachine
 from pyhelper_utils.shell import run_ssh_commands
 from pytest_testconfig import config as py_config
 
@@ -589,3 +590,53 @@ def clean_up_multiprocess(processes, object_list):
             )
         finally:
             process.close()
+
+
+@contextmanager
+def create_cirros_vm(
+    storage_class,
+    namespace,
+    client,
+    dv_name,
+    vm_name,
+    node=None,
+    wait_running=True,
+    volume_mode=None,
+):
+    artifactory_secret = get_artifactory_secret(namespace=namespace)
+    artifactory_config_map = get_artifactory_config_map(namespace=namespace)
+
+    dv = cluster_resource(DataVolume)(
+        name=dv_name,
+        namespace=namespace,
+        source="http",
+        url=get_http_image_url(
+            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
+        ),
+        storage_class=storage_class,
+        size=Images.Cirros.DEFAULT_DV_SIZE,
+        api_name="storage",
+        volume_mode=volume_mode,
+        secret=artifactory_secret,
+        cert_configmap=artifactory_config_map.name,
+    )
+    dv.to_dict()
+    dv_metadata = dv.res["metadata"]
+    with cluster_resource(VirtualMachineForTests)(
+        client=client,
+        name=vm_name,
+        namespace=dv_metadata["namespace"],
+        os_flavor=OS_FLAVOR_CIRROS,
+        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
+        data_volume_template={"metadata": dv_metadata, "spec": dv.res["spec"]},
+        node_selector=node,
+        run_strategy=VirtualMachine.RunStrategy.ALWAYS,
+    ) as vm:
+        if wait_running:
+            running_vm(vm=vm, wait_for_interfaces=False)
+        yield vm
+
+    cleanup_artifactory_secret_and_config_map(
+        artifactory_secret=artifactory_secret,
+        artifactory_config_map=artifactory_config_map,
+    )

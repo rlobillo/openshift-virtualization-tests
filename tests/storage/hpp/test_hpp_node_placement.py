@@ -7,7 +7,6 @@ import logging
 from contextlib import contextmanager
 
 import pytest
-from ocp_resources.datavolume import DataVolume
 from ocp_resources.persistent_volume import PersistentVolume
 from ocp_resources.persistent_volume_claim import PersistentVolumeClaim
 from ocp_resources.resource import ResourceEditor
@@ -16,11 +15,10 @@ from ocp_utilities.infra import cluster_resource
 from openshift.dynamic.exceptions import ResourceNotFoundError
 
 from tests.storage.hpp.utils import wait_for_desired_hpp_pods_running
-from tests.storage.utils import check_disk_count_in_vm
-from utilities.constants import OS_FLAVOR_CIRROS, TIMEOUT_1MIN, TIMEOUT_5MIN, Images
+from tests.storage.utils import check_disk_count_in_vm, create_cirros_vm
+from utilities.constants import TIMEOUT_1MIN, TIMEOUT_5MIN
 from utilities.hco import add_labels_to_nodes
-from utilities.infra import get_http_image_url
-from utilities.virt import VirtualMachineForTests, running_vm
+from utilities.virt import running_vm
 
 
 LOGGER = logging.getLogger(__name__)
@@ -113,28 +111,14 @@ def cirros_vm_on_hpp(
     node=None,
     wait_for_deletion=True,
 ):
-    dv = cluster_resource(DataVolume)(
-        name=dv_name,
-        namespace=namespace.name,
-        source="http",
-        url=get_http_image_url(
-            image_directory=Images.Cirros.DIR, image_name=Images.Cirros.QCOW2_IMG
-        ),
+    with create_cirros_vm(
         storage_class=storage_class,
-        size=Images.Cirros.DEFAULT_DV_SIZE,
-        api_name="storage",
-    )
-    dv.to_dict()
-    dv_metadata = dv.res["metadata"]
-    with cluster_resource(VirtualMachineForTests)(
+        namespace=namespace.name,
         client=client,
-        name=vm_name,
-        namespace=dv_metadata["namespace"],
-        os_flavor=OS_FLAVOR_CIRROS,
-        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-        data_volume_template={"metadata": dv_metadata, "spec": dv.res["spec"]},
-        node_selector=node,
-        running=True,
+        dv_name=dv_name,
+        vm_name=vm_name,
+        node=node,
+        wait_running=False,
     ) as vm:
         yield vm
     if wait_for_deletion:

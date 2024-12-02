@@ -21,10 +21,13 @@ from ocp_resources.secret import Secret
 from ocp_resources.utils import TimeoutSampler
 from pytest_testconfig import config as py_config
 
-import tests.storage.utils as storage_utils
+from tests.storage.utils import (
+    check_disk_count_in_vm,
+    create_cirros_vm,
+    create_vm_from_dv,
+)
 from utilities.constants import (
     CDI_SECRETS,
-    OS_FLAVOR_CIRROS,
     TIMEOUT_1MIN,
     TIMEOUT_3MIN,
     TIMEOUT_10MIN,
@@ -32,17 +35,14 @@ from utilities.constants import (
     Images,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import cluster_resource, get_http_image_url
+from utilities.infra import cluster_resource
 from utilities.storage import (
     check_upload_virtctl_result,
-    create_dummy_first_consumer_pod,
     create_dv,
     downloaded_image,
-    sc_is_hpp_with_immediate_volume_binding,
-    sc_volume_binding_mode_is_wffc,
     virtctl_upload_dv,
 )
-from utilities.virt import VirtualMachineForTests, running_vm
+from utilities.virt import running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -174,62 +174,64 @@ def refresh_cdi_certificates(secrets):
                         break
 
 
-@pytest.mark.polarion("CNV-3686")
+@pytest.fixture()
+def multi_storage_cirros_vm(
+    request, namespace, unprivileged_client, storage_class_matrix__function__
+):
+    storage_class = [*storage_class_matrix__function__][0]
+    with create_cirros_vm(
+        storage_class=storage_class,
+        namespace=namespace.name,
+        client=unprivileged_client,
+        dv_name=f"{request.param['dv_name']}-{storage_class}",
+        vm_name=f"{request.param['vm_name']}-{storage_class}",
+    ) as vm:
+        yield vm
+
+
+@pytest.fixture()
+def data_volume_template_metadata(multi_storage_cirros_vm):
+    return multi_storage_cirros_vm.data_volume_template["metadata"]
+
+
+@pytest.fixture()
+def dv_of_multi_storage_cirros_vm(
+    data_volume_template_metadata,
+):
+    return cluster_resource(DataVolume)(
+        name=data_volume_template_metadata["name"],
+        namespace=data_volume_template_metadata["namespace"],
+    )
+
+
+@pytest.mark.parametrize(
+    "multi_storage_cirros_vm",
+    [
+        pytest.param(
+            {
+                "dv_name": "dv-3686",
+                "vm_name": "vm-3686",
+            },
+            marks=pytest.mark.polarion("CNV-3686"),
+        ),
+    ],
+    indirect=True,
+)
 def test_dv_delete_from_vm(
-    valid_cdi_certificates, namespace, storage_class_matrix__module__, worker_node1
+    valid_cdi_certificates,
+    namespace,
+    multi_storage_cirros_vm,
+    dv_of_multi_storage_cirros_vm,
 ):
     """
     Check that create VM with dataVolumeTemplates, once DV is deleted, the owner VM will create one.
     This will trigger the import process so that cert code will be exercised one more time.
     """
-    dv = DataVolume(namespace=namespace.name, name="cnv-3686-dv")
-    dv.to_dict()
-    storage_class = [*storage_class_matrix__module__][0]
-    dv_template = {
-        "metadata": {
-            "name": f"{dv.name}",
-        },
-        "spec": {
-            "pvc": {
-                "storageClassName": storage_class,
-                "volumeMode": storage_class_matrix__module__[storage_class][
-                    "volume_mode"
-                ],
-                "accessModes": [
-                    storage_class_matrix__module__[storage_class]["access_mode"]
-                ],
-                "resources": {"requests": {"storage": "1Gi"}},
-            },
-            "source": {
-                "http": {
-                    "url": get_http_image_url(
-                        image_directory=Images.Cirros.DIR,
-                        image_name=Images.Cirros.QCOW2_IMG,
-                    )
-                }
-            },
-        },
-    }
-    if sc_is_hpp_with_immediate_volume_binding(sc=storage_class):
-        dv_template["metadata"]["annotations"] = {
-            "kubevirt.io/provisionOnNode": worker_node1.name
-        }
-    with cluster_resource(VirtualMachineForTests)(
-        name="cnv-3686-vm",
-        namespace=namespace.name,
-        os_flavor=OS_FLAVOR_CIRROS,
-        memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
-        data_volume_template=dv_template,
-    ) as vm:
-        if sc_volume_binding_mode_is_wffc(sc=storage_class):
-            create_dummy_first_consumer_pod(dv=dv)
-        dv.wait_for_dv_success()
-        dv.delete()
-        create_dummy_first_consumer_pod(dv=dv)
-        # DV re-creation is triggered by VM
-        running_vm(vm=vm, wait_for_interfaces=False)
-        dv.wait_for_dv_success()
-        storage_utils.check_disk_count_in_vm(vm=vm)
+    multi_storage_cirros_vm.stop(wait=True)
+    dv_of_multi_storage_cirros_vm.delete(wait=True)
+    # DV re-creation is triggered by VM
+    running_vm(vm=multi_storage_cirros_vm, wait_for_interfaces=False)
+    check_disk_count_in_vm(vm=multi_storage_cirros_vm)
 
 
 @pytest.mark.sno
@@ -256,8 +258,8 @@ def test_upload_after_certs_renewal(
         check_upload_virtctl_result(result=res)
         dv = DataVolume(namespace=namespace.name, name=dv_name)
         dv.wait_for_dv_success(timeout=TIMEOUT_1MIN)
-        with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
-            storage_utils.check_disk_count_in_vm(vm=vm)
+        with create_vm_from_dv(dv=dv, start=True) as vm:
+            check_disk_count_in_vm(vm=vm)
 
 
 @pytest.mark.parametrize(
@@ -293,8 +295,8 @@ def test_import_clone_after_certs_renewal(
         storage_class=data_volume_multi_storage_scope_module.storage_class,
     ) as cdv:
         cdv.wait_for_dv_success(timeout=TIMEOUT_3MIN)
-        with storage_utils.create_vm_from_dv(dv=cdv, start=True) as vm:
-            storage_utils.check_disk_count_in_vm(vm=vm)
+        with create_vm_from_dv(dv=cdv, start=True) as vm:
+            check_disk_count_in_vm(vm=vm)
 
 
 @pytest.mark.sno
@@ -321,8 +323,8 @@ def test_upload_after_validate_aggregated_api_cert(
         check_upload_virtctl_result(result=res)
         dv = DataVolume(namespace=namespace.name, name=dv_name)
         dv.wait_for_dv_success(timeout=TIMEOUT_1MIN)
-        with storage_utils.create_vm_from_dv(dv=dv, start=True) as vm:
-            storage_utils.check_disk_count_in_vm(vm=vm)
+        with create_vm_from_dv(dv=dv, start=True) as vm:
+            check_disk_count_in_vm(vm=vm)
 
 
 @pytest.fixture()
