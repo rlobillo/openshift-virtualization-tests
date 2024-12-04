@@ -162,14 +162,6 @@ def wait_for_pods_replacement_by_type(
     ), f"Failures during operator pods replacement. Failed processes={failed_processes}"
 
 
-def get_operator_by_name(dyn_client, hco_namespace, operator_name):
-    pods = list(
-        cluster_resource(Pod).get(dyn_client=dyn_client, namespace=hco_namespace)
-    )
-    operator_pod = list(filter(lambda x: operator_name in x.name, pods))[0]
-    return operator_pod
-
-
 def wait_for_expected_pods_exist(
     dyn_client,
     hco_namespace,

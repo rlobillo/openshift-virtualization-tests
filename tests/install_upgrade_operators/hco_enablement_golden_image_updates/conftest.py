@@ -1,21 +1,20 @@
 import pytest
 from ocp_resources.image_stream import ImageStream
 from ocp_resources.pod import Pod
+from ocp_utilities.infra import cluster_resource
 
 from tests.install_upgrade_operators.hco_enablement_golden_image_updates.utils import (
     HCO_CR_DATA_IMPORT_SCHEDULE_KEY,
-    delete_hco_operator_pod,
     get_modifed_common_template_names,
     get_random_minutes_hours_fields_from_data_import_schedule,
     get_templates_by_type_from_hco_status,
 )
-from tests.install_upgrade_operators.product_upgrade.utils import get_operator_by_name
 from utilities.constants import (
     COMMON_TEMPLATES_KEY_NAME,
     HCO_OPERATOR,
     SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME,
 )
-from utilities.infra import cluster_resource
+from utilities.infra import get_pod_by_name_prefix
 from utilities.ssp import get_ssp_resource
 
 
@@ -37,11 +36,11 @@ def data_import_schedule_minute_and_hour_values(data_import_schedule):
 def deleted_hco_operator_pod(
     admin_client, hco_namespace, hyperconverged_resource_scope_function
 ):
-    delete_hco_operator_pod(admin_client=admin_client, hco_namespace=hco_namespace)
-    get_operator_by_name(
-        dyn_client=admin_client,
-        hco_namespace=hco_namespace.name,
-        operator_name=HCO_OPERATOR,
+    get_pod_by_name_prefix(
+        dyn_client=admin_client, pod_prefix=HCO_OPERATOR, namespace=hco_namespace.name
+    ).delete(wait=True)
+    get_pod_by_name_prefix(
+        dyn_client=admin_client, pod_prefix=HCO_OPERATOR, namespace=hco_namespace.name
     ).wait_for_status(status=Pod.Status.RUNNING)
     return get_random_minutes_hours_fields_from_data_import_schedule(
         target_string=hyperconverged_resource_scope_function.instance.status.get(

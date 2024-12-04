@@ -7,8 +7,7 @@ from ocp_resources.data_source import DataSource
 from ocp_resources.ssp import SSP
 from openshift.dynamic.exceptions import ResourceNotFoundError
 
-from tests.install_upgrade_operators.product_upgrade.utils import get_operator_by_name
-from utilities.constants import HCO_OPERATOR, SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
+from utilities.constants import SSP_CR_COMMON_TEMPLATES_LIST_KEY_NAME
 from utilities.hco import ResourceEditorValidateHCOReconcile, wait_for_hco_conditions
 from utilities.ssp import wait_for_ssp_conditions
 
@@ -79,21 +78,6 @@ def get_random_minutes_hours_fields_from_data_import_schedule(target_string):
     return re_result.group(RE_NAMED_GROUP_MINUTES), re_result.group(
         RE_NAMED_GROUP_HOURS
     )
-
-
-def delete_hco_operator_pod(admin_client, hco_namespace):
-    """
-    Deletes the HCO operator pod
-
-    Args:
-        admin_client (DynamicClient): Dynamic client object
-        hco_namespace (Namespace): Namespace object
-    """
-    get_operator_by_name(
-        dyn_client=admin_client,
-        hco_namespace=hco_namespace.name,
-        operator_name=HCO_OPERATOR,
-    ).delete(wait=True)
 
 
 def get_modifed_common_template_names(hyperconverged):
