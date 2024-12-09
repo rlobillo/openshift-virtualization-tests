@@ -17,17 +17,18 @@ from utilities.storage import (
     run_command_on_cirros_vm_and_check_output,
     wait_for_vm_volume_ready,
 )
+from utilities.virt import migrate_vm_and_verify
 
 
 LOGGER = logging.getLogger(__name__)
 DEPENDENCIES_NODE_ID_PREFIX = f"{os.path.abspath(__file__)}::TestUpgradeStorage"
 
 
-@pytest.mark.sno
 @pytest.mark.upgrade
 class TestUpgradeStorage:
     """Pre-upgrade tests"""
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-4880")
     @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
@@ -50,6 +51,7 @@ class TestUpgradeStorage:
             actual_sc == expected_sc
         ), "The scratchSpaceStorageClass on CDIConfig config should be changed before upgrade"
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-5993")
     @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
@@ -75,6 +77,7 @@ class TestUpgradeStorage:
                 expected_result="1",
             )
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-5995")
     @pytest.mark.order(before=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
@@ -94,6 +97,7 @@ class TestUpgradeStorage:
     )
     def test_vm_with_hotplug_before_upgrade(
         self,
+        skip_if_config_default_storage_class_access_mode_rwo,
         upgrade_namespace_scope_session,
         blank_disk_dv_with_default_sc,
         fedora_vm_for_hotplug_upg,
@@ -117,6 +121,7 @@ class TestUpgradeStorage:
         for dv in dvs_for_upgrade:
             assert dv.api_version == f"{dv.api_group}/{dv.ApiVersion.V1BETA1}"
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-2952")
     @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
@@ -143,6 +148,7 @@ class TestUpgradeStorage:
             actual_sc == expected_sc
         ), "The scratchSpaceStorageClass on CDIConfig config should not change after upgrade"
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-5994")
     @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
@@ -162,6 +168,7 @@ class TestUpgradeStorage:
             expected_result="1",
         )
 
+    @pytest.mark.sno
     @pytest.mark.polarion("CNV-5996")
     @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)
     @pytest.mark.dependency(
@@ -207,6 +214,7 @@ class TestUpgradeStorage:
     ):
         assert_disk_serial(vm=fedora_vm_for_hotplug_upg)
         assert_hotplugvolume_nonexist_optional_restart(vm=fedora_vm_for_hotplug_upg)
+        migrate_vm_and_verify(vm=fedora_vm_for_hotplug_upg, check_ssh_connectivity=True)
 
     @pytest.mark.polarion("CNV-10334")
     @pytest.mark.order(after=IUO_UPGRADE_TEST_ORDERING_NODE_ID)

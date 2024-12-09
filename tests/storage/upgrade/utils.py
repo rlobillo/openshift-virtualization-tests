@@ -16,7 +16,11 @@ from utilities.virt import VirtualMachineForTests
 
 @contextmanager
 def create_vm_for_snapshot_upgrade_tests(
-    vm_name, namespace, client, storage_class_for_snapshot
+    vm_name,
+    namespace,
+    client,
+    storage_class_for_snapshot,
+    cpu_model,
 ):
     artifactory_secret = get_artifactory_secret(namespace=namespace)
     artifactory_config_map = get_artifactory_config_map(namespace=namespace)
@@ -41,7 +45,7 @@ def create_vm_for_snapshot_upgrade_tests(
         namespace=namespace,
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
         data_volume_template={"metadata": dv.res["metadata"], "spec": dv.res["spec"]},
-        eviction=None,
+        cpu_model=cpu_model,
     ) as vm:
         write_file(
             vm=vm,

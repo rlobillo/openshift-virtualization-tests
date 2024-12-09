@@ -1,6 +1,8 @@
 import logging
 
 import pytest
+from ocp_resources.datavolume import DataVolume
+from ocp_resources.storage_profile import StorageProfile
 from pytest_testconfig import py_config
 
 from tests.storage.upgrade.utils import (
@@ -71,13 +73,17 @@ def skip_if_not_override_cdiconfig_scratch_space(override_cdiconfig_scratch_spec
 
 @pytest.fixture(scope="session")
 def cirros_vm_for_upgrade_a(
-    upgrade_namespace_scope_session, admin_client, storage_class_for_snapshot
+    upgrade_namespace_scope_session,
+    admin_client,
+    storage_class_for_snapshot,
+    nodes_common_cpu_model,
 ):
     with create_vm_for_snapshot_upgrade_tests(
         vm_name="snapshot-upgrade-a",
         namespace=upgrade_namespace_scope_session.name,
         client=admin_client,
         storage_class_for_snapshot=storage_class_for_snapshot,
+        cpu_model=nodes_common_cpu_model,
     ) as vm:
         yield vm
 
@@ -95,13 +101,17 @@ def snapshots_for_upgrade_a(
 
 @pytest.fixture(scope="session")
 def cirros_vm_for_upgrade_b(
-    upgrade_namespace_scope_session, admin_client, storage_class_for_snapshot
+    upgrade_namespace_scope_session,
+    admin_client,
+    storage_class_for_snapshot,
+    nodes_common_cpu_model,
 ):
     with create_vm_for_snapshot_upgrade_tests(
         vm_name="snapshot-upgrade-b",
         namespace=upgrade_namespace_scope_session.name,
         client=admin_client,
         storage_class_for_snapshot=storage_class_for_snapshot,
+        cpu_model=nodes_common_cpu_model,
     ) as vm:
         yield vm
 
@@ -131,13 +141,13 @@ def blank_disk_dv_with_default_sc(upgrade_namespace_scope_session):
 
 
 @pytest.fixture(scope="session")
-def fedora_vm_for_hotplug_upg(upgrade_namespace_scope_session):
+def fedora_vm_for_hotplug_upg(upgrade_namespace_scope_session, nodes_common_cpu_model):
     name = "fedora-hotplug-upg"
     with cluster_resource(VirtualMachineForTests)(
         name=name,
         namespace=upgrade_namespace_scope_session.name,
         body=fedora_vm_body(name=name),
-        eviction=None,
+        cpu_model=nodes_common_cpu_model,
     ) as vm:
         running_vm(vm=vm)
         yield vm
@@ -161,3 +171,21 @@ def hotplug_volume_upg(fedora_vm_for_hotplug_upg):
 @pytest.fixture()
 def fedora_vm_for_hotplug_upg_ssh_connectivity(fedora_vm_for_hotplug_upg):
     wait_for_ssh_connectivity(vm=fedora_vm_for_hotplug_upg)
+
+
+@pytest.fixture(scope="session")
+def skip_if_config_default_storage_class_access_mode_rwo():
+    storage_class = py_config["default_storage_class"]
+    claim_property_sets = cluster_resource(StorageProfile)(
+        name=storage_class
+    ).instance.status.get("claimPropertySets")
+    access_modes = (
+        claim_property_sets[0].get("accessModes") if claim_property_sets else None
+    )
+    assert (
+        access_modes
+    ), f"Could not get the access mode from the {storage_class} storage profile"
+    access_mode = access_modes[0]
+    LOGGER.info(f"Storage class '{storage_class}' has access mode: '{access_mode}'")
+    if access_mode == DataVolume.AccessMode.RWO:
+        pytest.skip(reason="Skip when access_mode is RWO")

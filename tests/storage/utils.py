@@ -20,7 +20,6 @@ from ocp_resources.storage_profile import StorageProfile
 from ocp_resources.template import Template
 from ocp_resources.upload_token_request import UploadTokenRequest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
-from ocp_resources.virtual_machine import VirtualMachine
 from pyhelper_utils.shell import run_ssh_commands
 from pytest_testconfig import config as py_config
 
@@ -602,6 +601,7 @@ def create_cirros_vm(
     node=None,
     wait_running=True,
     volume_mode=None,
+    cpu_model=None,
 ):
     artifactory_secret = get_artifactory_secret(namespace=namespace)
     artifactory_config_map = get_artifactory_config_map(namespace=namespace)
@@ -630,7 +630,8 @@ def create_cirros_vm(
         memory_requests=Images.Cirros.DEFAULT_MEMORY_SIZE,
         data_volume_template={"metadata": dv_metadata, "spec": dv.res["spec"]},
         node_selector=node,
-        run_strategy=VirtualMachine.RunStrategy.ALWAYS,
+        running=True,
+        cpu_model=cpu_model,
     ) as vm:
         if wait_running:
             running_vm(vm=vm, wait_for_interfaces=False)
