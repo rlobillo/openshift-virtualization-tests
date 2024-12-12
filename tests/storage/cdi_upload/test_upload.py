@@ -23,6 +23,7 @@ import tests.storage.utils as storage_utils
 import utilities.storage
 from utilities.constants import (
     CDI_UPLOADPROXY,
+    HTTP_OK,
     TIMEOUT_1MIN,
     TIMEOUT_3MIN,
     TIMEOUT_5MIN,
@@ -35,7 +36,6 @@ from utilities.storage import downloaded_image
 
 LOGGER = logging.getLogger(__name__)
 HTTP_UNAUTHORIZED = 401
-HTTP_OK = 200
 
 
 def wait_for_upload_response_code(token, data, response_code, asynchronous=False):

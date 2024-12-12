@@ -28,6 +28,7 @@ from utilities import console
 from utilities.constants import (
     CNV_TEST_SERVICE_ACCOUNT,
     HOTPLUG_DISK_SERIAL,
+    HTTP_OK,
     OS_FLAVOR_WINDOWS,
     TIMEOUT_2MIN,
     TIMEOUT_3MIN,
@@ -37,6 +38,7 @@ from utilities.constants import (
     TIMEOUT_60MIN,
     Images,
 )
+from utilities.exceptions import UrlNotFoundError
 
 
 SECURITY_CONTEXT = "securityContext"
@@ -122,8 +124,8 @@ def create_dv(
     cert_created = None
     if source in ("http", "https"):
         if not utilities.infra.url_excluded_from_validation(url):
-            # Make sure URL and the file exists
-            utilities.infra.validate_file_exists_in_url(url=url)
+            # Make sure URL exists
+            validate_file_exists_in_url(url=url)
         if not secret:
             secret = utilities.infra.get_artifactory_secret(namespace=namespace)
             artifactory_secret = secret
@@ -946,3 +948,11 @@ class OCSVirtualizationStorageClass(StorageClass):
                 },
             }
         )
+
+
+def validate_file_exists_in_url(url):
+    response = requests.head(
+        url=url, headers=utilities.infra.get_artifactory_header(), verify=False
+    )
+    if response.status_code != HTTP_OK:
+        raise UrlNotFoundError(url_request=response)

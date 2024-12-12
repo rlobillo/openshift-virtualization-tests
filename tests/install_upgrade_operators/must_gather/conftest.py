@@ -21,12 +21,8 @@ from tests.install_upgrade_operators.must_gather.utils import (
 )
 from tests.install_upgrade_operators.utils import create_vms
 from utilities.constants import LINUX_BRIDGE
-from utilities.infra import (
-    ExecCommandOnPod,
-    MissingResourceException,
-    cluster_resource,
-    create_ns,
-)
+from utilities.exceptions import MissingResourceException
+from utilities.infra import ExecCommandOnPod, cluster_resource, create_ns
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 
 

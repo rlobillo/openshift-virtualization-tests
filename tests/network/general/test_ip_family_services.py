@@ -6,11 +6,8 @@ import pytest
 from ocp_resources.service import Service
 
 from utilities.constants import SSH_PORT_22
-from utilities.infra import (
-    MissingResourceException,
-    cluster_resource,
-    run_virtctl_command,
-)
+from utilities.exceptions import MissingResourceException
+from utilities.infra import cluster_resource, run_virtctl_command
 from utilities.network import compose_cloud_init_data_dict
 from utilities.virt import VirtualMachineForTests, fedora_vm_body, running_vm
 

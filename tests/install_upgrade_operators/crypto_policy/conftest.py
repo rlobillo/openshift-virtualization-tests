@@ -30,7 +30,7 @@ from utilities.constants import (
     SSP_KUBEVIRT_HYPERCONVERGED,
     TLS_SECURITY_PROFILE,
 )
-from utilities.infra import MissingResourceException
+from utilities.exceptions import MissingResourceException
 
 
 LOGGER = logging.getLogger(__name__)

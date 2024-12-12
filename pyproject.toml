@@ -1,3 +1,10 @@
+[tool.ruff.format]
+exclude = [".git", ".venv", ".mypy_cache", ".tox", "__pycache__"]
+
+[tool.ruff.lint.isort]
+order-by-type = true
+known-third-party = ["ocp_resources", "ocp_utilities", "pyhelper_utils"]
+
 [tool.black]
 line-length = 88
 

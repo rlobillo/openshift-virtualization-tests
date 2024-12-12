@@ -50,3 +50,19 @@ class ProcessWithException(Process):
         if self._pconn.poll():
             self._exception = self._pconn.recv()
         return self._exception
+
+
+class UrlNotFoundError(Exception):
+    def __init__(self, url_request):
+        self.url_request = url_request
+
+    def __str__(self):
+        return f"{self.url_request.url} not found. status code is: {self.url_request.status_code}"
+
+
+class MissingResourceException(Exception):
+    def __init__(self, resource):
+        self.resource = resource
+
+    def __str__(self):
+        return f"No resources of type {self.resource} were found. Please check the test environment setup."

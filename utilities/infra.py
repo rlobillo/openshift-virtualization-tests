@@ -69,7 +69,7 @@ from utilities.constants import (
     NamespacesNames,
 )
 from utilities.data_collector import collect_cnv_information, get_data_collector_dict
-from utilities.exceptions import UtilityPodNotFoundError
+from utilities.exceptions import UrlNotFoundError, UtilityPodNotFoundError
 from utilities.storage import get_images_server_url
 
 
@@ -138,41 +138,6 @@ class ClusterHosts:
     class Type:
         VIRTUAL = "virtual"
         PHYSICAL = "physical"
-
-
-class MissingResourceException(Exception):
-    def __init__(self, resource):
-        self.resource = resource
-
-    def __str__(self):
-        return f"No resources of type {self.resource} were found. Please check the test environment setup."
-
-
-class UrlNotFoundError(Exception):
-    def __init__(self, url_request):
-        self.url_request = url_request
-
-    def __str__(self):
-        return f"{self.url_request.url} not found. status code is: {self.url_request.status_code}"
-
-
-class FileNotFoundInUrlError(Exception):
-    def __init__(self, url_request, file_name):
-        self.url_request = url_request
-        self.file_name = file_name
-
-    def __str__(self):
-        return f"{self.file_name} not found in url {self.url_request.url}"
-
-
-def validate_file_exists_in_url(url):
-    base_url, file_name = url.rsplit("/", 1)
-    response = requests.get(base_url, headers=get_artifactory_header(), verify=False)
-    if response.status_code != 200:
-        raise UrlNotFoundError(url_request=response)
-
-    if file_name not in str(response.content):
-        raise FileNotFoundInUrlError(url_request=response, file_name=file_name)
 
 
 def url_excluded_from_validation(url):
