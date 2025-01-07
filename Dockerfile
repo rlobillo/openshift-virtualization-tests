@@ -34,6 +34,7 @@ RUN python3 -m pip install pip --upgrade \
     && python3 -m venv ${POETRY_HOME} \
     && ${POETRY_HOME}/bin/pip install pip --upgrade \
     && ${POETRY_HOME}/bin/pip install poetry \
+    && ${POETRY_HOME}/bin/pip install poetry-plugin-export \
     && ${POETRY_HOME}/bin/poetry --version \
     && ${POETRY_HOME}/bin/poetry config cache-dir /cnv-tests \
     && ${POETRY_HOME}/bin/poetry config virtualenvs.in-project true \
