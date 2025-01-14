@@ -121,7 +121,7 @@ def upload_token_request(storage_ns_name, pvc_name, data):
 
 def check_disk_count_in_vm(vm):
     LOGGER.info("Check disk count.")
-    cmd = shlex.split("lsblk | grep disk | wc -l")
+    cmd = shlex.split("lsblk | grep disk | grep -v SWAP | wc -l")
     out = run_ssh_commands(host=vm.ssh_exec, commands=cmd)[0].strip()
     assert out == str(
         len(vm.instance.spec.template.spec.domain.devices.disks)

@@ -6,7 +6,6 @@ Import from HTTP server
 
 import logging
 import math
-import multiprocessing
 
 import pytest
 from bitmath import GiB
@@ -21,7 +20,12 @@ from pytest_testconfig import config as py_config
 
 from tests.os_params import FEDORA_LATEST
 from tests.storage import utils
-from tests.storage.utils import get_importer_pod, wait_for_importer_container_message
+from tests.storage.utils import (
+    check_disk_count_in_vm,
+    create_vm_from_dv,
+    get_importer_pod,
+    wait_for_importer_container_message,
+)
 from utilities import console
 from utilities.constants import (
     OS_FLAVOR_RHEL,
@@ -45,7 +49,7 @@ from utilities.storage import (
     get_images_server_url,
     sc_volume_binding_mode_is_wffc,
 )
-from utilities.virt import CIRROS_IMAGE
+from utilities.virt import running_vm
 
 
 pytestmark = pytest.mark.post_upgrade
@@ -565,33 +569,9 @@ def test_certconfigmap_missing_or_wrong_cm(data_volume_multi_storage_scope_funct
                 )
 
 
-def blank_disk_import(namespace, storage_params, dv_name):
-    with create_dv(
-        source="blank",
-        dv_name=dv_name,
-        namespace=namespace.name,
-        size="100Mi",
-        storage_class=[*storage_params][0],
-    ) as dv:
-        dv.wait_for_condition(
-            condition=DataVolume.Condition.Type.BOUND,
-            status=DataVolume.Condition.Status.TRUE,
-            timeout=TIMEOUT_1MIN,
-        )
-        dv.wait_for_condition(
-            condition=DataVolume.Condition.Type.READY,
-            status=DataVolume.Condition.Status.TRUE,
-            timeout=TIMEOUT_1MIN,
-        )
-        with utils.create_vm_from_dv(
-            dv=dv, image=CIRROS_IMAGE, vm_name=f"vm-{dv_name}"
-        ) as vm_dv:
-            utils.check_disk_count_in_vm(vm=vm_dv)
-
-
 @pytest.mark.sno
 @pytest.mark.parametrize(
-    "number_of_threads",
+    "number_of_processes",
     [
         pytest.param(
             1,
@@ -604,22 +584,13 @@ def blank_disk_import(namespace, storage_params, dv_name):
     ],
 )
 def test_successful_concurrent_blank_disk_import(
-    namespace,
-    storage_class_matrix__module__,
-    number_of_threads,
+    number_of_processes,
+    dv_list_created_by_multiprocess,
+    vm_list_created_by_multiprocess,
 ):
-    dv_processes = []
-    for dv in range(number_of_threads):
-        dv_process = multiprocessing.Process(
-            target=blank_disk_import,
-            args=(namespace, storage_class_matrix__module__, f"dv{dv}"),
-        )
-        dv_process.start()
-        dv_processes.append(dv_process)
-
-    for dvs in dv_processes:
-        dvs.join()
-        assert dvs.exitcode == 0, "Creating DV exited with non-zero return code"
+    for vm in vm_list_created_by_multiprocess:
+        running_vm(vm=vm, wait_for_interfaces=False)
+        check_disk_count_in_vm(vm=vm)
 
 
 @pytest.mark.parametrize(
@@ -667,7 +638,7 @@ def test_vmi_image_size(
         cert_configmap=internal_http_configmap.name,
     ) as dv:
         dv.wait_for_dv_success(timeout=TIMEOUT_4MIN)
-        with utils.create_vm_from_dv(dv=dv, image=CIRROS_IMAGE, start=False):
+        with create_vm_from_dv(dv=dv, start=False):
             with cluster_resource(PodWithPVC)(
                 namespace=dv.namespace,
                 name=f"{dv.name}-pod",

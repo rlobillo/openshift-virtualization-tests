@@ -584,3 +584,8 @@ def snapshots_with_content(
 
     for vm_snapshot in vm_snapshots:
         vm_snapshot.clean_up()
+
+
+@pytest.fixture(scope="module")
+def storage_class_name_scope_module(storage_class_matrix__module__):
+    return [*storage_class_matrix__module__][0]

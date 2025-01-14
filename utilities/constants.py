@@ -68,9 +68,11 @@ class Images:
 
     class Fedora:
         FEDORA37_IMG = "Fedora-Cloud-Base-37-1.7.x86_64.qcow2"
+        FEDORA_CONTAINER_IMAGE = "quay.io/openshift-cnv/qe-cnv-tests-fedora:37"
         DISK_DEMO = "fedora-cloud-registry-disk-demo"
         DIR = f"{BASE_IMAGES_DIR}/fedora-images"
         DEFAULT_DV_SIZE = "10Gi"
+        DEFAULT_MEMORY_SIZE = "1Gi"
 
     class CentOS:
         CENTOS7_IMG = "CentOS-7-x86_64-GenericCloud-2009.qcow2"
