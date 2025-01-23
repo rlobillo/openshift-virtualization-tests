@@ -21,7 +21,6 @@ import pytest
 import requests
 import urllib3
 import yaml
-from jira import JIRA
 from kubernetes.client import ApiException
 from ocp_resources.cluster_service_version import ClusterServiceVersion
 from ocp_resources.cluster_version import ClusterVersion
@@ -239,18 +238,6 @@ def name_prefix(name):
 
 def authorized_key(private_key_path):
     return f"ssh-rsa {private_to_public_key(key=private_key_path)} root@exec1.rdocloud"
-
-
-def get_jira_status(jira):
-    env_var = os.environ
-    assert env_var.get("PYTEST_JIRA_TOKEN") and env_var.get(
-        "PYTEST_JIRA_URL"
-    ), "Jira environment variables are not set"
-    jira_connection = JIRA(
-        token_auth=env_var["PYTEST_JIRA_TOKEN"],
-        options={"server": env_var["PYTEST_JIRA_URL"]},
-    )
-    return jira_connection.issue(id=jira).fields.status.name.lower()
 
 
 def get_pods(dyn_client, namespace, label=None):
@@ -868,22 +855,6 @@ def get_hco_mismatch_statuses(hco_status_conditions, expected_hco_status):
             )
 
     return mismatch_statuses
-
-
-def is_jira_open(jira_id):
-    """
-    Check if jira status is open.
-    Args:
-        jira_id (string): Jira card ID in format: "CNV-<jira_id>"
-    Returns:
-        True: if jira is open
-        False: if jira is closed
-    """
-    jira_status = get_jira_status(jira=jira_id)
-    if jira_status not in JIRA_STATUS_CLOSED:
-        LOGGER.info(f"Jira {jira_id}: status is {jira_status}")
-        return True
-    return False
 
 
 def get_hyperconverged_resource(client, hco_ns_name):
