@@ -67,6 +67,7 @@ from utilities.pytest_utils import (
     skip_if_pytest_flags_exists,
     stop_if_run_in_progress,
 )
+from utilities.storage import HppCsiStorageClass
 
 
 LOGGER = logging.getLogger(__name__)
@@ -661,7 +662,9 @@ def pytest_sessionstart(session):
         elif StorageClassNames.HOSTPATH in cluster_storage_classes_names:
             py_config_scs.extend(py_config["legacy_hpp_storage_class_matrix"])
         # If no TOPOLVM and no Legacy HPP - add new HPP (CSI) storage classes
-        else:
+        elif (
+            HppCsiStorageClass.Name.HOSTPATH_CSI_BASIC in cluster_storage_classes_names
+        ):
             py_config_scs.extend(py_config["new_hpp_storage_class_matrix"])
 
     # Save the default storage_class_matrix before it is updated
