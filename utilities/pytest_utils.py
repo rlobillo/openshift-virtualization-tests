@@ -234,11 +234,10 @@ def get_artifactory_server_url(cluster_host_url):
             f"Using user requested ARTIFACTORY_SERVER environment variable: {artifactory_server}"
         )
         return artifactory_server
-    default_artifactory_server = "cnv-qe-artifactory.apps.ocp-virt.prod.psi.redhat.com"
-    ibmc_artifactory_server = "ibmc.artifactory.cnv-qe.rhood.us"
-    it_up_artifactory_server = (
+    default_artifactory_server = (
         "cnv-qe-artifactory.apps.int.prod-stable-spoke1-dc-iad2.itup.redhat.com"
     )
+    ibmc_artifactory_server = "ibmc.artifactory.cnv-qe.rhood.us"
     servers = {
         "rhos-psi.cnv-qe.rhood.us": default_artifactory_server,
         "ibmc.cnv-qe.rhood.us": ibmc_artifactory_server,
@@ -246,7 +245,7 @@ def get_artifactory_server_url(cluster_host_url):
         "qe.azure.devcluster.openshift.com": ibmc_artifactory_server,
         "cnv-ci.rhood.us": ibmc_artifactory_server,
         "cnv-qe.rhood.us": ibmc_artifactory_server,
-        "lab.eng.tlv2.redhat.com": it_up_artifactory_server,
+        "lab.eng.tlv2.redhat.com": default_artifactory_server,
     }
     matching_server = [
         servers[domain_key] for domain_key in servers if domain_key in cluster_host_url
