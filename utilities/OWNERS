@@ -1,10 +1,10 @@
 approvers:
+  - dbasunag
   - vsibirsk
   - dshchedr
-  - dbasunag
-  - myakove
 reviewers:
   - dbasunag
   - RoniKishner
   - vsibirsk
   - dshchedr
+  - geetikakay

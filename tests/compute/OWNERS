@@ -1,0 +1,11 @@
+root-approvers: False
+approvers:
+  - dshchedr
+  - vsibirsk
+reviewers:
+  - dshchedr
+  - vsibirsk
+  - akri3i
+  - kbidarkar
+  - jerry7z
+  - SiboWang1997
