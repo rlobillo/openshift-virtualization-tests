@@ -1,7 +1,5 @@
-FROM quay.io/centos/centos:stream9 AS builder
+FROM quay.io/fedora/fedora:40 AS builder
 
-ARG OPENSHIFT_PYTHON_WRAPPER_COMMIT=''
-ARG OPENSHIFT_PYTHON_UTILITIES_COMMIT=''
 ARG POETRY_HOME='/usr/local'
 
 ENV LANG=C.UTF-8 \
@@ -9,27 +7,26 @@ ENV LANG=C.UTF-8 \
     PATH="${POETRY_HOME}/bin:/mnt/host:${PATH}"
 
 RUN dnf update -y \
-    && dnf -y install epel-release \
-    && dnf -y install \
-    systemd-container \
-    python3-pip \
-    python3-devel \
-    procps-ng \
-    rsync \
-    gcc \
-    git \
-    wget \
-    libcurl-devel \
-    libxslt-devel \
-    libxml2-devel \
-    openssl-devel \
-    && dnf clean all && rm -rf /var/cache/yum
+  && dnf -y install \
+  systemd-container \
+  python3-devel \
+  gcc \
+  sshpass \
+  libcurl-devel \
+  libxslt-devel \
+  libxml2-devel \
+  which \
+  && dnf clean all \
+  && rm -rf /var/cache/dnf \
+  && rm -rf /var/lib/dnf \
+  && truncate -s0 /var/log/*.log
+
 
 COPY / cnv-tests/
 WORKDIR cnv-tests
 
-# TODO: We should pin poetry to a specific version as recommended by the docs for CI usage.
-
+# We should pin poetry to a specific version as recommended by the docs for CI usage.
+# but we like to leave on the edge :)
 RUN python3 -m pip install pip --upgrade \
     && python3 -m venv ${POETRY_HOME} \
     && ${POETRY_HOME}/bin/pip install pip --upgrade \
@@ -48,11 +45,13 @@ RUN python3 -m pip install pip --upgrade \
 
 RUN find /cnv-tests/ -type d -name "__pycache__" -print0 | xargs -0 rm -rfv
 
-# The following is the runner section, which we start again from a clean CentOS9 image
+# The following is the runner section, which we start again from a clean Fedora image
 # and only adding the required bits to allow us to run the tests.
-FROM quay.io/centos/centos:stream9 AS runner
+FROM quay.io/fedora/fedora:40 AS runner
 
 ARG POETRY_HOME='/usr/local'
+ARG OPENSHIFT_PYTHON_WRAPPER_COMMIT=''
+ARG OPENSHIFT_PYTHON_UTILITIES_COMMIT=''
 
 ENV LANG=C.UTF-8 \
     CNV_TESTS_CONTAINER=Yes \
@@ -67,10 +66,22 @@ COPY --from=builder ${POETRY_HOME} ${POETRY_HOME}
 
 ##TODO: We can remove wget, and use curl instead, this will require to change some tests
 RUN dnf update -y \
-    && dnf install -y procps-ng python3 git sshpass jq wget rsync epel-release \
-    && dnf install -y parallel fwknop \
+    && dnf install -y \
+    procps-ng \
+    python3 \
+    bind-utils \
+    jq \
+    fwknop \
+    parallel \
+    wget \
+    clang \
+    cargo \
+    rsync \
+    openssl \
+    openssl-devel \
+    git \
     && dnf clean all \
-    && rm -rf /var/cache/yum \
+    && rm -rf /var/cache/dnf \
     && rm -rf /var/lib/dnf \
     && rm -rf /cnv-tests/cache \
     && rm -rf /root/.cache \
