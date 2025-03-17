@@ -3,6 +3,7 @@
 import logging
 import shlex
 from contextlib import contextmanager
+from typing import Generator
 
 import requests
 from ocp_resources.cdi import CDI
@@ -20,6 +21,8 @@ from ocp_resources.storage_profile import StorageProfile
 from ocp_resources.template import Template
 from ocp_resources.upload_token_request import UploadTokenRequest
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
+from ocp_resources.virtual_machine import VirtualMachine
+from ocp_utilities.infra import cluster_resource
 from pyhelper_utils.shell import run_ssh_commands
 from pytest_testconfig import config as py_config
 
@@ -33,18 +36,13 @@ from utilities.constants import (
 from utilities.hco import ResourceEditorValidateHCOReconcile
 from utilities.infra import (
     cleanup_artifactory_secret_and_config_map,
-    cluster_resource,
     get_artifactory_config_map,
     get_artifactory_secret,
     get_http_image_url,
     get_pod_by_name_prefix,
 )
 from utilities.ssp import validate_os_info_vmi_vs_windows_os
-from utilities.storage import (
-    create_dv,
-    is_snapshot_supported_by_sc,
-    sc_volume_binding_mode_is_wffc,
-)
+from utilities.storage import create_dv
 from utilities.virt import (
     VirtualMachineForTests,
     VirtualMachineForTestsFromTemplate,
@@ -254,7 +252,12 @@ def get_file_url_https_server(images_https_server, file_name):
 
 
 @contextmanager
-def create_cluster_role(name, api_groups, verbs, permissions_to_resources):
+def create_cluster_role(
+    name: str,
+    api_groups: list[str],
+    verbs: list[str],
+    permissions_to_resources: list[str],
+) -> Generator:
     """
     Create cluster role
     """
@@ -273,15 +276,15 @@ def create_cluster_role(name, api_groups, verbs, permissions_to_resources):
 
 @contextmanager
 def create_role_binding(
-    name,
-    namespace,
-    subjects_kind,
-    subjects_name,
-    role_ref_kind,
-    role_ref_name,
-    subjects_namespace=None,
-    subjects_api_group=None,
-):
+    name: str,
+    namespace: str,
+    subjects_kind: str,
+    subjects_name: str,
+    role_ref_kind: str,
+    role_ref_name: str,
+    subjects_namespace: str | None = None,
+    subjects_api_group: str | None = None,
+) -> Generator:
     """
     Create role binding
     """
@@ -300,19 +303,20 @@ def create_role_binding(
 
 @contextmanager
 def set_permissions(
-    role_name,
-    verbs,
-    permissions_to_resources,
-    binding_name,
-    namespace,
-    subjects_name,
-    subjects_kind="User",
-    subjects_api_group=None,
-    subjects_namespace=None,
-):
+    role_name: str,
+    role_api_groups: list[str],
+    verbs: list[str],
+    permissions_to_resources: list[str],
+    binding_name: str,
+    namespace: str,
+    subjects_name: str,
+    subjects_kind: str = "User",
+    subjects_api_group: str | None = None,
+    subjects_namespace: str | None = None,
+) -> Generator:
     with create_cluster_role(
         name=role_name,
-        api_groups=["cdi.kubevirt.io"],
+        api_groups=role_api_groups,
         permissions_to_resources=permissions_to_resources,
         verbs=verbs,
     ) as cluster_role:
@@ -325,21 +329,25 @@ def set_permissions(
             subjects_namespace=subjects_namespace,
             role_ref_kind=cluster_role.kind,
             role_ref_name=cluster_role.name,
-        ) as role_binding:
-            yield [cluster_role, role_binding]
+        ):
+            yield
 
 
-def create_vm_and_verify_image_permission(dv):
+def create_vm_and_verify_image_permission(dv: DataVolume) -> None:
     with create_vm_from_dv(dv=dv) as vm:
         running_vm(vm=vm, check_ssh_connectivity=False, wait_for_interfaces=False)
-        v_pod = vm.vmi.virt_launcher_pod
-        LOGGER.debug("Check image exist, permission and ownership")
-        output = v_pod.execute(
-            command=["ls", "-l", "/var/run/kubevirt-private/vmi-disks/dv-disk"]
-        )
-        assert "disk.img" in output
-        assert "-rw-rw----." in output
-        assert "qemu qemu" in output
+        verify_vm_disk_image_permission(vm=vm)
+
+
+def verify_vm_disk_image_permission(vm: VirtualMachine) -> None:
+    v_pod = vm.vmi.virt_launcher_pod
+    LOGGER.debug("Check image exist, permission and ownership")
+    output = v_pod.execute(
+        command=["ls", "-l", "/var/run/kubevirt-private/vmi-disks/dv-disk"]
+    )
+    assert "disk.img" in output
+    assert "-rw-rw----." in output
+    assert "qemu qemu" in output
 
 
 def storage_params(storage_class_matrix):
@@ -403,16 +411,6 @@ def importer_container_status_reason(pod):
         return container_state.waiting.reason
     if container_state.terminated:
         return container_state.terminated.reason
-
-
-def verify_snapshot_used_namespace_transfer(cdv, unprivileged_client):
-    cdv.wait_for_dv_success()
-    storage_class = cdv.storage_class
-    # Namespace transfer is not possible with WFFC
-    if is_snapshot_supported_by_sc(
-        sc_name=storage_class, client=unprivileged_client
-    ) and not sc_volume_binding_mode_is_wffc(sc=storage_class):
-        assert_pvc_snapshot_annotation(pvc=cdv.pvc)
 
 
 def assert_pvc_snapshot_annotation(pvc):

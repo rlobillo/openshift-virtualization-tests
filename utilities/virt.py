@@ -432,7 +432,6 @@ class VirtualMachineForTests(VirtualMachine):
         )
         template_spec = self.update_vm_cpu_configuration(template_spec=template_spec)
         template_spec = self.update_vm_memory_configuration(template_spec=template_spec)
-        template_spec = self.set_service_accounts(template_spec=template_spec)
         template_spec = self.set_smm(template_spec=template_spec)
         template_spec = self.set_pvspinlock(template_spec=template_spec)
         template_spec = self.set_efi_params(template_spec=template_spec)
@@ -449,6 +448,7 @@ class VirtualMachineForTests(VirtualMachine):
             template_spec = self.update_vm_storage_configuration(
                 template_spec=template_spec
             )
+            template_spec = self.set_service_accounts(template_spec=template_spec)
             # cloud-init disks must be set after DV disks in order to boot from DV.
             template_spec = self.update_vm_cloud_init_data(template_spec=template_spec)
             template_spec = self.set_vhostmd(template_spec=template_spec)
