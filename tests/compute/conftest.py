@@ -3,7 +3,6 @@ from contextlib import contextmanager
 import pytest
 
 from utilities.hco import update_hco_annotations
-from utilities.infra import scale_deployment_replicas
 from utilities.virt import (
     vm_instance_from_template,
     wait_for_kv_stabilize,
@@ -93,16 +92,6 @@ def vm_from_template_scope_function(
         data_source=golden_image_data_source_scope_function,
     ) as vm_from_template:
         yield vm_from_template
-
-
-@pytest.fixture()
-def scaled_deployment(request, hco_namespace):
-    with scale_deployment_replicas(
-        deployment_name=request.param["deployment_name"],
-        replica_count=request.param["replicas"],
-        namespace=hco_namespace.name,
-    ):
-        yield
 
 
 @pytest.fixture()

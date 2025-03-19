@@ -148,21 +148,6 @@ def verify_pods_priority_class_value(pods, expected_value):
     ), f"priorityClassName not set correctly in pods: {failed_pods_list}, should be {expected_value}"
 
 
-def verify_no_listed_alerts_on_cluster(prometheus, alerts_list):
-    """
-    It gets a list of alerts and verifies that none of them are firing on a cluster.
-    """
-    fired_alerts = {}
-    for alert in alerts_list:
-        alert_state = prometheus.get_alert(alert=alert)
-        if alert_state and alert_state[0]["metric"]["alertstate"] == "firing":
-            fired_alerts[alert] = alert_state
-
-    assert (
-        not fired_alerts
-    ), f"Alerts should not be fired on healthy cluster.\n {fired_alerts}"
-
-
 def generate_rhsm_cloud_init_data():
     bootcmds = [
         f"mkdir /mnt/{RHSM_SECRET_NAME}",

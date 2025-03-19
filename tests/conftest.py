@@ -2561,16 +2561,6 @@ def audit_logs():
     return nodes_logs
 
 
-@pytest.fixture()
-def alert_not_firing(request, prometheus):
-    alert = request.param
-    if prometheus.get_alert(alert):
-        pytest.xfail(
-            f"Alert {alert} should not be in Firing or in Pending state on a cluster before running test"
-        )
-    return alert
-
-
 @pytest.fixture(scope="session")
 def installing_cnv(pytestconfig):
     return pytestconfig.option.install
