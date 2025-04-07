@@ -719,16 +719,17 @@ def update_image_in_catalog_source(dyn_client, image, catalog_source_name, cr_na
         )
 
 
-def update_subscription_source(subscription, subscription_source):
+def update_subscription_source(subscription, subscription_source, subscription_channel):
     LOGGER.info(
-        f"Update subscription {subscription.name} source to {subscription_source}"
+        f"Update subscription {subscription.name} source to {subscription_source} on {subscription_channel} channel"
     )
     ResourceEditor(
         {
             subscription: {
                 "spec": {
-                    "source": subscription_source,
+                    "channel": subscription_channel,
                     "installPlanApproval": "Manual",
+                    "source": subscription_source,
                 }
             }
         }
