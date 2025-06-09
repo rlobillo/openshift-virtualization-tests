@@ -19,10 +19,7 @@ from tests.install_upgrade_operators.utils import (
 from utilities.constants import HOTFIX_STR, HPP_POOL
 from utilities.hco import ResourceEditorValidateHCOReconcile, get_hco_version
 from utilities.infra import cluster_resource, get_deployment_by_name
-from utilities.operator import (
-    disable_default_sources_in_operatorhub,
-    get_machine_config_pool_by_name,
-)
+from utilities.operator import disable_default_sources_in_operatorhub
 from utilities.storage import get_hyperconverged_cdi
 from utilities.virt import get_hyperconverged_kubevirt
 
@@ -161,14 +158,6 @@ def disabled_default_sources_in_operatorhub(admin_client, installing_cnv, cnv_so
 @pytest.fixture(scope="session")
 def cnv_image_url(pytestconfig):
     return pytestconfig.option.cnv_image
-
-
-@pytest.fixture(scope="session")
-def machine_config_pools():
-    return [
-        get_machine_config_pool_by_name(mcp_name="master"),
-        get_machine_config_pool_by_name(mcp_name="worker"),
-    ]
 
 
 @pytest.fixture()

@@ -38,7 +38,7 @@ from tests.compute.ssp.descheduler.utils import (
     wait_vmi_failover,
 )
 from tests.compute.utils import check_pod_disruption_budget_for_completed_migrations
-from utilities.constants import TIMEOUT_5SEC
+from utilities.constants import TIMEOUT_5SEC, TIMEOUT_30MIN, TIMEOUT_30SEC
 from utilities.infra import create_ns, scale_deployment_replicas
 from utilities.operator import (
     create_catalog_source,
@@ -49,6 +49,7 @@ from utilities.operator import (
     delete_existing_icsp,
     get_install_plan_from_subscription,
     wait_for_catalogsource_ready,
+    wait_for_mcp_updated_condition_true,
     wait_for_operator_install,
 )
 from utilities.virt import (
@@ -138,11 +139,22 @@ def generated_descheduler_icsp(
 def updated_icsp_descheduler(
     admin_client,
     generated_descheduler_icsp,
+    machine_config_pools,
 ):
     LOGGER.info(f"Creating descheduler ICSP from {generated_descheduler_icsp} path...")
     create_icsp_from_file(icsp_file_path=generated_descheduler_icsp)
+    wait_for_mcp_updated_condition_true(
+        machine_config_pools_list=machine_config_pools,
+        timeout=TIMEOUT_30MIN,
+        sleep=TIMEOUT_30SEC,
+    )
     yield
     delete_existing_icsp(admin_client=admin_client, name="ocp-release-nightly-0")
+    wait_for_mcp_updated_condition_true(
+        machine_config_pools_list=machine_config_pools,
+        timeout=TIMEOUT_30MIN,
+        sleep=TIMEOUT_30SEC,
+    )
 
 
 @pytest.fixture(scope="module")

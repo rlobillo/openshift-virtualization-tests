@@ -202,14 +202,14 @@ def get_mcps_with_all_machines_ready(machine_config_pools_list):
 
 
 def wait_for_mcp_updated_condition_true(
-    machine_config_pools_list, update_timeout=TIMEOUT_75MIN
+    machine_config_pools_list, timeout=TIMEOUT_75MIN, sleep=TIMEOUT_5SEC
 ):
     LOGGER.info(
         f"Waiting for MCPs to reach desired condition: {MachineConfigPool.Status.UPDATED}"
     )
     sampler = TimeoutSampler(
-        wait_timeout=update_timeout,
-        sleep=TIMEOUT_5SEC,
+        wait_timeout=timeout,
+        sleep=sleep,
         func=get_mcps_with_true_condition_status,
         exceptions_dict=BASE_EXCEPTIONS_DICT,
         condition_type=MachineConfigPool.Status.UPDATED,

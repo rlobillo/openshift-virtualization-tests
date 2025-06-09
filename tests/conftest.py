@@ -147,7 +147,10 @@ from utilities.network import (
     wait_for_ovs_daemonset_resource,
     wait_for_ovs_status,
 )
-from utilities.operator import disable_default_sources_in_operatorhub
+from utilities.operator import (
+    disable_default_sources_in_operatorhub,
+    get_machine_config_pool_by_name,
+)
 from utilities.ssp import get_data_import_crons, get_ssp_resource
 from utilities.storage import (
     create_or_update_data_source,
@@ -2712,3 +2715,11 @@ def is_disconnected_cluster():
 def skip_on_cnv_upgrade(pytestconfig):
     if pytestconfig.option.upgrade == "cnv":
         pytest.skip("This test is not supported for CNV upgrade")
+
+
+@pytest.fixture(scope="session")
+def machine_config_pools():
+    return [
+        get_machine_config_pool_by_name(mcp_name="master"),
+        get_machine_config_pool_by_name(mcp_name="worker"),
+    ]
