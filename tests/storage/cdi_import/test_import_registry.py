@@ -139,17 +139,7 @@ def test_public_registry_multiple_data_volume(
             "import-public-registry-no-content-type-dv",
             QUAY_IMAGE,
             None,
-            None,
-            "5Gi",
-            marks=(pytest.mark.polarion("CNV-2195")),
-        ),
-        pytest.param(
-            "import-public-registry-empty-content-type-dv",
-            QUAY_IMAGE,
-            None,
-            "",
-            "5Gi",
-            marks=(pytest.mark.polarion("CNV-2197"), pytest.mark.smoke()),
+            marks=(pytest.mark.polarion("CNV-2195"), pytest.mark.smoke()),
         ),
         pytest.param(
             "import-public-registry-quay-dv",
@@ -162,7 +152,6 @@ def test_public_registry_multiple_data_volume(
     ],
     ids=[
         "import-public-registry-no-content-type-dv",
-        "import-public-registry-empty-content-type-dv",
         "import-public-registry-quay-dv",
     ],
 )
@@ -210,7 +199,6 @@ def test_public_registry_data_volume_low_capacity(
         dv_name=dv_param["dv_name"],
         namespace=namespace.name,
         url=dv_param["url"],
-        content_type="",
         size="16Mi",
         storage_class=dv_param["storage_class"],
     ) as dv:
@@ -233,6 +221,7 @@ def test_public_registry_data_volume_low_capacity(
         dv.wait_for_dv_success()
         with utils.create_vm_from_dv(dv=dv) as vm_dv:
             utils.check_disk_count_in_vm(vm=vm_dv)
+
 
 
 @pytest.mark.sno
