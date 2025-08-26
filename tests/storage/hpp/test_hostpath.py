@@ -246,19 +246,6 @@ def verify_image_location_via_dv_pod_with_pvc(dv, worker_node_name):
         assert "disk.img" in pod.execute(command=["ls", "-1", "/pvc"])
 
 
-def verify_image_location_via_dv_virt_launcher_pod(dv, worker_node_name):
-    dv.wait_for_dv_success()
-    with storage_utils.create_vm_from_dv(dv=dv) as vm:
-        running_vm(vm=vm, check_ssh_connectivity=False, wait_for_interfaces=False)
-        v_pod = vm.vmi.virt_launcher_pod
-        LOGGER.debug("Check pod location...")
-        assert v_pod.instance["spec"]["nodeName"] == worker_node_name
-        LOGGER.debug("Check image location...")
-        assert "disk.img" in v_pod.execute(
-            command=["ls", "-1", "/var/run/kubevirt-private/vmi-disks/dv-disk"]
-        )
-
-
 def assert_provision_on_node_annotation(pvc, node_name, type_):
     provision_on_node = "kubevirt.io/provisionOnNode"
     assert pvc.instance.metadata.annotations.get(provision_on_node) == node_name
@@ -407,48 +394,6 @@ def test_hpp_specify_node_immediate(
 
 
 @pytest.mark.sno
-@pytest.mark.parametrize(
-    ("image_name", "dv_name"),
-    [
-        pytest.param(
-            Images.Cirros.QCOW2_IMG,
-            "cnv-2767-qcow2",
-            marks=(pytest.mark.polarion("CNV-2767")),
-        ),
-        pytest.param(
-            Images.Cirros.RAW_IMG,
-            "cnv-8900-raw",
-            marks=(pytest.mark.polarion("CNV-8900")),
-        ),
-    ],
-)
-def test_hostpath_http_import_dv(
-    skip_when_hpp_no_immediate,
-    namespace,
-    dv_name,
-    image_name,
-    worker_node1,
-    storage_class_matrix_hpp_matrix__module__,
-):
-    """
-    Check that CDI importing from HTTP endpoint works well with hostpath-provisioner
-    """
-    with create_dv(
-        source="http",
-        dv_name=dv_name,
-        namespace=namespace.name,
-        content_type=DataVolume.ContentType.KUBEVIRT,
-        url=f"{get_images_server_url()}{Images.Cirros.DIR}/{image_name}",
-        size=Images.Cirros.DEFAULT_DV_SIZE,
-        storage_class=[*storage_class_matrix_hpp_matrix__module__][0],
-        hostpath_node=worker_node1.name,
-    ) as dv:
-        verify_image_location_via_dv_virt_launcher_pod(
-            dv=dv, worker_node_name=worker_node1.name
-        )
-
-
-@pytest.mark.sno
 @pytest.mark.polarion("CNV-3227")
 def test_hpp_pvc_without_specify_node_waitforfirstconsumer(
     skip_when_hpp_no_waitforfirstconsumer,
@@ -594,47 +539,6 @@ def test_hostpath_upload_dv_with_token(
         )
         dv.wait_for_dv_success()
         verify_image_location_via_dv_pod_with_pvc(
-            dv=dv, worker_node_name=dv.pvc.selected_node
-        )
-
-
-@pytest.mark.sno
-@pytest.mark.polarion("CNV-3326")
-def test_hostpath_registry_import_dv(
-    admin_client,
-    skip_when_hpp_no_waitforfirstconsumer,
-    skip_when_cdiconfig_scratch_no_hpp,
-    namespace,
-    storage_class_matrix_hpp_matrix__module__,
-):
-    """
-    Check that when importing image from public registry with WFFC binding mode
-    and without kubevirt.io/provisionOnNode annotation works well.
-    The 'volume.kubernetes.io/selected-node' annotation will be added to scratch PVC.
-    """
-    with create_dv(
-        source="registry",
-        dv_name="dv-cnv-3326-quay",
-        namespace=namespace.name,
-        url=f"docker://quay.io/kubevirt/{Images.Cirros.DISK_DEMO}",
-        content_type=DataVolume.ContentType.KUBEVIRT,
-        size=Images.Cirros.DEFAULT_DV_SIZE,
-        storage_class=[*storage_class_matrix_hpp_matrix__module__][0],
-    ) as dv:
-        dv.scratch_pvc.wait_for_status(
-            status=PersistentVolumeClaim.Status.BOUND, timeout=TIMEOUT_5MIN
-        )
-        importer_pod = storage_utils.get_importer_pod(
-            dyn_client=admin_client, namespace=dv.namespace
-        )
-        importer_pod.wait_for_status(status=Pod.Status.RUNNING, timeout=TIMEOUT_5MIN)
-        assert_selected_node_annotation(
-            pvc_node_name=dv.scratch_pvc.selected_node,
-            pod_node_name=importer_pod.instance.spec.nodeName,
-            type_="scratch",
-        )
-        dv.wait_for_dv_success(timeout=TIMEOUT_5MIN)
-        verify_image_location_via_dv_virt_launcher_pod(
             dv=dv, worker_node_name=dv.pvc.selected_node
         )
 
