@@ -223,7 +223,6 @@ def test_public_registry_data_volume_low_capacity(
             utils.check_disk_count_in_vm(vm=vm_dv)
 
 
-
 @pytest.mark.sno
 @pytest.mark.polarion("CNV-2150")
 def test_public_registry_data_volume_archive(
