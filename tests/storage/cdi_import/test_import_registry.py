@@ -139,6 +139,8 @@ def test_public_registry_multiple_data_volume(
             "import-public-registry-no-content-type-dv",
             QUAY_IMAGE,
             None,
+            None,
+            "5Gi",
             marks=(pytest.mark.polarion("CNV-2195"), pytest.mark.smoke()),
         ),
         pytest.param(
