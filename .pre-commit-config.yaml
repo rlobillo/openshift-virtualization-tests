@@ -46,7 +46,7 @@ repos:
     - id: flake8
       args: [--config=.flake8]
       additional_dependencies: [
-        "git+https://github.com/RedHatQE/flake8-plugins.git@v0.0.2",
+        "git+https://github.com/RedHatQE/flake8-plugins.git@v1.0.0",
         "flake8-mutable",
         "pep8-naming"
       ]
