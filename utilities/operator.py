@@ -662,13 +662,16 @@ def get_cluster_operator_status_conditions(admin_client, operator_conditions=Non
     return cluster_operator_status
 
 
-def get_failed_cluster_operator(admin_client):
-    cluster_operators_status_conditions = get_cluster_operator_status_conditions(admin_client=admin_client)
+def get_failed_cluster_operator(
+    admin_client: DynamicClient, operator_conditions: dict[str, str] | None = None
+) -> dict[str, dict[str, str]]:
+    operator_conditions = operator_conditions or DEFAULT_RESOURCE_CONDITIONS
+    cluster_operators_status_conditions = get_cluster_operator_status_conditions(
+        admin_client=admin_client, operator_conditions=operator_conditions
+    )
     failed_operators = {}
     for cluster_operator in cluster_operators_status_conditions:
-        if sorted(cluster_operators_status_conditions[cluster_operator].items()) != sorted(
-            DEFAULT_RESOURCE_CONDITIONS.items()
-        ):
+        if sorted(cluster_operators_status_conditions[cluster_operator].items()) != sorted(operator_conditions.items()):
             LOGGER.info(
                 f"{cluster_operator} current status condition: {cluster_operators_status_conditions[cluster_operator]}"
             )
@@ -676,12 +679,16 @@ def get_failed_cluster_operator(admin_client):
     return failed_operators
 
 
-def wait_for_cluster_operator_stabilize(admin_client, wait_timeout=TIMEOUT_20MIN):
+def wait_for_cluster_operator_stabilize(
+    admin_client: DynamicClient, wait_timeout: int = TIMEOUT_20MIN, operator_conditions: dict[str, str] | None = None
+) -> None:
+    operator_conditions = operator_conditions or DEFAULT_RESOURCE_CONDITIONS
     sampler = TimeoutSampler(
         wait_timeout=wait_timeout,
         sleep=10,
         func=get_failed_cluster_operator,
         admin_client=admin_client,
+        operator_conditions=operator_conditions,
     )
     consecutive_check = 0
     sample = None

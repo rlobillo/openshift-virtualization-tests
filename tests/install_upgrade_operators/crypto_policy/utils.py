@@ -27,6 +27,7 @@ from tests.install_upgrade_operators.utils import (
 from utilities.constants import (
     CLUSTER,
     TIMEOUT_2MIN,
+    TIMEOUT_5MIN,
     TLS_SECURITY_PROFILE,
 )
 from utilities.hco import ResourceEditorValidateHCOReconcile, wait_for_hco_conditions
@@ -34,6 +35,14 @@ from utilities.infra import ExecCommandOnPod
 from utilities.operator import wait_for_cluster_operator_stabilize
 
 LOGGER = logging.getLogger(__name__)
+
+# Lightweight conditions check for cluster operators
+# Only verifies AVAILABLE=True and DEGRADED=False
+# Does NOT wait for PROGRESSING=False (allows rolling updates)
+AVAILABLE_ONLY_CONDITIONS = {
+    Resource.Condition.AVAILABLE: Resource.Condition.Status.TRUE,
+    Resource.Condition.DEGRADED: Resource.Condition.Status.FALSE,
+}
 
 
 def get_resource_crypto_policy(
@@ -260,8 +269,17 @@ def update_apiserver_crypto_policy(
     with ResourceEditor(
         patches={apiserver: {"spec": {TLS_SECURITY_PROFILE: tls_spec}}},
     ):
+        wait_for_hco_conditions(
+            admin_client=admin_client,
+            hco_namespace=hco_namespace,
+            list_dependent_crs_to_check=MANAGED_CRS_LIST,
+        )
         yield
-    wait_for_cluster_operator_stabilize(admin_client=admin_client)
+    wait_for_cluster_operator_stabilize(
+        admin_client=admin_client,
+        wait_timeout=TIMEOUT_5MIN,
+        operator_conditions=AVAILABLE_ONLY_CONDITIONS,
+    )
     wait_for_hco_conditions(
         admin_client=admin_client,
         hco_namespace=hco_namespace,
