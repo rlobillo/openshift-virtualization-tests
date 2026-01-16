@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import tempfile
 from collections import defaultdict
+from datetime import datetime, timezone
 from signal import SIGINT, SIGTERM, getsignal, signal
 from subprocess import check_output
 
@@ -249,6 +250,19 @@ def junitxml_polarion(record_testsuite_property):
 @pytest.fixture(scope="session")
 def kubeconfig_export_path():
     return os.environ.get(KUBECONFIG)
+
+
+@pytest.fixture(scope="session")
+def session_start_time() -> datetime:
+    """
+    Capture when test session started in UTC.
+
+    Uses UTC to match the timezone used in audit log file names.
+
+    Returns:
+        datetime: UTC timestamp when test session began (timezone-naive)
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 @pytest.fixture(scope="session")
@@ -2011,21 +2025,87 @@ def skip_if_no_storage_class_for_snapshot(storage_class_for_snapshot):
 
 
 @pytest.fixture()
-def audit_logs():
-    """Get audit logs names"""
+def audit_logs(session_start_time):
+    """
+    Get audit logs names filtered by session start time.
+
+    Only returns audit logs that are relevant to the current test session:
+    - The active audit.log file
+    - Rotated files with timestamps >= session_start_time
+    - The immediately previous rotated file (to catch events just before session start)
+    """
     output = subprocess.getoutput(
         f"{OC_ADM_LOGS_COMMAND} --role=control-plane {AUDIT_LOGS_PATH} | grep audit"
     ).splitlines()
+
     nodes_logs = defaultdict(list)
     for line in output:
         try:
             node, log = line.split()
-            nodes_logs[node].append(log)
+
+            # Always include active audit.log
+            if log == "audit.log":
+                nodes_logs[node].append(log)
+                continue
+
+            # Parse timestamp from rotated file name: audit-2026-01-16T13-16-02.340.log
+            if log.startswith("audit-") and log.endswith(".log"):
+                try:
+                    # Extract timestamp: "audit-2026-01-16T13-16-02.340.log" -> "2026-01-16T13-16-02.340"
+                    timestamp_str = log[6:-4]  # Remove "audit-" prefix and ".log" suffix
+                    # Replace hyphens in time part with colons: "2026-01-16T13-16-02.340" -> "2026-01-16T13:16:02.340"
+                    timestamp_str = timestamp_str[:10] + "T" + timestamp_str[11:].replace("-", ":")
+                    log_timestamp = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S.%f")
+
+                    # Store with timestamp for later filtering (defaultdict handles initialization)
+                    nodes_logs[node].append((log, log_timestamp))
+                except (ValueError, IndexError) as err:
+                    LOGGER.warning(f"Could not parse timestamp from log file {log}: {err}")
+                    continue
+
         # When failing to get node log, for example "error trying to reach service: ... : connect: connection refused"
         except ValueError:
             LOGGER.error(f"Fail to get log: {line}")
 
-    return nodes_logs
+    # Filter rotated logs to keep only relevant ones
+    filtered_nodes_logs = defaultdict(list)
+    for node, logs in nodes_logs.items():
+        # Separate active audit.log from rotated files with timestamps
+        active_logs = [log for log in logs if isinstance(log, str)]
+        rotated_logs_with_ts = [item for item in logs if isinstance(item, tuple)]
+
+        # Sort rotated logs by timestamp (oldest first)
+        rotated_logs_with_ts.sort(key=lambda x: x[1])
+
+        # Find the immediately previous log before session start
+        # Note: Logs with timestamp == session_start_time are included in relevant_logs
+        # to ensure events exactly at session start are captured
+        previous_log = None
+        relevant_logs = []
+
+        for log, log_timestamp in rotated_logs_with_ts:
+            if log_timestamp < session_start_time:
+                # This is older than session start, keep updating to get the most recent one
+                previous_log = log
+            else:
+                # This is >= session start (includes exact match), include it
+                relevant_logs.append(log)
+
+        # Build final list: [previous_log] + relevant_logs + [audit.log]
+        final_logs = []
+        if previous_log:
+            final_logs.append(previous_log)
+        final_logs.extend(relevant_logs)
+        final_logs.extend(active_logs)
+
+        if final_logs:
+            filtered_nodes_logs[node] = final_logs
+            LOGGER.info(
+                f"Node {node}: processing {len(final_logs)} audit log file(s) "
+                f"(filtered from {len(rotated_logs_with_ts) + len(active_logs)} total)"
+            )
+
+    return filtered_nodes_logs
 
 
 @pytest.fixture(scope="session")
