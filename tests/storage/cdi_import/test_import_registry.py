@@ -13,6 +13,7 @@ from tests.storage.utils import (
     clean_up_multiprocess,
     create_vm_from_dv,
     get_importer_pod,
+    storage_params,
     wait_for_importer_container_message,
     wait_for_processes_exit_successfully,
 )
@@ -89,9 +90,7 @@ def test_public_registry_multiple_data_volume(
                 url=QUAY_IMAGE,
                 size="5Gi",
                 content_type=DataVolume.ContentType.KUBEVIRT,
-                **utils.storage_params(
-                    storage_class_matrix=storage_class_matrix__function__
-                ),
+                **storage_params(storage_class_matrix=storage_class_matrix__function__),
                 privileged_client=admin_client,
             )
 
