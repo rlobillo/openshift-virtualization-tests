@@ -32,7 +32,7 @@ pytest-order = "*"
 jinja2 = "*"
 requests = "*"
 xmltodict = "*"
-pytest-jira = "*"
+pytest-jira = {version = "0.3.24", python = ">=3.9"}
 jira = "*"
 python-rrmngmnt = "*"
 importlib-metadata = "*"
