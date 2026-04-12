@@ -57,6 +57,7 @@ deepdiff = "*"
 python-utility-scripts = "*"
 kubernetes = "^27.2.0"
 poetry-plugin-export = "^1.7.1"
+pyhelper-utils = {version = "^2.0.2", python = ">=3.10"}
 
 [tool.poetry.dev-dependencies]
 ipython = "*"
