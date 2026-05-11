@@ -40,7 +40,9 @@ LOGGER = logging.getLogger(__name__)
 
 def drain_using_console(dyn_client, source_node, source_pod, vm):
     with virt_utils.running_sleep_in_linux(vm=vm):
-        with node_mgmt_console(node=source_node, node_mgmt="drain"):
+        with node_mgmt_console(
+            admin_client=dyn_client, node=source_node, node_mgmt="drain"
+        ):
             check_migration_process_after_node_drain(
                 dyn_client=dyn_client, source_pod=source_pod, vm=vm
             )
@@ -57,7 +59,9 @@ def drain_using_console_windows(
         vm=vm,
         process_name=process_name,
     )
-    with node_mgmt_console(node=source_node, node_mgmt="drain"):
+    with node_mgmt_console(
+        admin_client=dyn_client, node=source_node, node_mgmt="drain"
+    ):
         check_migration_process_after_node_drain(
             dyn_client=dyn_client, source_pod=source_pod, vm=vm
         )
@@ -212,7 +216,9 @@ class TestNodeMaintenanceRHEL:
             pod=vm.vmi.virt_launcher_pod,
             schedulable_nodes=schedulable_nodes,
         )
-        with node_mgmt_console(node=cordon_nodes[0], node_mgmt="cordon"):
+        with node_mgmt_console(
+            admin_client=admin_client, node=cordon_nodes[0], node_mgmt="cordon"
+        ):
             drain_using_console(
                 dyn_client=admin_client,
                 source_node=golden_image_vm_instance_from_template_multi_storage_scope_class.vmi.virt_launcher_pod.node,
@@ -270,7 +276,11 @@ class TestNodeCordonAndDrain:
         admin_client,
     ):
         vm = golden_image_vm_instance_from_template_multi_storage_scope_class
-        with node_mgmt_console(node=vm.vmi.virt_launcher_pod.node, node_mgmt="cordon"):
+        with node_mgmt_console(
+            admin_client=admin_client,
+            node=vm.vmi.virt_launcher_pod.node,
+            node_mgmt="cordon",
+        ):
             with pytest.raises(TimeoutExpiredError):
                 migration_job_sampler(
                     dyn_client=admin_client,

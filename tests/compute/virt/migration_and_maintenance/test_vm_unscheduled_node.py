@@ -53,6 +53,7 @@ def unscheduled_node_vm(
 )
 @pytest.mark.polarion("CNV-4157")
 def test_schedule_vm_on_cordoned_node(
+    admin_client,
     skip_when_one_node,
     skip_rwo_default_access_mode,
     nodes,
@@ -72,7 +73,7 @@ def test_schedule_vm_on_cordoned_node(
     vm_node = [
         node for node in nodes if node.name == unscheduled_node_vm.node_selector
     ][0]
-    with node_mgmt_console(node=vm_node, node_mgmt="cordon"):
+    with node_mgmt_console(admin_client=admin_client, node=vm_node, node_mgmt="cordon"):
         wait_for_node_schedulable_status(node=vm_node, status=False)
         unscheduled_node_vm.start()
         unscheduled_node_vm.vmi.wait_for_status(

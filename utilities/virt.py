@@ -71,7 +71,7 @@ from utilities.constants import (
     WORKERS_TYPE,
     Images,
 )
-from utilities.hco import wait_for_hco_conditions
+from utilities.hco import get_hco_namespace, wait_for_hco_conditions
 
 
 LOGGER = logging.getLogger(__name__)
@@ -2027,7 +2027,8 @@ def vm_instance_from_template(
 
 
 @contextmanager
-def node_mgmt_console(node, node_mgmt):
+def node_mgmt_console(admin_client, node, node_mgmt):
+    hco_namespace = get_hco_namespace(admin_client=admin_client)
     try:
         LOGGER.info(f"{node_mgmt.capitalize()} the node {node.name}")
         extra_opts = (
@@ -2041,9 +2042,15 @@ def node_mgmt_console(node, node_mgmt):
         )
         yield
     finally:
+        if node_mgmt == "drain":
+            LOGGER.info("Terminate drain process")
+            run(
+                shlex.split('pkill -f "oc adm drain"'),
+            )
         LOGGER.info(f"Uncordon node {node.name}")
         run(f"oc adm uncordon {node.name}", shell=True)
         wait_for_node_schedulable_status(node=node, status=True)
+        wait_for_kv_stabilize(admin_client=admin_client, hco_namespace=hco_namespace)
 
 
 def wait_for_node_schedulable_status(node, status, timeout=60):
