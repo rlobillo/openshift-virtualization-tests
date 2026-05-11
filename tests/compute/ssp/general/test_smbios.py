@@ -15,7 +15,7 @@ pytestmark = pytest.mark.post_upgrade
 
 
 @pytest.fixture()
-def configmap_smbios_vm(unprivileged_client, namespace):
+def configmap_smbios_vm(namespace):
     name = "configmap-smbios-vm"
     with cluster_resource(VirtualMachineForTests)(
         name=name,
@@ -27,12 +27,11 @@ def configmap_smbios_vm(unprivileged_client, namespace):
 
 
 @pytest.fixture()
-def smbios_defaults(admin_client, cnv_current_version):
+def smbios_defaults(cnv_current_version):
     smbios_defaults = {
         "family": "Red Hat",
         "product": "OpenShift Virtualization",
         "manufacturer": "Red Hat",
-        "sku": cnv_current_version,
         "version": cnv_current_version,
     }
     return smbios_defaults
