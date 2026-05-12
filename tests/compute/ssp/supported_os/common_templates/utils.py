@@ -103,7 +103,7 @@ def check_windows_vm_hvinfo(vm):
     def _check_hyperv_privileges():
         hyperv_windows_privileges_list = [
             "AccessReenlightenmentControls",
-            "AccessVpRunTimeRegs",
+            "AccessVpRunTimeReg",
             "AccessSynicRegs",
             "AccessSyntheticTimerRegs",
             "AccessVpIndex",
