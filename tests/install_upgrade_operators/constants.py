@@ -10,3 +10,9 @@ CNV_VERSION_EXPLORER_URL = (
     "http://cnv-version-explorer.apps.cnv2.engineering.redhat.com"
 )
 WORKLOAD_UPDATE_STRATEGY_KEY_NAME = "workloadUpdateStrategy"
+
+KONFLUX_ICSP_NAME = "zz-cnv-icsp-fallback"
+KONFLUX_MIRROR_BASE_URL = "quay.io/openshift-virtualization/konflux-builds"
+RH_ICSP_SOURCE = "registry.redhat.io/container-native-virtualization"
+KONFLUX_PIPELINE = "Konflux"
+BREW_MIRROR_BASE_URL = "brew.registry.redhat.io/container-native-virtualization"

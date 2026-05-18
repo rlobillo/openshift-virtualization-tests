@@ -5,16 +5,24 @@ import re
 
 from benedict import benedict
 from kubernetes.dynamic.exceptions import NotFoundError
+from ocp_resources.image_content_source_policy import ImageContentSourcePolicy
 from ocp_resources.installplan import InstallPlan
 from ocp_resources.network_addons_config import NetworkAddonsConfig
 from ocp_resources.operator_condition import OperatorCondition
-from ocp_resources.resource import Resource
+from ocp_resources.resource import Resource, ResourceEditor
 from ocp_resources.utils import TimeoutExpiredError, TimeoutSampler
 from ocp_utilities.infra import cluster_resource
 from ocp_wrapper_data_collector.data_collector import collect_resources_yaml_instance
 from openshift.dynamic.exceptions import ConflictError
 from pytest_testconfig import py_config
 
+from tests.install_upgrade_operators.constants import (
+    BREW_MIRROR_BASE_URL,
+    KONFLUX_ICSP_NAME,
+    KONFLUX_MIRROR_BASE_URL,
+    KONFLUX_PIPELINE,
+    RH_ICSP_SOURCE,
+)
 from utilities.constants import (
     HCO_SUBSCRIPTION,
     PRODUCTION_CATALOG_SOURCE,
@@ -24,6 +32,7 @@ from utilities.constants import (
 )
 from utilities.data_collector import get_data_collector_dict
 from utilities.infra import get_subscription
+from utilities.operator import wait_for_mcp_update_completion
 from utilities.virt import VirtualMachineForTests, fedora_vm_body
 
 
@@ -366,4 +375,108 @@ def get_resource_from_module_name(
         admin_client=admin_client,
         related_obj=related_obj,
         module_name=module_name,
+    )
+
+
+def is_konflux_pipeline(build_info):
+    if not build_info:
+        LOGGER.info("No build info available. Skipping ICSP.")
+        return False
+    pipeline = build_info.get("pipeline")
+    if pipeline != KONFLUX_PIPELINE:
+        LOGGER.warning(f"Pipeline is '{pipeline}', not Konflux. Skipping ICSP.")
+        return False
+    return True
+
+
+def konflux_mirror_url(version):
+    return f"{KONFLUX_MIRROR_BASE_URL}/v{version.major}-{version.minor}"
+
+
+def _build_updated_mirror_entries(icsp, required_mirrors):
+    mirror_entries = icsp.instance.to_dict().get("spec", {}).get("repositoryDigestMirrors", [])
+    if not mirror_entries:
+        return []
+    has_changes = False
+    for entry in mirror_entries:
+        source = entry["source"]
+        if source == RH_ICSP_SOURCE:
+            suffix = ""
+        elif source.startswith(f"{RH_ICSP_SOURCE}/"):
+            suffix = source.removeprefix(RH_ICSP_SOURCE)
+        else:
+            continue
+        mirrors = entry.get("mirrors", [])
+        missing = [
+            f"{url}{suffix}"
+            for url in required_mirrors
+            if f"{url}{suffix}" not in mirrors
+        ]
+        if missing:
+            entry["mirrors"] = mirrors + missing
+            has_changes = True
+    return mirror_entries if has_changes else []
+
+
+def apply_konflux_icsp(
+    admin_client,
+    required_mirrors,
+    machine_config_pools,
+    mcp_conditions,
+    nodes,
+):
+    icsp = ImageContentSourcePolicy(
+        name=KONFLUX_ICSP_NAME, client=admin_client
+    )
+    if not icsp.exists:
+        all_mirrors = required_mirrors + [BREW_MIRROR_BASE_URL]
+        repository_digest_mirrors = [
+            {"source": RH_ICSP_SOURCE, "mirrors": all_mirrors}
+        ]
+        LOGGER.info(f"Creating ICSP {icsp.name} with mirrors: {all_mirrors}")
+        with ResourceEditor(
+            patches={
+                mcp: {"spec": {"paused": True}}
+                for mcp in machine_config_pools
+            }
+        ):
+            ImageContentSourcePolicy(
+                name=KONFLUX_ICSP_NAME,
+                client=admin_client,
+                repository_digest_mirrors=repository_digest_mirrors,
+                teardown=False,
+            ).deploy(wait=True)
+    else:
+        updated_entries = _build_updated_mirror_entries(
+            icsp=icsp, required_mirrors=required_mirrors
+        )
+        if not updated_entries:
+            LOGGER.warning(
+                f"ICSP {icsp.name} already contains all required mirrors."
+            )
+            return
+        LOGGER.info(
+            f"Patching ICSP {icsp.name} with missing mirrors for:"
+            f" {required_mirrors}"
+        )
+        with ResourceEditor(
+            patches={
+                mcp: {"spec": {"paused": True}}
+                for mcp in machine_config_pools
+            }
+        ):
+            ResourceEditor(
+                patches={
+                    icsp: {
+                        "spec": {
+                            "repositoryDigestMirrors": updated_entries
+                        }
+                    }
+                }
+            ).update()
+    LOGGER.info("Wait for MCP update after ICSP modification.")
+    wait_for_mcp_update_completion(
+        machine_config_pools_list=machine_config_pools,
+        initial_mcp_conditions=mcp_conditions,
+        nodes=nodes,
     )

@@ -54,10 +54,6 @@ from utilities.infra import (
 )
 from utilities.operator import (
     approve_install_plan,
-    create_icsp_command,
-    create_icsp_from_file,
-    delete_existing_icsp,
-    generate_icsp_file,
     update_image_in_catalog_source,
     wait_for_mcp_update_completion,
 )
@@ -828,38 +824,6 @@ def wait_for_hco_csv_creation(admin_client, hco_namespace, hco_target_version):
 
 def get_mcp_conditions(machine_config_pools):
     return {mcp.name: mcp.instance.status.conditions for mcp in machine_config_pools}
-
-
-def get_generated_icsp(
-    image_url,
-    registry_source,
-    generated_pulled_secret,
-    pull_secret_directory,
-):
-    cnv_mirror_cmd = create_icsp_command(
-        image=image_url,
-        source_url=registry_source,
-        folder_name=pull_secret_directory,
-        pull_secret=generated_pulled_secret,
-    )
-    icsp_file_path = generate_icsp_file(
-        folder_name=pull_secret_directory,
-        command=cnv_mirror_cmd,
-    )
-
-    return icsp_file_path
-
-
-def apply_icsp(admin_client, icsp_file_path, delete_file=False):
-    """
-    Creates a new ImageContentSourcePolicy file with a given CNV image and applies it to the cluster.
-    """
-    # Due to the amount of annotations in ICSP yaml, `oc apply` may fail. Existing ICSP is deleted.
-    if delete_file:
-        LOGGER.info("Deleting existing ICSP.")
-        delete_existing_icsp(admin_client=admin_client, name="iib")
-    LOGGER.info("Creating new ICSP.")
-    create_icsp_from_file(icsp_file_path=icsp_file_path)
 
 
 def wait_for_odf_update(target_version):

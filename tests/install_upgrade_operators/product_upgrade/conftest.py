@@ -4,11 +4,9 @@ import re
 
 import packaging
 import pytest
-import yaml
 from ocp_resources.kubevirt import KubeVirt
-from ocp_resources.machine_config_pool import MachineConfigPool
 from ocp_resources.resource import ResourceEditor
-from ocp_utilities.infra import cluster_resource
+from ocp_resources.utils import TimeoutExpiredError
 from packaging.version import Version
 from pytest_testconfig import py_config
 
@@ -17,12 +15,10 @@ from tests.install_upgrade_operators.constants import (
     WORKLOADUPDATEMETHODS,
 )
 from tests.install_upgrade_operators.product_upgrade.utils import (
-    apply_icsp,
     approve_cnv_upgrade_install_plan,
     extract_ocp_version_from_ocp_image,
     get_alerts_fired_during_upgrade,
     get_all_cnv_alerts,
-    get_generated_icsp,
     get_iib_images_of_cnv_versions,
     get_mcp_conditions,
     get_nodes_labels,
@@ -35,19 +31,27 @@ from tests.install_upgrade_operators.product_upgrade.utils import (
     wait_for_hco_upgrade,
     wait_for_odf_update,
     wait_for_pods_replacement_by_type,
+    wait_for_version_explorer_response,
 )
-from tests.install_upgrade_operators.utils import wait_for_operator_condition
+from tests.install_upgrade_operators.utils import (
+    apply_konflux_icsp,
+    is_konflux_pipeline,
+    konflux_mirror_url,
+    wait_for_operator_condition,
+)
 from utilities.constants import (
     HCO_CATALOG_SOURCE,
-    HOTFIX_STR,
-    ICSP_FILE,
     TIMEOUT_10MIN,
     TIMEOUT_180MIN,
     NamespacesNames,
 )
 from utilities.data_collector import get_data_collector_dict
 from utilities.hco import ResourceEditorValidateHCOReconcile
-from utilities.infra import get_related_images_name_and_version, get_subscription
+from utilities.infra import (
+    exit_pytest_execution,
+    get_related_images_name_and_version,
+    get_subscription,
+)
 from utilities.operator import (
     get_machine_config_pool_by_name,
     update_image_in_catalog_source,
@@ -63,14 +67,28 @@ ODF_URL = "quay.io/rhceph-dev"
 
 
 @pytest.fixture(scope="session")
-def cnv_image_name(cnv_image_url):
-    # Image name format example osbs: registry-proxy.engineering.redhat.com/rh-osbs/iib:45131
-    match = re.match(".*/(.*):", cnv_image_url)
-    assert match, (
-        f"Can not find CNV image name from: {cnv_image_url} "
-        f"(example: registry-proxy.engineering.redhat.com/rh-osbs/iib:45131 should find 'iib')"
-    )
-    return match.group(1)
+def iib_build_info(cnv_source, cnv_image_url):
+    if cnv_source in ("osbs", "fbc"):
+        iib_format_match = re.search(r"/iib:(\d+)$", cnv_image_url)
+        if not iib_format_match:
+            exit_pytest_execution(
+                message=(
+                    f"Cannot extract IIB number from: {cnv_image_url}"
+                    f" (expected format: .../iib:<number>)"
+                ),
+            )
+        iib_number = iib_format_match.group(1)
+
+        try:
+            return wait_for_version_explorer_response(
+                api_end_point="GetBuildByIIB",
+                query_string=f"iib_number={iib_number}",
+            )
+        except TimeoutExpiredError:
+            exit_pytest_execution(
+                message=f"Version Explorer returned empty response for IIB {iib_number}.",
+            )
+    return {}
 
 
 @pytest.fixture(scope="session")
@@ -88,51 +106,37 @@ def nodes_labels_before_upgrade(nodes, cnv_upgrade):
     return get_nodes_labels(nodes=nodes, cnv_upgrade=cnv_upgrade)
 
 
+@pytest.fixture(scope="session")
+def required_konflux_mirrors(cnv_target_version, cnv_current_version):
+    target = Version(version=cnv_target_version)
+    current = Version(version=cnv_current_version)
+    return [
+        konflux_mirror_url(version=Version(version=f"{target.major}.{minor}"))
+        for minor in range(target.minor, current.minor - 1, -1)
+    ]
+
+
 @pytest.fixture()
 def updated_image_content_source_policy(
     admin_client,
     nodes,
-    tmpdir_factory,
+    required_konflux_mirrors,
+    is_disconnected_cluster,
     machine_config_pools,
     machine_config_pools_conditions_scope_function,
-    cnv_image_url,
-    cnv_image_name,
-    cnv_source,
-    cnv_registry_source,
-    pull_secret_directory,
-    generated_pulled_secret,
-    is_production_source,
-    is_disconnected_cluster,
+    iib_build_info,
 ):
     if is_disconnected_cluster:
         LOGGER.warning("Skip applying ICSP in a disconnected setup.")
-
-    if is_production_source or cnv_source == HOTFIX_STR:
-        LOGGER.info(
-            "ICSP updates skipped as upgrading using production source/upgrade to hotfix"
-        )
         return
-    icsp_file = get_generated_icsp(
-        image_url=cnv_image_url,
-        registry_source=cnv_registry_source["source_map"],
-        generated_pulled_secret=generated_pulled_secret,
-        pull_secret_directory=pull_secret_directory,
-    )
-    LOGGER.info("pausing MCP updates while modifying ICSP")
-    with ResourceEditor(
-        patches={
-            mcp: {"spec": {"paused": True}}
-            for mcp in cluster_resource(MachineConfigPool).get(dyn_client=admin_client)
-        }
-    ):
-        apply_icsp(
-            admin_client=admin_client, icsp_file_path=icsp_file, delete_file=True
-        )
+    if not is_konflux_pipeline(build_info=iib_build_info):
+        return
 
-    LOGGER.info("Wait for MCP update after ICSP modification.")
-    wait_for_mcp_update_completion(
-        machine_config_pools_list=machine_config_pools,
-        initial_mcp_conditions=machine_config_pools_conditions_scope_function,
+    apply_konflux_icsp(
+        admin_client=admin_client,
+        required_mirrors=required_konflux_mirrors,
+        machine_config_pools=machine_config_pools,
+        mcp_conditions=machine_config_pools_conditions_scope_function,
         nodes=nodes,
     )
 
@@ -592,68 +596,32 @@ def non_eus_to_target_eus_cnv_upgraded(
 
 
 @pytest.fixture(scope="module")
-def created_eus_icsps(
-    nodes,
-    pull_secret_directory,
-    generated_pulled_secret,
-    machine_config_pools,
-    machine_config_pools_conditions_scope_module,
-    cnv_registry_source,
-    eus_cnv_upgrade_path,
-):
-    icsp_files = []
-    registry_source = cnv_registry_source["source_map"]
-    for entry in eus_cnv_upgrade_path:
-        for version in eus_cnv_upgrade_path[entry]:
-            cnv_image_url = eus_cnv_upgrade_path[entry][version]
-            icsp_file = get_generated_icsp(
-                image_url=cnv_image_url,
-                registry_source=registry_source,
-                generated_pulled_secret=generated_pulled_secret,
-                pull_secret_directory=pull_secret_directory,
-            )
-            version_str = version.lstrip("v").replace(".", "")
-            with open(icsp_file, "r") as fd:
-                icsp_yaml = yaml.safe_load(fd.read())
-            icsp_yaml["metadata"]["name"] = f"iib-{version_str}"
-            with open(icsp_file, "w") as current_icsp_file:
-                yaml.dump(icsp_yaml, current_icsp_file)
-            new_file_name = icsp_file.replace(
-                ICSP_FILE, f"imageContentSourcePolicy{version_str}.yaml"
-            )
-            os.rename(icsp_file, new_file_name)
-            icsp_files.append(new_file_name)
-    LOGGER.info(f"EUS ICSP Files created: {icsp_files}")
-    return icsp_files
-
-
-@pytest.fixture(scope="module")
 def eus_applied_all_icsp(
     admin_client,
     nodes,
-    pull_secret_directory,
-    generated_pulled_secret,
+    is_disconnected_cluster,
     machine_config_pools,
     machine_config_pools_conditions_scope_module,
-    cnv_registry_source,
+    iib_build_info,
     eus_cnv_upgrade_path,
-    created_eus_icsps,
 ):
-    with ResourceEditor(
-        patches={
-            mcp: {"spec": {"paused": True}}
-            for mcp in cluster_resource(MachineConfigPool).get(dyn_client=admin_client)
-        }
-    ):
-        for file_name in created_eus_icsps:
-            LOGGER.info(f"Applying file: {file_name}")
-            apply_icsp(
-                admin_client=admin_client, icsp_file_path=file_name, delete_file=False
-            )
-    LOGGER.info("Wait for MCP update after ICSP modification.")
-    wait_for_mcp_update_completion(
-        machine_config_pools_list=machine_config_pools,
-        initial_mcp_conditions=machine_config_pools_conditions_scope_module,
+    if is_disconnected_cluster:
+        LOGGER.warning("Skip applying ICSP in a disconnected setup.")
+        return
+    if not is_konflux_pipeline(build_info=iib_build_info):
+        return
+
+    required_mirrors = list(dict.fromkeys(
+        konflux_mirror_url(version=Version(version=version))
+        for phase in eus_cnv_upgrade_path
+        for version in eus_cnv_upgrade_path[phase]
+    ))
+
+    apply_konflux_icsp(
+        admin_client=admin_client,
+        required_mirrors=required_mirrors,
+        machine_config_pools=machine_config_pools,
+        mcp_conditions=machine_config_pools_conditions_scope_module,
         nodes=nodes,
     )
 
